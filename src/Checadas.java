@@ -1,6 +1,6 @@
 
 public class Checadas {
-	private Empleado empleado;
+	private int id;
 	private String fecha;
 	private String horaEntrada;
 	private String horaSalida;
@@ -12,23 +12,15 @@ public class Checadas {
     public Checadas() {
     }
     
-    public Checadas(Empleado empleado, String fecha, String horaEntrada, String horaSalida, String horaEntrada2, String horaSalida2,String retardo) {
-        this.empleado = empleado;
-        this.fecha=fecha;
+    public Checadas(int id, String fecha, String horaEntrada, String horaSalida, String horaEntrada2, String horaSalida2,String retardo) {
+        this.id=id;
+    	this.fecha=fecha;
         this.horaEntrada = horaEntrada;
         this.horaSalida = horaSalida;
         this.horaEntrada2 = horaEntrada2;
         this.horaSalida2 = horaSalida2;
         this.retardo=retardo;
     }
-
-	public Empleado getEmpleado() {
-		return empleado;
-	}
-
-	public void setEmpleado(Empleado empleado) {
-		this.empleado = empleado;
-	}
 
 	public String getFecha() {
 		return fecha;
@@ -40,6 +32,14 @@ public class Checadas {
 
 	public String getHoraEntrada() {
 		return horaEntrada;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public void setHoraEntrada(String horaEntrada) {
