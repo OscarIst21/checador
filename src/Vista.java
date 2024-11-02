@@ -64,9 +64,7 @@ public class Vista extends JFrame {
         btnSelectFile2.setBounds(380, 11, 300, 50);
         contentPane.add(btnSelectFile2);
 
-        // Configuración de la tabla con encabezados directamente en el modelo
-        String[] columnHeaders = {"ID", "Nombre","Departamento", "Fecha", "Horario de Entrada", "Horario de Salida", "Retardos(Min)", "Falta(Min)","Total"};
-        DefaultTableModel model = new DefaultTableModel(columnHeaders, 0);
+         DefaultTableModel model = new DefaultTableModel();
         table = new JTable(model);
 
         // Agregar JScrollPane alrededor de la tabla para que siempre se muestren los encabezados
@@ -130,8 +128,8 @@ public class Vista extends JFrame {
             }
 
             DefaultTableModel model = (DefaultTableModel) table.getModel();
-            model.setRowCount(0); // Limpiar tabla antes de cargar nuevos datos
-            model.setColumnCount(0); // Limpiar columnas para definirlas dinámicamente
+            model.setRowCount(0); 
+            model.setColumnCount(0); 
 
             // Leer la primera fila como encabezados
             Row headerRow = sheet.getRow(0);
@@ -141,33 +139,58 @@ public class Vista extends JFrame {
                 }
             }
 
-            // Leer el contenido de cada fila
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
                     List<Object> rowData = new ArrayList<>();
+                    String id = "", nombre = "", departamento = "", fecha = "", horaEntrada = "", horaSalida = "", horaEntrada2 = "", horaSalida2 = "", retardo = "", salida = "", falta = "", total = "", notas = "";
+
                     for (int j = 0; j < row.getLastCellNum(); j++) {
-                        if (row.getCell(j) != null) {
-                            switch (row.getCell(j).getCellType()) {
+                        Cell cell = row.getCell(j);
+                        String cellValue = ""; // Variable para almacenar el valor de la celda
+
+                        if (cell != null) {
+                            switch (cell.getCellType()) {
                                 case STRING:
-                                    rowData.add(row.getCell(j).getStringCellValue());
+                                    cellValue = cell.getStringCellValue();
                                     break;
                                 case NUMERIC:
-                                    rowData.add(row.getCell(j).getNumericCellValue());
+                                    cellValue = String.valueOf(cell.getNumericCellValue());
                                     break;
                                 case BOOLEAN:
-                                    rowData.add(row.getCell(j).getBooleanCellValue());
+                                    cellValue = String.valueOf(cell.getBooleanCellValue());
                                     break;
                                 case FORMULA:
-                                    rowData.add(row.getCell(j).getCellFormula());
+                                    cellValue = cell.getCellFormula();
                                     break;
                                 default:
-                                    rowData.add(""); // En caso de celdas vacías u otros tipos
+                                    cellValue = ""; // En caso de celdas vacías u otros tipos
                             }
-                        } else {
-                            rowData.add(""); // Para celdas nulas
+                        }
+
+                        rowData.add(cellValue); 
+
+                        if (i > 4) {
+                            switch (j) {
+                                case 0: id = cellValue; break;
+                                case 1: nombre = cellValue; break;
+                                case 2: departamento = cellValue; break;
+                                case 3: fecha = cellValue; break;
+                                case 4: horaEntrada = cellValue; break;
+                                case 5: horaSalida = cellValue; break;
+                                case 6: horaEntrada2 = cellValue; break;
+                                case 7: horaSalida2 = cellValue; break;
+                                case 8: retardo = cellValue; break;
+                                case 9: salida = cellValue; break;
+                                case 10: falta = cellValue; break;
+                                case 11: total = cellValue; break;
+                                case 12: notas = cellValue; break;
+                            }
                         }
                     }
+
+                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, total, notas);
+                    checadas.add(checada);
                     model.addRow(rowData.toArray()); // Agregar la fila completa a la tabla
                 }
             }
@@ -181,6 +204,7 @@ public class Vista extends JFrame {
             e.printStackTrace(); // Imprime el stack trace para obtener más detalles
         }
     }
+
 
 
 }
