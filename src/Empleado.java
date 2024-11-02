@@ -1,6 +1,6 @@
 
 public class Empleado {
-    private int id;
+    private String id;
     private String nombre;
     private String categoria;
     private String estado;
@@ -9,7 +9,7 @@ public class Empleado {
     public Empleado() {
     }
 
-    public Empleado(int id, String nombre, String categoria, String estado, String jornada) {
+    public Empleado(String id, String nombre, String categoria, String estado, String jornada) {
         this.id = id;
         this.nombre = nombre;
         this.categoria = categoria;
@@ -17,11 +17,11 @@ public class Empleado {
         this.jornada = jornada;
     }
 
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
@@ -56,6 +56,13 @@ public class Empleado {
 	public void setJornada(String jornada) {
 		this.jornada = jornada;
 	}
+
+	@Override
+	public String toString() {
+		return "Empleado [id=" + id + ", nombre=" + nombre + ", categoria=" + categoria + ", estado=" + estado
+				+ ", jornada=" + jornada + "]";
+	}
+
 
 	
 

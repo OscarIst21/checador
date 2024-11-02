@@ -13,14 +13,16 @@ public class Checadas {
     private String total;
     private String notas;
 
-    // Constructor vacío
+    private String categoria;
+    private String estado;
+    private String jornada;
+    
     public Checadas() {
     }
 
-    // Constructor con todos los parámetros
     public Checadas(String id, String nombre, String departamento, String fecha, String horaEntrada, String horaSalida,
                     String horaEntrada2, String horaSalida2, String retardo, String salida, String falta,
-                    String total, String notas) {
+                    String total, String notas,String categoria,String estado,String jornada) {
         this.id = id;
         this.nombre = nombre;
         this.departamento = departamento;
@@ -36,7 +38,6 @@ public class Checadas {
         this.notas = notas;
     }
 
-    // Métodos getter y setter
     public String getId() {
         return id;
     }
@@ -141,22 +142,38 @@ public class Checadas {
         this.notas = notas;
     }
 
-    @Override
-    public String toString() {
-        return "Checadas{" +
-                "id=" + id +
-                ", nombre='" + nombre + '\'' +
-                ", departamento='" + departamento + '\'' +
-                ", fecha='" + fecha + '\'' +
-                ", horaEntrada='" + horaEntrada + '\'' +
-                ", horaSalida='" + horaSalida + '\'' +
-                ", horaEntrada2='" + horaEntrada2 + '\'' +
-                ", horaSalida2='" + horaSalida2 + '\'' +
-                ", retardo='" + retardo + '\'' +
-                ", salida='" + salida + '\'' +
-                ", falta='" + falta + '\'' +
-                ", total='" + total + '\'' +
-                ", notas='" + notas + '\'' +
-                '}';
-    }
+    public String getCategoria() {
+		return categoria;
+	}
+
+	public void setCategoria(String categoria) {
+		this.categoria = categoria;
+	}
+
+	public String getEstado() {
+		return estado;
+	}
+
+	public void setEstado(String estado) {
+		this.estado = estado;
+	}
+
+	public String getJornada() {
+		return jornada;
+	}
+
+	public void setJornada(String jornada) {
+		this.jornada = jornada;
+	}
+
+	@Override
+	public String toString() {
+		return "Checadas [id=" + id + ", nombre=" + nombre + ", departamento=" + departamento + ", fecha=" + fecha
+				+ ", horaEntrada=" + horaEntrada + ", horaSalida=" + horaSalida + ", horaEntrada2=" + horaEntrada2
+				+ ", horaSalida2=" + horaSalida2 + ", retardo=" + retardo + ", salida=" + salida + ", falta=" + falta
+				+ ", total=" + total + ", notas=" + notas + ", categoria=" + categoria + ", estado=" + estado
+				+ ", jornada=" + jornada + "]";
+	}
+
+ 
 }

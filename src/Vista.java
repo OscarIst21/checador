@@ -37,15 +37,16 @@ public class Vista extends JFrame {
     private List<Checadas> checadas;
 
     public Vista() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 1280, 720);
-        setLocationRelativeTo(null);
-        contentPane = new JPanel();
-        contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-        setContentPane(contentPane);
-        contentPane.setLayout(null);
+    	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	    setBounds(100, 100, 1280, 720);
+	    setLocationRelativeTo(null);
+	    contentPane = new JPanel();
+	    contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+	    setContentPane(contentPane);
+	    contentPane.setLayout(null);
 
-        listaEmpleados = new ArrayList<>(); // Inicializar la lista
+	    listaEmpleados = new ArrayList<>(); // Inicializar la lista de empleados
+	    checadas = new ArrayList<>();
 
         // Crear un botón para seleccionar el archivo Excel
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel");
@@ -62,6 +63,7 @@ public class Vista extends JFrame {
         btnSelectFile2.setFocusable(false);
         btnSelectFile2.setBackground(new Color(0, 64, 128));
         btnSelectFile2.setBounds(380, 11, 300, 50);
+        btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
 
          DefaultTableModel model = new DefaultTableModel();
@@ -78,6 +80,7 @@ public class Vista extends JFrame {
         btnSave.setForeground(new Color(255, 255, 255));
         btnSave.setBackground(new Color(0, 128, 192));
         btnSave.setBounds(847, 11, 300, 50);
+        btnSave.setEnabled(false);
         contentPane.add(btnSave);
         
        
@@ -91,6 +94,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     cargarChecador(fileToOpen);
+                    btnSelectFile2.setEnabled(true);
+                    btnSave.setEnabled(true);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
@@ -112,9 +117,77 @@ public class Vista extends JFrame {
             }
         });
     }
-
     private void cargarEmpleados(File file) {
-        
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+
+            Sheet sheet = workbook.getSheet("Hoja1"); // Verifica que esta sea la hoja correcta
+            if (sheet == null) {
+                JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
+                return;
+            }
+
+            listaEmpleados.clear(); // Limpiar la lista de empleados para evitar duplicados
+
+            // Iterar sobre cada fila de la hoja para obtener ID, nombre, categoría, estado y jornada
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // Asumimos que la primera fila son encabezados
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    String id = "", nombre = "", categoria = "", estado = "", jornada = "";
+
+                    // Obtener el ID
+                    Cell idCell = row.getCell(0); // EMPLEADO_NO
+                    if (idCell != null) {
+                        if (idCell.getCellType() == CellType.STRING) {
+                            id = idCell.getStringCellValue();
+                        } else if (idCell.getCellType() == CellType.NUMERIC) {
+                            id = String.valueOf((int) idCell.getNumericCellValue());
+                        }
+                    }
+                    System.out.println("ID: " + id); // Debug
+
+                    // Obtener el nombre completo
+                    Cell nombreCell = row.getCell(5); // EMPLEADO_NOMBRE_COMPLETO
+                    if (nombreCell != null) {
+                        nombre = nombreCell.getStringCellValue();
+                    }
+                    System.out.println("Nombre: " + nombre); // Debug
+
+                    // Obtener la categoría
+                    Cell categoriaCell = row.getCell(18); // EMPLEADO_CATEGORIA
+                    if (categoriaCell != null) {
+                        categoria = categoriaCell.getStringCellValue();
+                    }
+                    System.out.println("Categoría: " + categoria); // Debug
+
+                    // Obtener el estado
+                    Cell estadoCell = row.getCell(26); // EMPLEADO_ACTIVO
+                    if (estadoCell != null) {
+                        estado = estadoCell.getStringCellValue();
+                    }
+                    System.out.println("Estado: " + estado); // Debug
+
+                    // Obtener la jornada
+                    Cell jornadaCell = row.getCell(24); // EMPLEADO_TIPO_JORNADA
+                    if (jornadaCell != null) {
+                        jornada = jornadaCell.getStringCellValue();
+                    }
+                    System.out.println("Jornada: " + jornada); // Debug
+
+                    // Crear y añadir a la lista de empleados
+                    Empleado empleado = new Empleado(id, nombre, categoria, estado, jornada);
+                    listaEmpleados.add(empleado);
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, "Empleados cargados exitosamente.");
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void cargarChecador(File file) {
@@ -189,8 +262,9 @@ public class Vista extends JFrame {
                         }
                     }
 
-                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, total, notas);
+                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, total, notas, "", "", "");
                     checadas.add(checada);
+                    System.out.println(checada.toString());
                     model.addRow(rowData.toArray()); // Agregar la fila completa a la tabla
                 }
             }
