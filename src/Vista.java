@@ -35,6 +35,7 @@ public class Vista extends JFrame {
     private JTable table;
     private List<Empleado> listaEmpleados;
     private List<Checadas> checadas;
+    private ReportePDF reporte;
 
     public Vista() {
     	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -82,7 +83,14 @@ public class Vista extends JFrame {
         btnSave.setBounds(847, 11, 300, 50);
         btnSave.setEnabled(false);
         contentPane.add(btnSave);
-        
+
+        btnSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	 reporte = new ReportePDF();
+            	reporte.generateReport(checadas);
+            }
+        });
        
         btnSelectFile.addActionListener(new ActionListener() {
             @Override

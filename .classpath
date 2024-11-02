@@ -29,5 +29,8 @@
 	<classpathentry kind="lib" path="src/libreria/SparseBitSet-1.2.jar"/>
 	<classpathentry kind="lib" path="src/libreria/xmlbeans-5.1.1.jar"/>
 	<classpathentry kind="lib" path="src/libreria/log4j-core-2.18.0.jar"/>
+	<classpathentry kind="lib" path="src/libreria/io-8.0.4.jar"/>
+	<classpathentry kind="lib" path="src/libreria/kernel-8.0.4.jar"/>
+	<classpathentry kind="lib" path="src/libreria/layout-8.0.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
