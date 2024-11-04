@@ -5,17 +5,26 @@ public class Empleado {
     private String categoria;
     private String estado;
     private String jornada;
-
+    private String total;
     public Empleado() {
     }
 
-    public Empleado(String id, String nombre, String categoria, String estado, String jornada) {
+    public Empleado(String id, String nombre, String categoria, String estado, String jornada,String total) {
         this.id = id;
         this.nombre = nombre;
         this.categoria = categoria;
         this.estado = estado;
         this.jornada = jornada;
+        this.total=total;
     }
+
+	public String getTotal() {
+		return total;
+	}
+
+	public void setTotal(String total) {
+		this.total = total;
+	}
 
 	public String getId() {
 		return id;

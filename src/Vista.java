@@ -36,7 +36,7 @@ public class Vista extends JFrame {
     private List<Empleado> listaEmpleados;
     private List<Checadas> checadas;
     private ReportePDF reporte;
-
+    public String periodo="";
     public Vista() {
     	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	    setBounds(100, 100, 1280, 720);
@@ -160,8 +160,8 @@ public class Vista extends JFrame {
                     String categoria = row.getCell(18) != null ? row.getCell(18).toString().trim() : "";
                     String estado = row.getCell(24) != null ? row.getCell(24).toString().trim() : "";
                     String jornada = row.getCell(20) != null ? row.getCell(20).toString().trim() : "";
-
-                    Empleado empleado = new Empleado(id, nombre, categoria, estado, jornada);
+                    String total=row.getCell(29) != null ? row.getCell(29).toString().trim() : "";
+                    Empleado empleado = new Empleado(id, nombre, categoria, estado, jornada,total);
                     listaEmpleados.add(empleado);
                 }
             }
@@ -174,6 +174,7 @@ public class Vista extends JFrame {
                         checada.setCategoria(empleado.getCategoria());
                         checada.setEstado(empleado.getEstado());
                         checada.setJornada(empleado.getJornada());
+                        checada.setTotal(empleado.getTotal());
                         found = true;
                         break;
                     }
@@ -216,6 +217,8 @@ public class Vista extends JFrame {
                 for (int j = 0; j < headerRow.getLastCellNum(); j++) {
                     model.addColumn(headerRow.getCell(j).toString()); // Agrega los encabezados dinámicamente
                 }
+                periodo=headerRow.getCell(2).getStringCellValue();
+                
             }
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -272,7 +275,7 @@ public class Vista extends JFrame {
                     model.addRow(rowData.toArray()); 
                 }
             }
-
+            System.out.println(periodo);
             JOptionPane.showMessageDialog(this, "Datos cargados exitosamente en la tabla desde 'Reporte estadístico'.");
 
         } catch (IOException e) {
