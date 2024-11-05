@@ -270,7 +270,7 @@ public class Vista extends JFrame {
                         }
                     }
 
-                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, total, notas, "", "", "");
+                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, "", notas, "", "", "");
                     checadas.add(checada);
                     model.addRow(rowData.toArray()); 
                 }
