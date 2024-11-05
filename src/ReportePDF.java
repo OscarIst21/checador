@@ -18,10 +18,14 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -48,67 +52,110 @@ public class ReportePDF {
                     PdfWriter writer = new PdfWriter(filePath);
                     PdfDocument pdfDoc = new PdfDocument(writer);
                     Document document = new Document(pdfDoc);
-
                     // Agrupar checadas por ID
                     Map<String, List<Checadas>> checadasPorId = checadasList.stream()
                             .collect(Collectors.groupingBy(Checadas::getId));
 
                     for (String id : checadasPorId.keySet()) {
                         String nombre = checadasPorId.get(id).get(0).getNombre();
-                        String jornada = checadasPorId.get(id).get(0).getJornada();
-                        Paragraph title = new Paragraph(id + " Empleado: " + nombre + " Jornada: " + jornada)
+                        String categoria = checadasPorId.get(id).get(0).getCategoria();
+                        Paragraph title = new Paragraph(id + "\t" + nombre +"\t"+ categoria)
                                 .setFontSize(12)
                                 .setBold()
                                 .setTextAlignment(TextAlignment.LEFT);
                         document.add(title);
 
-                        Table table = new Table(new float[]{4, 4, 4, 4});
+                        Table table = new Table(new float[]{4, 4, 4, 4,4,4,4});
                         table.setWidth(UnitValue.createPercentValue(100));
 
                         // Encabezado de la tabla
                         table.addHeaderCell(new Cell().add(new Paragraph("Fecha"))
                                 .setBackgroundColor(new DeviceRgb(255, 158, 56))
                                 .setTextAlignment(TextAlignment.CENTER));
+                        table.addHeaderCell(new Cell().add(new Paragraph("Dia"))
+                                .setBackgroundColor(new DeviceRgb(255, 158, 56))
+                                .setTextAlignment(TextAlignment.CENTER));
                         table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada"))
+                                .setBackgroundColor(new DeviceRgb(255, 158, 56))
+                                .setTextAlignment(TextAlignment.CENTER));
+                        table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
                                 .setBackgroundColor(new DeviceRgb(255, 158, 56))
                                 .setTextAlignment(TextAlignment.CENTER));
                         table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida"))
                                 .setBackgroundColor(new DeviceRgb(255, 158, 56))
                                 .setTextAlignment(TextAlignment.CENTER));
+                        table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
+                                .setBackgroundColor(new DeviceRgb(255, 158, 56))
+                                .setTextAlignment(TextAlignment.CENTER));
                         table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado"))
                                 .setBackgroundColor(new DeviceRgb(255, 158, 56))
                                 .setTextAlignment(TextAlignment.CENTER));
-
+                        
                         Duration totalHorasTrabajadas = Duration.ZERO;
-
-                        for (Checadas checada : checadasPorId.get(id)) {
+                        int faltas=0;
+                        int entrada=0;
+                        int salida=0;
+                        int mediosRetardos=0;
+                        int retardos=0;
+                        for (Checadas checada : checadasPorId.get(id)) {	
                             table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
+                                    .setTextAlignment(TextAlignment.CENTER));
+                            table.addCell(new Cell().add(new Paragraph(calcularDiaSemana(checada.getFecha())))
                                     .setTextAlignment(TextAlignment.CENTER));
                             table.addCell(new Cell().add(new Paragraph(checada.getHoraEntrada()))
                                     .setTextAlignment(TextAlignment.CENTER));
+                            table.addCell(new Cell().add(new Paragraph(estatusChequeo(checada.getHoraEntrada())))
+                                    .setTextAlignment(TextAlignment.CENTER));
                             table.addCell(new Cell().add(new Paragraph(checada.getHoraSalida()))
+                                    .setTextAlignment(TextAlignment.CENTER));
+                            table.addCell(new Cell().add(new Paragraph(estatusChequeo(checada.getHoraSalida())))
                                     .setTextAlignment(TextAlignment.CENTER));
 
                             String tiempoTrabajo = calcularTiempoTrabajo(checada.getHoraEntrada(), checada.getHoraSalida());
                             table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
                                     .setTextAlignment(TextAlignment.CENTER));
-
+                            if(estatusChequeo(checada.getHoraEntrada())=="Medio Retardo"){
+                            	mediosRetardos++;
+                            }
+                            if(estatusChequeo(checada.getHoraEntrada())=="Retardo"){
+                            	retardos++;
+                            }
+                            if(estatusChequeo(checada.getHoraSalida())=="Falta" || estatusChequeo(checada.getHoraEntrada())=="Falta"){
+                            	salida++;
+                            }
+                            if(checada.getHoraEntrada()=="" || checada.getHoraSalida()=="") {
+                            	if(checada.getHoraEntrada()=="" && checada.getHoraSalida()=="") {
+                            	faltas++;
+                            	}else
+                            	 if(checada.getHoraEntrada()=="") {
+                                 	entrada++;
+                                 }else
+                            	 if(checada.getHoraSalida()=="") {
+                                 	salida++;
+                                 }
+                            }
+                            if(retardos>=5) {
+                            	faltas++;
+                            }
+                            if(mediosRetardos>=10) {
+                            	faltas++;
+                            }
                             Duration duracion = obtenerDuracion(checada.getHoraEntrada(), checada.getHoraSalida());
                             totalHorasTrabajadas = totalHorasTrabajadas.plus(duracion);
                         }
 
-                        document.add(table);
 
                         long totalHoras = totalHorasTrabajadas.toHours();
                         long totalMinutos = totalHorasTrabajadas.toMinutes() % 60;
 
                         Paragraph info = new Paragraph("Total de horas a cubrir: " + checadasPorId.get(id).get(0).getTotal() +
-                                " Horas trabajadas: " + totalHoras + ":" + totalMinutos)
+                                "  Horas trabajadas: " + totalHoras + ":" + totalMinutos + "  Faltas días: "+faltas + "  Entrada:"+entrada+"  Salida:"+salida)
                                 .setFontSize(10)
                                 .setBold()
                                 .setTextAlignment(TextAlignment.LEFT);
                         document.add(info);
 
+                        document.add(table);
                         document.add(new Paragraph("\n"));
                     }
 
@@ -129,7 +176,37 @@ public class ReportePDF {
                 }
             }
         }
+    	public String estatusChequeo(String horaChequeo) { 
+    	    if (horaChequeo == null || horaChequeo.isEmpty()) {
+    	        return "";
+    	    }
+    	    String[] partes = horaChequeo.split(":");
+    	    //int horas = Integer.parseInt(partes[0]);
+    	    int minutos = Integer.parseInt(partes[1]);
 
+    	    if (minutos >= 0 && minutos <= 10) {
+    	        return "Tolerancia";
+    	    } else if (minutos <= 20) {
+    	        return "Medio Retardo";
+    	    } else if (minutos <= 30) {
+    	        return "Retardo";
+    	    } else {
+    	        return "Falta";
+    	    }
+    	}
+    	public static String calcularDiaSemana(String fecha) {
+    		if (fecha == null || fecha.isEmpty()) {
+                return "";
+            }
+            // Define el formato de la fecha
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            // Convierte el String a un objeto LocalDate
+            LocalDate localDate = LocalDate.parse(fecha, formatter);
+
+            // Obtiene el día de la semana en español
+            return localDate.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
+        }
     private String calcularTiempoTrabajo(String horaEntrada, String horaSalida) {
         if (horaEntrada == null || horaSalida == null || horaEntrada.isEmpty() || horaSalida.isEmpty()) {
             return "";

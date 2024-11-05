@@ -157,7 +157,7 @@ public class Vista extends JFrame {
                     }
 
                     String nombre = nombreCell != null ? nombreCell.toString().trim() : "";
-                    String categoria = row.getCell(18) != null ? row.getCell(18).toString().trim() : "";
+                    String categoria = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
                     String estado = row.getCell(24) != null ? row.getCell(24).toString().trim() : "";
                     String jornada = row.getCell(20) != null ? row.getCell(20).toString().trim() : "";
                     String total=row.getCell(29) != null ? row.getCell(29).toString().trim() : "";
@@ -167,7 +167,6 @@ public class Vista extends JFrame {
             }
 
             for (Checadas checada : checadas) {
-                boolean found = false;
                 for (Empleado empleado : listaEmpleados) {
                     if (checada.getId().equals(empleado.getId())) {
                         checada.setNombre(empleado.getNombre());
@@ -175,18 +174,12 @@ public class Vista extends JFrame {
                         checada.setEstado(empleado.getEstado());
                         checada.setJornada(empleado.getJornada());
                         checada.setTotal(empleado.getTotal());
-                        found = true;
+                        
                         break;
                     }
                 }
-                if (!found) {
-                    checada.setNombre(checada.getId());
-                }
                
             }
-            for (Checadas checada : checadas) {
-            	 System.out.println(checada.toString());
-			}
             JOptionPane.showMessageDialog(this, "Empleados cargados y lista de checadas actualizada exitosamente.");
 
         } catch (IOException e) {
