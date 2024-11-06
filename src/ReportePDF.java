@@ -2,15 +2,20 @@ import com.itextpdf.io.exceptions.IOException;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -29,9 +34,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/*Clase encargada de generar un reporte a partir de una lista de objetos checadas*/
 public class ReportePDF {
 
-    	public void generateReport(List<Checadas> checadasList) {
+    	public void generateReport(List<Checadas> checadasList, String periodo) {
             // Seleccionar ubicación para guardar el archivo
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Guardar Reporte PDF");
@@ -52,6 +58,40 @@ public class ReportePDF {
                     PdfWriter writer = new PdfWriter(filePath);
                     PdfDocument pdfDoc = new PdfDocument(writer);
                     Document document = new Document(pdfDoc);
+                  
+                    pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
+                        @Override
+                        public void handleEvent(com.itextpdf.kernel.events.Event event) {
+                            PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+                            PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
+
+                            // Posición del encabezado en el centro de la parte superior
+                            Rectangle pageSize = docEvent.getPage().getPageSize();
+                            float y = pageSize.getTop() - 20;
+
+                            try {
+                                // Crear la fuente en negrita y calcular el ancho del texto
+                                var font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+                                String encabezado = "REPORTE DETALLADO DE REGISTRO ENTRADA Y SALIDA EN EL PERIODO: " + periodo;
+                                float textWidth = font.getWidth(encabezado, 10); // Ancho del texto a tamaño de fuente 10
+                                float x = (pageSize.getWidth() - textWidth) / 2; // Calcular posición x centrada
+
+                                // Configurar el canvas para el encabezado centrado
+                                canvas.beginText();
+                                canvas.setFontAndSize(font, 10); // Usar la fuente en negrita
+                                canvas.moveText(x, y);
+                                canvas.showText(encabezado);
+                                canvas.endText();
+
+                            } catch (java.io.IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            canvas.release();
+                        }
+                    });
+
+
                     // Agrupar checadas por ID
                     Map<String, List<Checadas>> checadasPorId = checadasList.stream()
                             .collect(Collectors.groupingBy(Checadas::getId));
@@ -176,6 +216,8 @@ public class ReportePDF {
                 }
             }
         }
+    	
+    	
     	public String estatusChequeo(String horaChequeo) { 
     	    if (horaChequeo == null || horaChequeo.isEmpty()) {
     	        return "";
@@ -247,4 +289,5 @@ public class ReportePDF {
             return Duration.ZERO;
         }
     }
+    
 }

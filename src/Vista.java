@@ -88,7 +88,7 @@ public class Vista extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
             	 reporte = new ReportePDF();
-            	reporte.generateReport(checadas);
+            	reporte.generateReport(checadas, periodo);
             }
         });
        
@@ -210,8 +210,6 @@ public class Vista extends JFrame {
                 for (int j = 0; j < headerRow.getLastCellNum(); j++) {
                     model.addColumn(headerRow.getCell(j).toString()); // Agrega los encabezados dinámicamente
                 }
-                periodo=headerRow.getCell(2).getStringCellValue();
-                
             }
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -221,7 +219,7 @@ public class Vista extends JFrame {
 
                     for (int j = 0; j < row.getLastCellNum(); j++) {
                         Cell cell = row.getCell(j);
-                        String cellValue = ""; // Variable para almacenar el valor de la celda
+                        String cellValue = ""; 
 
                         if (cell != null) {
                             switch (cell.getCellType()) {
@@ -241,7 +239,9 @@ public class Vista extends JFrame {
                                     cellValue = ""; 
                             }
                         }
-
+                        if((i==1 && j==2)&& !cellValue.isEmpty()) {
+                        	periodo=cellValue;
+                        }
                         rowData.add(cellValue); 
 
                         if (i > 4) {
@@ -268,7 +268,6 @@ public class Vista extends JFrame {
                     model.addRow(rowData.toArray()); 
                 }
             }
-            System.out.println(periodo);
             JOptionPane.showMessageDialog(this, "Datos cargados exitosamente en la tabla desde 'Reporte estadístico'.");
 
         } catch (IOException e) {
