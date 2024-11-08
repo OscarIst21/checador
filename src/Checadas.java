@@ -1,41 +1,39 @@
 public class Checadas {
     private String id;
     private String nombre;
-    private String departamento;
+    private String empleadoPuesto;
     private String fecha;
     private String horaEntrada;
     private String horaSalida;
     private String horaEntrada2;
     private String horaSalida2;
-    private String retardo;
-    private String salida;
-    private String falta;
-    private String total;
-    private String notas;
-
-    private String categoria;
-    private String estado;
+    private String horarioMixto;
+    private String horaEntradaReal;
+    private String horaSalidaReal;
+    private String cctNo;
+    private String diaN;
     private String jornada;
     
     public Checadas() {
     }
 
-    public Checadas(String id, String nombre, String departamento, String fecha, String horaEntrada, String horaSalida,
-                    String horaEntrada2, String horaSalida2, String retardo, String salida, String falta,
-                    String total, String notas,String categoria,String estado,String jornada) {
+    public Checadas(String id, String nombre, String empleadoPuesto, String fecha, String horaEntrada, String horaSalida,
+                    String horaEntrada2, String horaSalida2, String horarioMixto, String horaEntradaReal, 
+                    String horaSalidaReal, String cctNo, String diaN, String jornada) {
         this.id = id;
         this.nombre = nombre;
-        this.departamento = departamento;
+        this.empleadoPuesto = empleadoPuesto;
         this.fecha = fecha;
         this.horaEntrada = horaEntrada;
         this.horaSalida = horaSalida;
         this.horaEntrada2 = horaEntrada2;
         this.horaSalida2 = horaSalida2;
-        this.retardo = retardo;
-        this.salida = salida;
-        this.falta = falta;
-        this.total = total;
-        this.notas = notas;
+        this.horarioMixto = horarioMixto;
+        this.horaEntradaReal = horaEntradaReal;
+        this.horaSalidaReal = horaSalidaReal;
+        this.cctNo = cctNo;
+        this.diaN = diaN;
+        this.jornada = jornada;
     }
 
     public String getId() {
@@ -54,12 +52,12 @@ public class Checadas {
         this.nombre = nombre;
     }
 
-    public String getDepartamento() {
-        return departamento;
+    public String getEmpleadoPuesto() {
+        return empleadoPuesto;
     }
 
-    public void setDepartamento(String departamento) {
-        this.departamento = departamento;
+    public void setEmpleadoPuesto(String empleadoPuesto) {
+        this.empleadoPuesto = empleadoPuesto;
     }
 
     public String getFecha() {
@@ -102,78 +100,71 @@ public class Checadas {
         this.horaSalida2 = horaSalida2;
     }
 
-    public String getRetardo() {
-        return retardo;
+    public String getHorarioMixto() {
+        return horarioMixto;
     }
 
-    public void setRetardo(String retardo) {
-        this.retardo = retardo;
+    public void setHorarioMixto(String horarioMixto) {
+        this.horarioMixto = horarioMixto;
     }
 
-    public String getSalida() {
-        return salida;
+    public String getHoraEntradaReal() {
+        return horaEntradaReal;
     }
 
-    public void setSalida(String salida) {
-        this.salida = salida;
+    public void setHoraEntradaReal(String horaEntradaReal) {
+        this.horaEntradaReal = horaEntradaReal;
     }
 
-    public String getFalta() {
-        return falta;
+    public String getHoraSalidaReal() {
+        return horaSalidaReal;
     }
 
-    public void setFalta(String falta) {
-        this.falta = falta;
+    public void setHoraSalidaReal(String horaSalidaReal) {
+        this.horaSalidaReal = horaSalidaReal;
     }
 
-    public String getTotal() {
-        return total;
+    public String getCctNo() {
+        return cctNo;
     }
 
-    public void setTotal(String total) {
-        this.total = total;
+    public void setCctNo(String cctNo) {
+        this.cctNo = cctNo;
     }
 
-    public String getNotas() {
-        return notas;
+    public String getDiaN() {
+        return diaN;
     }
 
-    public void setNotas(String notas) {
-        this.notas = notas;
+    public void setDiaN(String diaN) {
+        this.diaN = diaN;
     }
 
-    public String getCategoria() {
-		return categoria;
-	}
+    public String getJornada() {
+        return jornada;
+    }
 
-	public void setCategoria(String categoria) {
-		this.categoria = categoria;
-	}
+    public void setJornada(String jornada) {
+        this.jornada = jornada;
+    }
 
-	public String getEstado() {
-		return estado;
-	}
-
-	public void setEstado(String estado) {
-		this.estado = estado;
-	}
-
-	public String getJornada() {
-		return jornada;
-	}
-
-	public void setJornada(String jornada) {
-		this.jornada = jornada;
-	}
-
-	@Override
-	public String toString() {
-		return "Checadas [id=" + id + ", nombre=" + nombre + ", departamento=" + departamento + ", fecha=" + fecha
-				+ ", horaEntrada=" + horaEntrada + ", horaSalida=" + horaSalida + ", horaEntrada2=" + horaEntrada2
-				+ ", horaSalida2=" + horaSalida2 + ", retardo=" + retardo + ", salida=" + salida + ", falta=" + falta
-				+ ", total=" + total + ", notas=" + notas + ", categoria=" + categoria + ", estado=" + estado
-				+ ", jornada=" + jornada + "]";
-	}
-
- 
+    @Override
+    public String toString() {
+        return "Checadas{" +
+                "id='" + id + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", empleadoPuesto='" + empleadoPuesto + '\'' +
+                ", fecha='" + fecha + '\'' +
+                ", horaEntrada='" + horaEntrada + '\'' +
+                ", horaSalida='" + horaSalida + '\'' +
+                ", horaEntrada2='" + horaEntrada2 + '\'' +
+                ", horaSalida2='" + horaSalida2 + '\'' +
+                ", horarioMixto='" + horarioMixto + '\'' +
+                ", horaEntradaReal='" + horaEntradaReal + '\'' +
+                ", horaSalidaReal='" + horaSalidaReal + '\'' +
+                ", cctNo='" + cctNo + '\'' +
+                ", diaN='" + diaN + '\'' +
+                ", jornada='" + jornada + '\'' +
+                '}';
+    }
 }

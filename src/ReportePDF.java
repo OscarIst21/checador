@@ -65,6 +65,7 @@ public class ReportePDF {
                             PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
                             PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 
+                            
                             // Posición del encabezado en el centro de la parte superior
                             Rectangle pageSize = docEvent.getPage().getPageSize();
                             float y = pageSize.getTop() - 20;

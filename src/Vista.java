@@ -1,4 +1,4 @@
- import java.awt.event.ActionEvent;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -63,12 +62,18 @@ public class Vista extends JFrame {
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
         btnSelectFile2.setBackground(new Color(0, 64, 128));
-        btnSelectFile2.setBounds(380, 11, 300, 50);
+        btnSelectFile2.setBounds(380, 11, 200, 50);
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
-
-         DefaultTableModel model = new DefaultTableModel();
-        table = new JTable(model);
+        
+        JButton btnSelectFile3 = new JButton("Seleccionar archivo 3ro");
+        btnSelectFile3.setForeground(Color.WHITE);
+        btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnSelectFile3.setFocusable(false);
+        btnSelectFile3.setBackground(new Color(100, 64, 128));
+        btnSelectFile3.setBounds(590, 11, 200, 50);
+        btnSelectFile3.setEnabled(false);
+        contentPane.add(btnSelectFile3);
 
         // Agregar JScrollPane alrededor de la tabla para que siempre se muestren los encabezados
         JScrollPane scrollPane = new JScrollPane(table);
@@ -104,6 +109,7 @@ public class Vista extends JFrame {
                     cargarChecador(fileToOpen);
                     btnSelectFile2.setEnabled(true);
                     btnSave.setEnabled(true);
+                    btnSelectFile3.setEnabled(true);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
@@ -124,7 +130,82 @@ public class Vista extends JFrame {
                 }
             }
         });
+        btnSelectFile3.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
+                int userSelection = fileChooser.showOpenDialog(Vista.this);
+
+                if (userSelection == JFileChooser.APPROVE_OPTION) {
+                    File fileToOpen = fileChooser.getSelectedFile();
+                    cargarDatosExtra(fileToOpen);
+                } else {
+                    JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
+                }
+            }
+        });
     }
+    private void cargarDatosExtra(File file) {
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+
+            Sheet sheet = workbook.getSheet("Hoja1"); // Cambiar el nombre de la hoja si es necesario
+            if (sheet == null) {
+                JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
+                return;
+            }
+
+            // Leer cada fila para extraer los datos y actualizar `checadas`
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    // Obtener el valor de la ID
+                    Cell idCell = row.getCell(0); // Suponiendo que "ID" está en la columna 0
+                    String id = "";
+                    if (idCell != null) {
+                        if (idCell.getCellType() == CellType.NUMERIC) {
+                            id = String.valueOf((int) idCell.getNumericCellValue()); // Convertir a int y luego a String
+                        } else {
+                            id = idCell.toString().trim();
+                        }
+                    }
+
+                    // Obtener otros valores directamente por índice de columna
+                    String cctNo = row.getCell(2) != null ? row.getCell(1).toString().trim() : ""; // Cambiar al índice de "cct no"
+                    String diaN = row.getCell(3) != null ? row.getCell(2).toString().trim() : ""; // Cambiar al índice de "diaN"
+                    String horaEntradaReal = row.getCell(4) != null ? row.getCell(3).toString().trim() : ""; // Cambiar al índice de "horaEntradaReal"
+                    String horaSalidaReal = row.getCell(5) != null ? row.getCell(4).toString().trim() : ""; // Cambiar al índice de "horaSalidaReal"
+                    String horarioMixto = row.getCell(7) != null ? row.getCell(5).toString().trim() : ""; // Cambiar al índice de "horarioMixto"
+
+                    // Buscar y actualizar el objeto `Checadas` correspondiente
+                    for (Checadas checada : checadas) {
+                        if (checada.getId().equals(id)) {
+                            checada.setCctNo(cctNo);
+                            checada.setDiaN(diaN);
+                            checada.setHoraEntradaReal(horaEntradaReal);
+                            checada.setHoraSalidaReal(horaSalidaReal);
+                            checada.setHorarioMixto(horarioMixto);
+                            break;
+                        }
+                    }
+                    
+                }
+                for(Checadas checada:checadas) {
+                	System.out.println(checada.toString());
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, "Datos adicionales cargados y lista de checadas actualizada exitosamente.");
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void cargarEmpleados(File file) {
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -135,18 +216,12 @@ public class Vista extends JFrame {
                 return;
             }
 
-            // Iterar sobre cada fila de la hoja para obtener ID, nombre, categoría, estado y jornada
+            // Leer cada fila para extraer los datos y actualizar `checadas`
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
-                    Cell idCell = row.getCell(0); // EMPLEADO_NO
-                    Cell nombreCell = row.getCell(5); // EMPLEADO_NOMBRE_COMPLETO
-
-                    if ((idCell == null || idCell.toString().trim().isEmpty()) &&
-                            (nombreCell == null || nombreCell.toString().trim().isEmpty())) {
-                        continue;
-                    }
-
+                    // Obtener el valor de la ID
+                    Cell idCell = row.getCell(0); // Columna de ID
                     String id = "";
                     if (idCell != null) {
                         if (idCell.getCellType() == CellType.NUMERIC) {
@@ -156,29 +231,20 @@ public class Vista extends JFrame {
                         }
                     }
 
-                    String nombre = nombreCell != null ? nombreCell.toString().trim() : "";
-                    String categoria = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
-                    String estado = row.getCell(24) != null ? row.getCell(24).toString().trim() : "";
+                    // Obtener otros valores directamente por índice de columna
+                    String nombreCompleto = row.getCell(5) != null ? row.getCell(5).toString().trim() : "";
+                    String puesto = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
                     String jornada = row.getCell(20) != null ? row.getCell(20).toString().trim() : "";
-                    String total=row.getCell(29) != null ? row.getCell(29).toString().trim() : "";
-                    Empleado empleado = new Empleado(id, nombre, categoria, estado, jornada,total);
-                    listaEmpleados.add(empleado);
-                }
-            }
-
-            for (Checadas checada : checadas) {
-                for (Empleado empleado : listaEmpleados) {
-                    if (checada.getId().equals(empleado.getId())) {
-                        checada.setNombre(empleado.getNombre());
-                        checada.setCategoria(empleado.getCategoria());
-                        checada.setEstado(empleado.getEstado());
-                        checada.setJornada(empleado.getJornada());
-                        checada.setTotal(empleado.getTotal());
-                        
-                        break;
+                    // Buscar y actualizar el objeto `Checadas` correspondiente
+                    for (Checadas checada : checadas) {
+                        if (checada.getId().equals(id)) {
+                            checada.setNombre(nombreCompleto);
+                            checada.setEmpleadoPuesto(puesto);
+                            checada.setJornada(jornada);
+                            break;
+                        }
                     }
                 }
-               
             }
             JOptionPane.showMessageDialog(this, "Empleados cargados y lista de checadas actualizada exitosamente.");
 
@@ -190,6 +256,7 @@ public class Vista extends JFrame {
         }
     }
 
+
     private void cargarChecador(File file) {
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -200,22 +267,12 @@ public class Vista extends JFrame {
                 return;
             }
 
-            DefaultTableModel model = (DefaultTableModel) table.getModel();
-            model.setRowCount(0); 
-            model.setColumnCount(0); 
-
-            // Leer la primera fila como encabezados
-            Row headerRow = sheet.getRow(0);
-            if (headerRow != null) {
-                for (int j = 0; j < headerRow.getLastCellNum(); j++) {
-                    model.addColumn(headerRow.getCell(j).toString()); // Agrega los encabezados dinámicamente
-                }
-            }
+            
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
                     List<Object> rowData = new ArrayList<>();
-                    String id = "", nombre = "", departamento = "", fecha = "", horaEntrada = "", horaSalida = "", horaEntrada2 = "", horaSalida2 = "", retardo = "", salida = "", falta = "", total = "", notas = "";
+                    String id = "", fecha = "", horaEntrada = "", horaSalida = "", horaEntrada2 = "", horaSalida2 = "";
 
                     for (int j = 0; j < row.getLastCellNum(); j++) {
                         Cell cell = row.getCell(j);
@@ -242,42 +299,49 @@ public class Vista extends JFrame {
                         if((i==1 && j==2)&& !cellValue.isEmpty()) {
                         	periodo=cellValue;
                         }
-                        rowData.add(cellValue); 
 
                         if (i > 4) {
                             switch (j) {
                                 case 0: id = cellValue; break;
-                                case 1: nombre = cellValue; break;
-                                case 2: departamento = cellValue; break;
                                 case 3: fecha = cellValue; break;
                                 case 4: horaEntrada = cellValue; break;
                                 case 5: horaSalida = cellValue; break;
                                 case 6: horaEntrada2 = cellValue; break;
                                 case 7: horaSalida2 = cellValue; break;
-                                case 8: retardo = cellValue; break;
-                                case 9: salida = cellValue; break;
-                                case 10: falta = cellValue; break;
-                                case 11: total = cellValue; break;
-                                case 12: notas = cellValue; break;
+                                default:
+                                	break;
                             }
                         }
                     }
 
-                    Checadas checada = new Checadas(id, nombre, departamento, fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, retardo, salida, falta, "", notas, "", "", "");
+                    Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "", "", "", "", "", "");
                     checadas.add(checada);
-                    model.addRow(rowData.toArray()); 
                 }
             }
-            JOptionPane.showMessageDialog(this, "Datos cargados exitosamente en la tabla desde 'Reporte estadístico'.");
+            JOptionPane.showMessageDialog(this, "¡Datos Cargados con exito!");
 
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
-            e.printStackTrace(); // Imprime el stack trace para obtener más detalles
+            e.printStackTrace(); 
         }
     }
 
-
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                return String.valueOf((int) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
+    }
 
 }
