@@ -1,78 +1,109 @@
-
 public class Empleado {
     private String id;
     private String nombre;
-    private String categoria;
-    private String estado;
+    private String empleadoPuesto;
+    private String horarioMixto;
+    private String horaEntradaReal;
+    private String horaSalidaReal;
+    private String cctNo;
+    private String diaN;
     private String jornada;
-    private String total;
+
+    //ID,NombreCOmpleto, empleado puesto,  tipo de jornada,
     public Empleado() {
     }
 
-    public Empleado(String id, String nombre, String categoria, String estado, String jornada,String total) {
+    public Empleado(String id, String nombre, String empleadoPuesto, String horarioMixto,
+                    String horaEntradaReal, String horaSalidaReal, String cctNo, 
+                    String diaN, String jornada) {
         this.id = id;
         this.nombre = nombre;
-        this.categoria = categoria;
-        this.estado = estado;
+        this.empleadoPuesto = empleadoPuesto;
+        this.horarioMixto = horarioMixto;
+        this.horaEntradaReal = horaEntradaReal;
+        this.horaSalidaReal = horaSalidaReal;
+        this.cctNo = cctNo;
+        this.diaN = diaN;
         this.jornada = jornada;
-        this.total=total;
+    }
+    public String getId() {
+        return id;
     }
 
-	public String getTotal() {
-		return total;
-	}
+    public void setId(String id) {
+        this.id = id;
+    }
 
-	public void setTotal(String total) {
-		this.total = total;
-	}
+    public String getNombre() {
+        return nombre;
+    }
 
-	public String getId() {
-		return id;
-	}
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public String getEmpleadoPuesto() {
+        return empleadoPuesto;
+    }
 
-	public String getNombre() {
-		return nombre;
-	}
+    public void setEmpleadoPuesto(String empleadoPuesto) {
+        this.empleadoPuesto = empleadoPuesto;
+    }
 
-	public void setNombre(String nombre) {
-		this.nombre = nombre;
-	}
+    public String getHorarioMixto() {
+        return horarioMixto;
+    }
 
-	public String getCategoria() {
-		return categoria;
-	}
+    public void setHorarioMixto(String horarioMixto) {
+        this.horarioMixto = horarioMixto;
+    }
 
-	public void setCategoria(String categoria) {
-		this.categoria = categoria;
-	}
+    public String getHoraEntradaReal() {
+        return horaEntradaReal;
+    }
 
-	public String getEstado() {
-		return estado;
-	}
+    public void setHoraEntradaReal(String horaEntradaReal) {
+        this.horaEntradaReal = horaEntradaReal;
+    }
 
-	public void setEstado(String estado) {
-		this.estado = estado;
-	}
+    public String getHoraSalidaReal() {
+        return horaSalidaReal;
+    }
 
-	public String getJornada() {
-		return jornada;
-	}
+    public void setHoraSalidaReal(String horaSalidaReal) {
+        this.horaSalidaReal = horaSalidaReal;
+    }
 
-	public void setJornada(String jornada) {
-		this.jornada = jornada;
-	}
+    public String getCctNo() {
+        return cctNo;
+    }
 
-	@Override
-	public String toString() {
-		return "Empleado [id=" + id + ", nombre=" + nombre + ", categoria=" + categoria + ", estado=" + estado
-				+ ", jornada=" + jornada + "]";
-	}
+    public void setCctNo(String cctNo) {
+        this.cctNo = cctNo;
+    }
 
+    public String getDiaN() {
+        return diaN;
+    }
 
-	
+    public void setDiaN(String diaN) {
+        this.diaN = diaN;
+    }
 
+    public String getJornada() {
+        return jornada;
+    }
+
+    public void setJornada(String jornada) {
+        this.jornada = jornada;
+    }
+
+    // Método toString para representación del objeto
+    @Override
+    public String toString() {
+        return "Empleado [id=" + id + ", nombre=" + nombre + ", empleadoPuesto=" + empleadoPuesto +
+               ", horarioMixto=" + horarioMixto + ", horaEntradaReal=" + horaEntradaReal + 
+               ", horaSalidaReal=" + horaSalidaReal + ", cctNo=" + cctNo + ", diaN=" + diaN + 
+               ", jornada=" + jornada + "]";
+    }
 }

@@ -148,23 +148,14 @@ public class Checadas {
         this.jornada = jornada;
     }
 
-    @Override
-    public String toString() {
-        return "Checadas{" +
-                "id='" + id + '\'' +
-                ", nombre='" + nombre + '\'' +
-                ", empleadoPuesto='" + empleadoPuesto + '\'' +
-                ", fecha='" + fecha + '\'' +
-                ", horaEntrada='" + horaEntrada + '\'' +
-                ", horaSalida='" + horaSalida + '\'' +
-                ", horaEntrada2='" + horaEntrada2 + '\'' +
-                ", horaSalida2='" + horaSalida2 + '\'' +
-                ", horarioMixto='" + horarioMixto + '\'' +
-                ", horaEntradaReal='" + horaEntradaReal + '\'' +
-                ", horaSalidaReal='" + horaSalidaReal + '\'' +
-                ", cctNo='" + cctNo + '\'' +
-                ", diaN='" + diaN + '\'' +
-                ", jornada='" + jornada + '\'' +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "Checadas [id=" + id + ", nombre=" + nombre + ", empleadoPuesto=" + empleadoPuesto + ", fecha=" + fecha
+				+ ", horaEntrada=" + horaEntrada + ", horaSalida=" + horaSalida + ", horaEntrada2=" + horaEntrada2
+				+ ", horaSalida2=" + horaSalida2 + ", horarioMixto=" + horarioMixto + ", horaEntradaReal="
+				+ horaEntradaReal + ", horaSalidaReal=" + horaSalidaReal + ", cctNo=" + cctNo + ", diaN=" + diaN
+				+ ", jornada=" + jornada + "]";
+	}
+
+    
 }

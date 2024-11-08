@@ -150,62 +150,64 @@ public class Vista extends JFrame {
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
-            Sheet sheet = workbook.getSheet("Hoja1"); // Cambiar el nombre de la hoja si es necesario
+            Sheet sheet = workbook.getSheet("Hoja1");
             if (sheet == null) {
                 JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
                 return;
             }
 
-            // Leer cada fila para extraer los datos y actualizar `checadas`
+            // Iterar sobre cada fila de la hoja para obtener los datos de checadas
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
-                    // Obtener el valor de la ID
                     Cell idCell = row.getCell(0); // Suponiendo que "ID" está en la columna 0
                     String id = "";
                     if (idCell != null) {
                         if (idCell.getCellType() == CellType.NUMERIC) {
-                            id = String.valueOf((int) idCell.getNumericCellValue()); // Convertir a int y luego a String
+                            double numericValue = idCell.getNumericCellValue();
+                            // Verificar si el valor es un número entero
+                            if (numericValue == (int) numericValue) {
+                                id = String.valueOf((int) numericValue); // Convertir a entero si es un número entero
+                            } else {
+                                id = String.valueOf(numericValue); // De lo contrario, convertir como número con decimales
+                            }
                         } else {
                             id = idCell.toString().trim();
                         }
                     }
 
-                    // Obtener otros valores directamente por índice de columna
-                    String cctNo = row.getCell(2) != null ? row.getCell(1).toString().trim() : ""; // Cambiar al índice de "cct no"
-                    String diaN = row.getCell(3) != null ? row.getCell(2).toString().trim() : ""; // Cambiar al índice de "diaN"
-                    String horaEntradaReal = row.getCell(4) != null ? row.getCell(3).toString().trim() : ""; // Cambiar al índice de "horaEntradaReal"
-                    String horaSalidaReal = row.getCell(5) != null ? row.getCell(4).toString().trim() : ""; // Cambiar al índice de "horaSalidaReal"
-                    String horarioMixto = row.getCell(7) != null ? row.getCell(5).toString().trim() : ""; // Cambiar al índice de "horarioMixto"
-
-                    // Buscar y actualizar el objeto `Checadas` correspondiente
-                    for (Checadas checada : checadas) {
-                        if (checada.getId().equals(id)) {
-                            checada.setCctNo(cctNo);
-                            checada.setDiaN(diaN);
-                            checada.setHoraEntradaReal(horaEntradaReal);
-                            checada.setHoraSalidaReal(horaSalidaReal);
-                            checada.setHorarioMixto(horarioMixto);
+                    // Obtener otros valores de las columnas correspondientes
+                    String cctNo = row.getCell(2) != null ? row.getCell(2).toString().trim() : "";
+                    String diaN = row.getCell(3) != null ? row.getCell(3).toString().trim() : "";
+                    String horaEntradaReal = row.getCell(4) != null ? row.getCell(4).toString().trim() : "";
+                    String horaSalidaReal = row.getCell(5) != null ? row.getCell(5).toString().trim() : "";
+                    String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
+                    System.out.println(cctNo);
+                    for (Empleado empleado : listaEmpleados) {
+                        if (empleado.getId().equals(id)) {
+                            empleado.setCctNo(cctNo);
+                            empleado.setDiaN(diaN);
+                            empleado.setHoraEntradaReal(horaEntradaReal);
+                            empleado.setHoraSalidaReal(horaSalidaReal);
+                            empleado.setHorarioMixto(horarioMixto);
                             break;
                         }
                     }
-                    
-                }
-                for(Checadas checada:checadas) {
-                	System.out.println(checada.toString());
                 }
             }
 
+            // Actualizar checadas con los datos de empleados
+            actualizarChecadasConEmpleados();
             JOptionPane.showMessageDialog(this, "Datos adicionales cargados y lista de checadas actualizada exitosamente.");
 
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+
+    
     private void cargarEmpleados(File file) {
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -216,12 +218,18 @@ public class Vista extends JFrame {
                 return;
             }
 
-            // Leer cada fila para extraer los datos y actualizar `checadas`
+            // Iterar sobre cada fila de la hoja para obtener ID, nombre, categoría, estado y jornada
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
-                    // Obtener el valor de la ID
-                    Cell idCell = row.getCell(0); // Columna de ID
+                    Cell idCell = row.getCell(0); // EMPLEADO_NO
+                    Cell nombreCell = row.getCell(5); // EMPLEADO_NOMBRE_COMPLETO
+
+                    if ((idCell == null || idCell.toString().trim().isEmpty()) &&
+                            (nombreCell == null || nombreCell.toString().trim().isEmpty())) {
+                        continue;
+                    }
+
                     String id = "";
                     if (idCell != null) {
                         if (idCell.getCellType() == CellType.NUMERIC) {
@@ -231,21 +239,17 @@ public class Vista extends JFrame {
                         }
                     }
 
-                    // Obtener otros valores directamente por índice de columna
-                    String nombreCompleto = row.getCell(5) != null ? row.getCell(5).toString().trim() : "";
-                    String puesto = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
+                    String nombre = nombreCell != null ? nombreCell.toString().trim() : "";
+                    String categoria = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
                     String jornada = row.getCell(20) != null ? row.getCell(20).toString().trim() : "";
-                    // Buscar y actualizar el objeto `Checadas` correspondiente
-                    for (Checadas checada : checadas) {
-                        if (checada.getId().equals(id)) {
-                            checada.setNombre(nombreCompleto);
-                            checada.setEmpleadoPuesto(puesto);
-                            checada.setJornada(jornada);
-                            break;
-                        }
-                    }
+                    Empleado empleado = new Empleado(id, nombre, categoria, "","","","","", jornada);
+                    listaEmpleados.add(empleado);
                 }
             }
+            actualizarChecadasConEmpleados();
+
+            
+
             JOptionPane.showMessageDialog(this, "Empleados cargados y lista de checadas actualizada exitosamente.");
 
         } catch (IOException e) {
@@ -267,7 +271,6 @@ public class Vista extends JFrame {
                 return;
             }
 
-            
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
@@ -276,7 +279,7 @@ public class Vista extends JFrame {
 
                     for (int j = 0; j < row.getLastCellNum(); j++) {
                         Cell cell = row.getCell(j);
-                        String cellValue = ""; 
+                        String cellValue = "";
 
                         if (cell != null) {
                             switch (cell.getCellType()) {
@@ -293,11 +296,12 @@ public class Vista extends JFrame {
                                     cellValue = cell.getCellFormula();
                                     break;
                                 default:
-                                    cellValue = ""; 
+                                    cellValue = "";
                             }
                         }
-                        if((i==1 && j==2)&& !cellValue.isEmpty()) {
-                        	periodo=cellValue;
+
+                        if ((i == 1 && j == 2) && !cellValue.isEmpty()) {
+                            periodo = cellValue;
                         }
 
                         if (i > 4) {
@@ -309,38 +313,37 @@ public class Vista extends JFrame {
                                 case 6: horaEntrada2 = cellValue; break;
                                 case 7: horaSalida2 = cellValue; break;
                                 default:
-                                	break;
+                                    break;
                             }
                         }
                     }
-
-                    Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "", "", "", "", "", "");
-                    checadas.add(checada);
+                    if (!id.isEmpty()) {
+                        Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "", "", "", "", "", "");
+                        checadas.add(checada);
+                    }
                 }
             }
-            JOptionPane.showMessageDialog(this, "¡Datos Cargados con exito!");
+
+            JOptionPane.showMessageDialog(this, "¡Datos Cargados con éxito!");
 
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
-            e.printStackTrace(); 
+            e.printStackTrace();
         }
     }
 
-    private String getCellValue(Cell cell) {
-        if (cell == null) return "";
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue().trim();
-            case NUMERIC:
-                return String.valueOf((int) cell.getNumericCellValue());
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
+    private void actualizarChecadasConEmpleados() {
+        for (Checadas checada : checadas) {
+            for (Empleado empleado : listaEmpleados) {
+                if (checada.getId().equals(empleado.getId())) {
+                    checada.setNombre(empleado.getNombre());
+                    checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
+                    checada.setJornada(empleado.getJornada());
+                    break;
+                }
+            }
         }
     }
 
