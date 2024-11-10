@@ -3,6 +3,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,9 +23,15 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+
+import modelos.Checadas;
+import modelos.Empleado;
+import modelos.EmpleadoDatosExtra;
+
 import java.awt.Color;
 import java.awt.Font;
 
+import org.apache.poi.hpsf.Date;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 
@@ -34,6 +41,7 @@ public class Vista extends JFrame {
     private JTable table;
     private List<Empleado> listaEmpleados;
     private List<Checadas> checadas;
+    private List<EmpleadoDatosExtra> empleadosDatos;
     private ReportePDF reporte;
     public String periodo="";
     public Vista() {
@@ -45,8 +53,9 @@ public class Vista extends JFrame {
 	    setContentPane(contentPane);
 	    contentPane.setLayout(null);
 
-	    listaEmpleados = new ArrayList<>(); // Inicializar la lista de empleados
+	    listaEmpleados = new ArrayList<>(); 
 	    checadas = new ArrayList<>();
+	    empleadosDatos = new ArrayList<>();
 
         // Crear un botón para seleccionar el archivo Excel
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel");
@@ -93,7 +102,7 @@ public class Vista extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
             	 reporte = new ReportePDF();
-            	reporte.generateReport(checadas, periodo);
+            	reporte.generateReport(checadas, periodo,empleadosDatos);
             }
         });
        
@@ -147,6 +156,7 @@ public class Vista extends JFrame {
         });
     }
     private void cargarDatosExtra(File file) {
+    	empleadosDatos = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
@@ -165,39 +175,74 @@ public class Vista extends JFrame {
                     if (idCell != null) {
                         if (idCell.getCellType() == CellType.NUMERIC) {
                             double numericValue = idCell.getNumericCellValue();
-                            // Verificar si el valor es un número entero
                             if (numericValue == (int) numericValue) {
-                                id = String.valueOf((int) numericValue); // Convertir a entero si es un número entero
+                                id = String.valueOf((int) numericValue);
                             } else {
-                                id = String.valueOf(numericValue); // De lo contrario, convertir como número con decimales
+                                id = String.valueOf(numericValue);
                             }
                         } else {
                             id = idCell.toString().trim();
                         }
                     }
-
-                    // Obtener otros valores de las columnas correspondientes
                     String cctNo = row.getCell(2) != null ? row.getCell(2).toString().trim() : "";
-                    String diaN = row.getCell(3) != null ? row.getCell(3).toString().trim() : "";
-                    String horaEntradaReal = row.getCell(4) != null ? row.getCell(4).toString().trim() : "";
-                    String horaSalidaReal = row.getCell(5) != null ? row.getCell(5).toString().trim() : "";
-                    String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
-                    System.out.println(cctNo);
-                    for (Empleado empleado : listaEmpleados) {
-                        if (empleado.getId().equals(id)) {
-                            empleado.setCctNo(cctNo);
-                            empleado.setDiaN(diaN);
-                            empleado.setHoraEntradaReal(horaEntradaReal);
-                            empleado.setHoraSalidaReal(horaSalidaReal);
-                            empleado.setHorarioMixto(horarioMixto);
-                            break;
+
+                    String diaN = "";
+                    if (row.getCell(3) != null && row.getCell(3).getCellType() == CellType.NUMERIC) {
+                        double numericValue = row.getCell(3).getNumericCellValue();
+                        if (numericValue == (int) numericValue) {
+                            int dayNumber = (int) numericValue;
+                            
+                            switch (dayNumber) {
+                                case 1:
+                                    diaN = "lunes";
+                                    break;
+                                case 2:
+                                    diaN = "martes";
+                                    break;
+                                case 3:
+                                    diaN = "miércoles";
+                                    break;
+                                case 4:
+                                    diaN = "jueves";
+                                    break;
+                                case 5:
+                                    diaN = "viernes";
+                                    break;
+                                default:
+                                    diaN = "Día no válido";
+                                    break;
+                            }
+                        } else {
+                            diaN = String.valueOf(numericValue);
                         }
                     }
+
+                    // Procesar horaEntradaReal en formato de 24 horas
+                    String horaEntradaReal = "";
+                    if (row.getCell(4) != null && row.getCell(4).getCellType() == CellType.NUMERIC) {
+                        java.util.Date dateValue = row.getCell(4).getDateCellValue();
+                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                        horaEntradaReal = timeFormat.format(dateValue);
+                    }
+
+                    // Procesar horaSalidaReal en formato de 24 horas
+                    String horaSalidaReal = "";
+                    if (row.getCell(5) != null && row.getCell(5).getCellType() == CellType.NUMERIC) {
+                        java.util.Date dateValue = row.getCell(5).getDateCellValue();
+                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                        horaSalidaReal = timeFormat.format(dateValue);
+                    }
+                    // Obtener horarioMixto sin cambios
+                    String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
+                    if(!id.isEmpty()) {
+                        EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id,cctNo,diaN,horaEntradaReal,horaSalidaReal, horarioMixto);
+                        empleadosDatos.add(empleado1);
+                        System.out.println(empleado1.toString());
+                    }
+                    
                 }
             }
-
-            // Actualizar checadas con los datos de empleados
-            actualizarChecadasConEmpleados();
+            
             JOptionPane.showMessageDialog(this, "Datos adicionales cargados y lista de checadas actualizada exitosamente.");
 
         } catch (Exception e) {
@@ -205,6 +250,7 @@ public class Vista extends JFrame {
             e.printStackTrace();
         }
     }
+
 
 
     
@@ -242,8 +288,11 @@ public class Vista extends JFrame {
                     String nombre = nombreCell != null ? nombreCell.toString().trim() : "";
                     String categoria = row.getCell(17) != null ? row.getCell(17).toString().trim() : "";
                     String jornada = row.getCell(20) != null ? row.getCell(20).toString().trim() : "";
-                    Empleado empleado = new Empleado(id, nombre, categoria, "","","","","", jornada);
+                    if(!id.isEmpty()) {
+                    Empleado empleado = new Empleado(id, nombre, categoria, jornada);
                     listaEmpleados.add(empleado);
+                    //System.out.println(empleado.toString());
+                    }
                 }
             }
             actualizarChecadasConEmpleados();
@@ -260,6 +309,12 @@ public class Vista extends JFrame {
         }
     }
 
+
+    private String convertirDecimalAHora(double valorDecimal) {
+        int horas = (int) (valorDecimal * 24); // Calcular la hora
+        int minutos = (int) ((valorDecimal * 24 - horas) * 60); // Calcular los minutos
+        return String.format("%02d:%02d", horas, minutos);
+    }
 
     private void cargarChecador(File file) {
         try (FileInputStream fis = new FileInputStream(file);
@@ -287,7 +342,14 @@ public class Vista extends JFrame {
                                     cellValue = cell.getStringCellValue();
                                     break;
                                 case NUMERIC:
-                                    cellValue = String.valueOf(cell.getNumericCellValue());
+                                    double numericValue = cell.getNumericCellValue();
+                                    if (j >= 4 && j <= 7) { // Columnas de hora
+                                        cellValue = convertirDecimalAHora(numericValue);
+                                    } else if (numericValue == Math.floor(numericValue)) {
+                                        cellValue = String.valueOf((int) numericValue);
+                                    } else {
+                                        cellValue = String.valueOf(numericValue);
+                                    }
                                     break;
                                 case BOOLEAN:
                                     cellValue = String.valueOf(cell.getBooleanCellValue());
@@ -318,12 +380,13 @@ public class Vista extends JFrame {
                         }
                     }
                     if (!id.isEmpty()) {
-                        Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "", "", "", "", "", "");
+                        Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "");
                         checadas.add(checada);
+                        //System.out.println(checada.toString());
                     }
                 }
             }
-
+            System.out.println(periodo);
             JOptionPane.showMessageDialog(this, "¡Datos Cargados con éxito!");
 
         } catch (IOException e) {
