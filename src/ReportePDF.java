@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/*Clase encargada de generar un reporte a partir de una lista de objetos checadas*/
 public class ReportePDF {
 
 	public void generateReport(List<Checadas> checadasList, String periodo, List<EmpleadoDatosExtra> empleadosDatos) {
@@ -106,38 +105,44 @@ public class ReportePDF {
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
 	                document.add(title);
-
 	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1}))
 	                        .useAllAvailableWidth();
-
 	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Día"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 	                table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado"))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER));
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(10));
 
 	                Duration totalHorasACubrir = Duration.ZERO;
 	                Duration totalHorasTrabajadas = Duration.ZERO;
+	                int retardos=0;
+	                int mediosRetardos=0;
 	                int faltas = 0;
 	                int entradaFaltante = 0;
 	                int salidaFaltante = 0;
-
 	                for (Checadas checada : checadasPorId.get(id)) {
 	                    String fecha = checada.getFecha() != null ? checada.getFecha() : "Sin Fecha";
 	                    String diaSemana = calcularDiaSemana(fecha).toLowerCase();
@@ -154,38 +159,72 @@ public class ReportePDF {
 	                        totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
 	                    }
 
-	                    String horaEntrada = checada.getHoraEntrada() != null ? checada.getHoraEntrada() : "";
-	                    String horaSalida = checada.getHoraSalida() != null ? checada.getHoraSalida() : "";
+	                    String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
+	                    String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
 	                    String estatusEntrada = estatusChequeo(horaEntrada, horaEntradaReal);
 	                    String estatusSalida = estatusChequeo(horaSalida, horaSalidaReal);
 	                    String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
 	                    Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
 
-	                    if (!horaEntrada.isEmpty() && !horaSalida.isEmpty()) {
+	                    if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
 	                        totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
 	                    }
-
-	                    if (horaEntrada.isEmpty() && horaSalida.isEmpty()) {
+	                    if("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+	                    	retardos++;
+	                    }
+	                    if("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+	                    	retardos++;
+	                    }
+	                    
+	                    if("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+	                    	retardos++;
+	                    }
+	                    if("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+	                    	retardos++;
+	                    }
+	                    if(mediosRetardos>=10) {
+	                    	faltas++;
+	                    }
+	                    
+	                    
+	                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos>=5)) {
 	                        faltas++;
 	                    } else {
-	                        if (horaEntrada.isEmpty()) entradaFaltante++;
-	                        if (horaSalida.isEmpty()) salidaFaltante++;
+	                        if (horaEntrada.equals("00:00")) {
+	                            entradaFaltante++;
+	                        }
+	                        if (horaSalida.equals("00:00")) {
+	                            salidaFaltante++;
+	                        }
 	                    }
 
 	                    table.addCell(new Cell().add(new Paragraph(fecha))
-	                            .setTextAlignment(TextAlignment.CENTER));
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8)); 
+
 	                    table.addCell(new Cell().add(new Paragraph(diaSemana))
-	                            .setTextAlignment(TextAlignment.CENTER));
-	                    table.addCell(new Cell().add(new Paragraph(horaEntrada + "-" + horaEntradaReal))
-	                            .setTextAlignment(TextAlignment.CENTER));
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8));
+
+	                    table.addCell(new Cell().add(new Paragraph(horaEntrada + " - " + horaEntradaReal))
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8)); 
+
 	                    table.addCell(new Cell().add(new Paragraph(estatusEntrada))
-	                            .setTextAlignment(TextAlignment.CENTER));
-	                    table.addCell(new Cell().add(new Paragraph(horaSalida + "-" + horaSalidaReal))
-	                            .setTextAlignment(TextAlignment.CENTER));
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8));  
+
+	                    table.addCell(new Cell().add(new Paragraph(horaSalida + " - " + horaSalidaReal))
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8));  
+
 	                    table.addCell(new Cell().add(new Paragraph(estatusSalida))
-	                            .setTextAlignment(TextAlignment.CENTER));
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8));  
+
 	                    table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
-	                            .setTextAlignment(TextAlignment.CENTER));
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8)); 
 	                }
 
 	                long totalHoras = totalHorasACubrir.toHours();
@@ -225,8 +264,11 @@ public class ReportePDF {
 	}
 
 
-    	public String estatusChequeo(String horaChequeo, String horaReal) { 
-    	    if (horaChequeo == null || horaChequeo.isEmpty() || horaReal == null || horaReal.isEmpty()) {
+    	public String estatusChequeo(String horaChequeo, String horaReal) {
+    		if (horaChequeo.equals("00:00") || horaChequeo.isEmpty()) {
+    			return "Falta";
+    		}
+    		if (horaReal == null || horaReal.equals("00:00")) {
     	        return "";
     	    }
     	    
@@ -242,9 +284,7 @@ public class ReportePDF {
 
     	    int diferenciaEnMinutos = (horasChequeo - horasReal) * 60 + (minutosChequeo - minutosReal);
 
-    	    if (diferenciaEnMinutos < 0) {
-    	        return "Falta";
-    	    } else if (diferenciaEnMinutos <= 10) {
+    	     if (diferenciaEnMinutos <= 10) {
     	        return "Tolerancia";
     	    } else if (diferenciaEnMinutos <= 20) {
     	        return "Medio Retardo";
@@ -270,14 +310,13 @@ public class ReportePDF {
         }
     	
     	private String calcularTiempoTrabajo(String horaEntrada, String horaSalida) {
-    	    if (horaEntrada == null || horaSalida == null || horaEntrada.isEmpty() || horaSalida.isEmpty()) {
+    		if (horaEntrada.equals("00:00") || horaEntrada==null || horaSalida == null || horaSalida.equals("00:00")) {
     	        return "";
     	    }
     	    
     	    try {
     	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
-    	        // Convertir valores decimales a formato de hora si es necesario
     	        if (horaEntrada.matches("\\d+\\.\\d+")) {
     	            horaEntrada = convertirDecimalAHora(Double.parseDouble(horaEntrada));
     	        }
@@ -311,7 +350,6 @@ public class ReportePDF {
     	    try {
     	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
-    	        // Convertir valores decimales a formato de hora si es necesario
     	        if (horaEntrada.matches("\\d+\\.\\d+")) {
     	            horaEntrada = convertirDecimalAHora(Double.parseDouble(horaEntrada));
     	        }
@@ -328,10 +366,9 @@ public class ReportePDF {
     	        return Duration.ZERO;
     	    }
     	}
-    	// Método para convertir un valor decimal a formato HH:mm
     	private String convertirDecimalAHora(double valorDecimal) {
-    	    int horas = (int) (valorDecimal * 24); // Calcular la hora
-    	    int minutos = (int) ((valorDecimal * 24 - horas) * 60); // Calcular los minutos
+    	    int horas = (int) (valorDecimal * 24); 
+    	    int minutos = (int) ((valorDecimal * 24 - horas) * 60); 
     	    return String.format("%02d:%02d", horas, minutos);
     	}
 

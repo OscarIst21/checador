@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -34,6 +35,8 @@ import java.awt.Font;
 import org.apache.poi.hpsf.Date;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import javax.swing.ImageIcon;
+import java.awt.Rectangle;
 
 public class Vista extends JFrame {
 
@@ -49,21 +52,22 @@ public class Vista extends JFrame {
 	    setBounds(100, 100, 1280, 720);
 	    setLocationRelativeTo(null);
 	    contentPane = new JPanel();
+	    contentPane.setBackground(Color.white);
 	    contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 	    setContentPane(contentPane);
 	    contentPane.setLayout(null);
 
+	  
 	    listaEmpleados = new ArrayList<>(); 
 	    checadas = new ArrayList<>();
 	    empleadosDatos = new ArrayList<>();
 
-        // Crear un botón para seleccionar el archivo Excel
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel");
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
         btnSelectFile.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile.setBackground(new Color(0, 64, 0));
-        btnSelectFile.setBounds(49, 11, 300, 50);
+        btnSelectFile.setBounds(103, 226, 300, 50);
         contentPane.add(btnSelectFile);
 
         JButton btnSelectFile2 = new JButton("Seleccionar archivo empleados");
@@ -71,41 +75,53 @@ public class Vista extends JFrame {
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
         btnSelectFile2.setBackground(new Color(0, 64, 128));
-        btnSelectFile2.setBounds(380, 11, 200, 50);
+        btnSelectFile2.setBounds(103, 309, 300, 50);
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
         
-        JButton btnSelectFile3 = new JButton("Seleccionar archivo 3ro");
+        JButton btnSelectFile3 = new JButton("Seleccionar archivo datos extras");
         btnSelectFile3.setForeground(Color.WHITE);
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
         btnSelectFile3.setBackground(new Color(100, 64, 128));
-        btnSelectFile3.setBounds(590, 11, 200, 50);
+        btnSelectFile3.setBounds(105, 398, 300, 50);
         btnSelectFile3.setEnabled(false);
         contentPane.add(btnSelectFile3);
-
-        // Agregar JScrollPane alrededor de la tabla para que siempre se muestren los encabezados
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(49, 87, 1098, 594);
-        contentPane.add(scrollPane);
+        
+        JLabel headerGreen = new JLabel("");
+        headerGreen.setOpaque(true);
+        headerGreen.setBounds(new Rectangle(594, 113, 611, 38));
+        headerGreen.setBackground(new Color(54, 165, 85));
+        contentPane.add(headerGreen);
         
         JButton btnSave = new JButton("Generar Reporte");
         btnSave.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSave.setFocusable(false);
         btnSave.setForeground(new Color(255, 255, 255));
         btnSave.setBackground(new Color(0, 128, 192));
-        btnSave.setBounds(847, 11, 300, 50);
+        btnSave.setBounds(105, 488, 300, 50);
         btnSave.setEnabled(false);
         contentPane.add(btnSave);
 
-        btnSave.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            	 reporte = new ReportePDF();
-            	reporte.generateReport(checadas, periodo,empleadosDatos);
-            }
-        });
-       
+        JLabel logo = new JLabel("");
+	    logo.setIcon(new ImageIcon(Vista.class.getResource("/img/logo.png")));
+	    logo.setBounds(20, 10, 120, 115);
+	    contentPane.add(logo);
+        JLabel encabezado = new JLabel();
+        encabezado.setOpaque(true);
+	    encabezado.setBackground(new Color(242, 106, 29));
+	    encabezado.setBounds(0,0, 1280, 77);
+	    contentPane.add(encabezado);
+	    
+	    JLabel footer = new JLabel();
+	    footer.setIcon(new ImageIcon(Vista.class.getResource("/img/footer.png")));
+	    footer.setBounds(0, 520, 1280, 170);
+	    contentPane.add(footer);
+	    
+	    
+	    
+	    
+	    
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -152,6 +168,13 @@ public class Vista extends JFrame {
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
+            }
+        });
+        btnSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	 reporte = new ReportePDF();
+            	reporte.generateReport(checadas, periodo,empleadosDatos);
             }
         });
     }
@@ -409,5 +432,4 @@ public class Vista extends JFrame {
             }
         }
     }
-
 }
