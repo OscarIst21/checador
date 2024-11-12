@@ -186,8 +186,7 @@ public class ReportePDF {
 	                    	faltas++;
 	                    }
 	                    
-	                    
-	                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos>=5)) {
+	                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos>=5) || ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
 	                        faltas++;
 	                    } else {
 	                        if (horaEntrada.equals("00:00")) {
