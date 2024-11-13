@@ -205,7 +205,7 @@ public class ReportePDF {
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(horaEntrada + " - " + horaEntradaReal))
+	                    table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8)); 
 
@@ -213,7 +213,7 @@ public class ReportePDF {
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));  
 
-	                    table.addCell(new Cell().add(new Paragraph(horaSalida + " - " + horaSalidaReal))
+	                    table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));  
 

@@ -55,7 +55,9 @@ public class Vista extends JFrame {
     public String checadasExcel="";
     public String empleadosExcel="";
     public String datosExtraExcel="";
-    
+    JLabel lblNewLabel=new JLabel("");
+    JLabel lblNewLabel_1=new JLabel("");
+    JLabel lblNewLabel_2=new JLabel("");
     public Vista() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 1280, 720);
@@ -69,30 +71,33 @@ public class Vista extends JFrame {
         listaEmpleados = new ArrayList<>(); 
         checadas = new ArrayList<>();
         empleadosDatos = new ArrayList<>();
-
+        
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel Checadas");
+        btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
         btnSelectFile.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile.setBackground(new Color(0, 64, 0));
-        btnSelectFile.setBounds(68, 226, 300, 50);
+        btnSelectFile.setBounds(68, 220, 300, 50);
         contentPane.add(btnSelectFile);
 
         JButton btnSelectFile2 = new JButton("Seleccionar archivo Excel empleados");
+        btnSelectFile2.setIcon(new ImageIcon(Vista.class.getResource("/img/icon2.png")));
         btnSelectFile2.setForeground(Color.WHITE);
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
         btnSelectFile2.setBackground(new Color(0, 64, 0));
-        btnSelectFile2.setBounds(68, 309, 300, 50);
+        btnSelectFile2.setBounds(68, 300, 300, 50);
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
 
         JButton btnSelectFile3 = new JButton("Seleccionar archivo Excel extra(Empleados)");
+        btnSelectFile3.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
         btnSelectFile3.setForeground(Color.WHITE);
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
         btnSelectFile3.setBackground(new Color(0, 64, 0));
-        btnSelectFile3.setBounds(70, 398, 300, 50);
+        btnSelectFile3.setBounds(68, 380, 300, 50);
         btnSelectFile3.setEnabled(false);
         contentPane.add(btnSelectFile3);
 
@@ -103,12 +108,15 @@ public class Vista extends JFrame {
         contentPane.add(headerGreen);
 
         JButton btnSave = new JButton("Generar Reporte");
+        btnSave.setIcon(new ImageIcon(Vista.class.getResource("/img/icon3.png")));
         btnSave.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSave.setFocusable(false);
-        btnSave.setForeground(new Color(255, 255, 255));
+        btnSave.setForeground(Color.WHITE);
         btnSave.setBackground(new Color(0, 104, 0));
         btnSave.setBounds(70, 488, 300, 50);
         btnSave.setEnabled(false);
+        
+        // Add the button to the content pane
         contentPane.add(btnSave);
 
         JLabel logo = new JLabel("");
@@ -131,7 +139,7 @@ public class Vista extends JFrame {
 
         JLabel encabezado = new JLabel();
         encabezado.setOpaque(true);
-        encabezado.setBackground(new Color(242, 106, 29));
+        encabezado.setBackground(new Color(244, 124, 0 ));
         encabezado.setBounds(0, 0, 1280, 73);
         contentPane.add(encabezado);
 
@@ -152,29 +160,28 @@ public class Vista extends JFrame {
         g2dFooter.drawImage(footerImage, 0, 0, footerWidth, footerHeight, null);
         g2dFooter.dispose(); // Liberar recursos gráficos
 
-        // Asignar la imagen escalada al JLabel del footer
         footer.setIcon(new ImageIcon(resizedFooterImage));
-        footer.setBounds(0, 520, footerWidth, footerHeight);
-        contentPane.add(footer);
+        footer.setBounds(0, 535, 1280, 155);
 
 
         JPanel panelTablasExcel = new JPanel();
         panelTablasExcel.setBounds(594, 124, 611, 502);
         contentPane.add(panelTablasExcel);
-        
-        JLabel lblNewLabel = new JLabel("");
+
+        contentPane.add(footer);
+         lblNewLabel = new JLabel("");
         lblNewLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel.setBounds(373, 226, 170, 50);
+        lblNewLabel.setBounds(373, 220, 170, 50);
         contentPane.add(lblNewLabel);
         
-        JLabel lblNewLabel_1 = new JLabel("");
+         lblNewLabel_1 = new JLabel("");
         lblNewLabel_1.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel_1.setBounds(373, 309, 170, 50);
+        lblNewLabel_1.setBounds(373, 300, 170, 50);
         contentPane.add(lblNewLabel_1);
         
-        JLabel lblNewLabel_2 = new JLabel("");
+         lblNewLabel_2 = new JLabel("");
         lblNewLabel_2.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel_2.setBounds(373, 398, 170, 50);
+        lblNewLabel_2.setBounds(373, 380, 170, 50);
         contentPane.add(lblNewLabel_2);
 
         btnSelectFile.addActionListener(new ActionListener() {
@@ -187,10 +194,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel.setText(fileToOpen.getName());
-                    lblNewLabel.setForeground(new Color(0, 104, 0));
                     cargarChecador(fileToOpen);
                     btnSelectFile2.setEnabled(true);
-                    btnSave.setEnabled(true);
                     btnSelectFile3.setEnabled(true);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
@@ -208,7 +213,6 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel_1.setText(fileToOpen.getName());
-                    lblNewLabel_1.setForeground(new Color(0, 104, 0));
                     cargarEmpleados(fileToOpen);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
@@ -226,8 +230,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel_2.setText(fileToOpen.getName());
-                    lblNewLabel_2.setForeground(new Color(0, 254, 0));
                     cargarDatosExtra(fileToOpen);
+                    btnSave.setEnabled(true);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
@@ -242,12 +246,6 @@ public class Vista extends JFrame {
             }
         });
     }
-
-    private ImageIcon resizeImageIcon(ImageIcon icon, int width, int height) {
-        Image img = icon.getImage();
-        Image scaledImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-        return new ImageIcon(scaledImg);
-    }
     
     private void cargarDatosExtra(File file) {
     	empleadosDatos = new ArrayList<>();
@@ -257,6 +255,7 @@ public class Vista extends JFrame {
             Sheet sheet = workbook.getSheet("Hoja1");
             if (sheet == null) {
                 JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
+                lblNewLabel_2.setForeground(new Color(104, 4, 0));
                 return;
             }
 
@@ -336,11 +335,14 @@ public class Vista extends JFrame {
                     
                 }
             }
-            
+
+            lblNewLabel_2.setForeground(new Color(0, 104, 0));
             JOptionPane.showMessageDialog(this, "Datos adicionales cargados y lista de checadas actualizada exitosamente.");
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+
+            lblNewLabel_2.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
     }
@@ -355,6 +357,7 @@ public class Vista extends JFrame {
             Sheet sheet = workbook.getSheet("Hoja1");
             if (sheet == null) {
                 JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
+                lblNewLabel_1.setForeground(new Color(104, 4, 0));
                 return;
             }
 
@@ -393,12 +396,15 @@ public class Vista extends JFrame {
 
             
 
+            lblNewLabel_1.setForeground(new Color(0, 104, 0));
             JOptionPane.showMessageDialog(this, "Empleados cargados y lista de checadas actualizada exitosamente.");
 
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+            lblNewLabel_1.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            lblNewLabel_1.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
     }
@@ -417,6 +423,8 @@ public class Vista extends JFrame {
             Sheet sheet = workbook.getSheet("Reporte de Excepciones");
             if (sheet == null) {
                 JOptionPane.showMessageDialog(this, "La hoja 'Reporte de Excepciones' no se encontró.");
+
+                lblNewLabel.setForeground(new Color(104, 4, 0));
                 return;
             }
 
@@ -476,17 +484,18 @@ public class Vista extends JFrame {
                     if (!id.isEmpty()) {
                         Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "");
                         checadas.add(checada);
-                        //System.out.println(checada.toString());
                     }
                 }
             }
-            System.out.println(periodo);
+            lblNewLabel.setForeground(new Color(0, 104, 0));
             JOptionPane.showMessageDialog(this, "¡Datos Cargados con éxito!");
 
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+            lblNewLabel.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            lblNewLabel.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
     }
