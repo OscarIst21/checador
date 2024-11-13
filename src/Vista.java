@@ -6,15 +6,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JOptionPane;
 import javax.swing.border.EmptyBorder;
@@ -25,23 +24,25 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-
 import modelos.Checadas;
 import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
-
-import org.apache.poi.hpsf.Date;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+
 import javax.swing.ImageIcon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import javax.swing.SwingConstants;
+
+import java.awt.GridLayout;
 
 public class Vista extends JFrame {
 
@@ -58,6 +59,8 @@ public class Vista extends JFrame {
     JLabel lblNewLabel=new JLabel("");
     JLabel lblNewLabel_1=new JLabel("");
     JLabel lblNewLabel_2=new JLabel("");
+    JPanel panelTablasExcel=new JPanel();
+    private JTabbedPane tabbedPane = new JTabbedPane();
     public Vista() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 1280, 720);
@@ -77,7 +80,7 @@ public class Vista extends JFrame {
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
         btnSelectFile.setFont(new Font("Tahoma", Font.BOLD, 11));
-        btnSelectFile.setBackground(new Color(0, 64, 0));
+        btnSelectFile.setBackground(new Color(54, 165, 85));
         btnSelectFile.setBounds(68, 220, 300, 50);
         contentPane.add(btnSelectFile);
 
@@ -86,7 +89,7 @@ public class Vista extends JFrame {
         btnSelectFile2.setForeground(Color.WHITE);
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
-        btnSelectFile2.setBackground(new Color(0, 64, 0));
+        btnSelectFile2.setBackground(new Color(54, 165, 85));
         btnSelectFile2.setBounds(68, 300, 300, 50);
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
@@ -96,7 +99,7 @@ public class Vista extends JFrame {
         btnSelectFile3.setForeground(Color.WHITE);
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
-        btnSelectFile3.setBackground(new Color(0, 64, 0));
+        btnSelectFile3.setBackground(new Color(54, 165, 85));
         btnSelectFile3.setBounds(68, 380, 300, 50);
         btnSelectFile3.setEnabled(false);
         contentPane.add(btnSelectFile3);
@@ -112,7 +115,7 @@ public class Vista extends JFrame {
         btnSave.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSave.setFocusable(false);
         btnSave.setForeground(Color.WHITE);
-        btnSave.setBackground(new Color(0, 104, 0));
+        btnSave.setBackground(new Color(54, 165, 85));
         btnSave.setBounds(70, 488, 300, 50);
         btnSave.setEnabled(false);
         
@@ -145,28 +148,26 @@ public class Vista extends JFrame {
 
         JLabel footer = new JLabel("");
         ImageIcon iconFooter = new ImageIcon(Vista.class.getResource("/img/footer.png"));
-        Image footerImage = iconFooter.getImage(); // Obtiene la imagen original
+        Image footerImage = iconFooter.getImage(); 
 
-        // Dimensiones deseadas
         int footerWidth = 1280;
         int footerHeight = 170;
 
-        // Crear una nueva imagen con el tamaño deseado
         BufferedImage resizedFooterImage = new BufferedImage(footerWidth, footerHeight, BufferedImage.TYPE_INT_ARGB);
 
-        // Usar Graphics2D para aplicar el escalado bicúbico
         Graphics2D g2dFooter = resizedFooterImage.createGraphics();
-        g2dFooter.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC); // Escalado bicúbico
+        g2dFooter.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC); 
         g2dFooter.drawImage(footerImage, 0, 0, footerWidth, footerHeight, null);
-        g2dFooter.dispose(); // Liberar recursos gráficos
+        g2dFooter.dispose(); 
 
         footer.setIcon(new ImageIcon(resizedFooterImage));
         footer.setBounds(0, 535, 1280, 155);
 
 
-        JPanel panelTablasExcel = new JPanel();
-        panelTablasExcel.setBounds(594, 124, 611, 502);
+        panelTablasExcel = new JPanel();
+        panelTablasExcel.setBounds(594, 124, 610, 500);
         contentPane.add(panelTablasExcel);
+        panelTablasExcel.setLayout(new GridLayout(0, 1, 0, 0));
 
         contentPane.add(footer);
          lblNewLabel = new JLabel("");
@@ -194,6 +195,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel.setText(fileToOpen.getName());
+                    String hoja="Reporte de Excepciones";
+                    mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarChecador(fileToOpen);
                     btnSelectFile2.setEnabled(true);
                     btnSelectFile3.setEnabled(true);
@@ -213,6 +216,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel_1.setText(fileToOpen.getName());
+                    String hoja="Hoja1";
+                    mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarEmpleados(fileToOpen);
                 } else {
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
@@ -230,6 +235,8 @@ public class Vista extends JFrame {
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
                     lblNewLabel_2.setText(fileToOpen.getName());
+                    String hoja="Hoja1";
+                    mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarDatosExtra(fileToOpen);
                     btnSave.setEnabled(true);
                 } else {
@@ -246,7 +253,98 @@ public class Vista extends JFrame {
             }
         });
     }
-    
+    private void mostrarTablaDesdeExcel(File file, String hoja) {
+
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+
+            Sheet sheet = workbook.getSheet(hoja); 
+            if (sheet == null) {
+                JOptionPane.showMessageDialog(this, "La hoja seleccionada no se encontró.");
+                return;
+            }
+
+            DefaultTableModel tableModel = new DefaultTableModel();
+            Row headerRow = sheet.getRow(0);
+            for (Cell cell : headerRow) {
+                tableModel.addColumn(cell.toString());
+            }
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null || row.getLastCellNum() <= 0) {
+                    continue; // Ignorar filas vacías
+                }
+
+                Object[] rowData = new Object[row.getLastCellNum()];
+                for (int j = 0; j < row.getLastCellNum(); j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell != null) {
+                        rowData[j] = formatCell(cell, j); // Formatear la celda según su tipo
+                    } else {
+                        rowData[j] = ""; // Si la celda está vacía, asignar una cadena vacía
+                    }
+                }
+                tableModel.addRow(rowData);
+            }
+
+            JTable table = new JTable(tableModel);
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+            String tabName = file.getName();
+            tabbedPane.addTab(tabName, scrollPane);
+
+            panelTablasExcel.removeAll();
+            panelTablasExcel.add(tabbedPane);
+            panelTablasExcel.revalidate();
+            panelTablasExcel.repaint();
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    private Object formatCell(Cell cell, int columnIndex) {
+        String cellValue = "";
+
+        switch (cell.getCellType()) {
+            case STRING:
+                cellValue = cell.getStringCellValue();
+                break;
+            case NUMERIC:
+                double numericValue = cell.getNumericCellValue();
+                if (columnIndex >= 4 && columnIndex <= 7) { // Rango de columnas que contienen horas
+                    cellValue = convertirDecimalAHora1(numericValue);
+                } else if (numericValue == Math.floor(numericValue)) {
+                    cellValue = String.valueOf((int) numericValue); // Evitar mostrar decimales innecesarios
+                } else {
+                    cellValue = String.valueOf(numericValue); // Mostrar número completo
+                }
+                break;
+            case BOOLEAN:
+                cellValue = String.valueOf(cell.getBooleanCellValue());
+                break;
+            case FORMULA:
+                cellValue = cell.getCellFormula();
+                break;
+            default:
+                cellValue = "";
+        }
+        
+        return cellValue;
+    }
+
+    private String convertirDecimalAHora1(double decimal) {
+        java.util.Date date = DateUtil.getJavaDate(decimal);
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        return timeFormat.format(date);
+    }
+
     private void cargarDatosExtra(File file) {
     	empleadosDatos = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
@@ -259,7 +357,6 @@ public class Vista extends JFrame {
                 return;
             }
 
-            // Iterar sobre cada fila de la hoja para obtener los datos de checadas
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
@@ -309,8 +406,6 @@ public class Vista extends JFrame {
                             diaN = String.valueOf(numericValue);
                         }
                     }
-
-                    // Procesar horaEntradaReal en formato de 24 horas
                     String horaEntradaReal = "";
                     if (row.getCell(4) != null && row.getCell(4).getCellType() == CellType.NUMERIC) {
                         java.util.Date dateValue = row.getCell(4).getDateCellValue();
@@ -318,14 +413,12 @@ public class Vista extends JFrame {
                         horaEntradaReal = timeFormat.format(dateValue);
                     }
 
-                    // Procesar horaSalidaReal en formato de 24 horas
                     String horaSalidaReal = "";
                     if (row.getCell(5) != null && row.getCell(5).getCellType() == CellType.NUMERIC) {
                         java.util.Date dateValue = row.getCell(5).getDateCellValue();
                         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                         horaSalidaReal = timeFormat.format(dateValue);
                     }
-                    // Obtener horarioMixto sin cambios
                     String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
                     if(!id.isEmpty()) {
                         EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id,cctNo,diaN,horaEntradaReal,horaSalidaReal, horarioMixto);
@@ -360,8 +453,6 @@ public class Vista extends JFrame {
                 lblNewLabel_1.setForeground(new Color(104, 4, 0));
                 return;
             }
-
-            // Iterar sobre cada fila de la hoja para obtener ID, nombre, categoría, estado y jornada
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
@@ -411,8 +502,8 @@ public class Vista extends JFrame {
 
 
     private String convertirDecimalAHora(double valorDecimal) {
-        int horas = (int) (valorDecimal * 24); // Calcular la hora
-        int minutos = (int) ((valorDecimal * 24 - horas) * 60); // Calcular los minutos
+        int horas = (int) (valorDecimal * 24);
+        int minutos = (int) ((valorDecimal * 24 - horas) * 60); 
         return String.format("%02d:%02d", horas, minutos);
     }
 
