@@ -27,7 +27,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import modelos.Checadas;
 import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -63,6 +62,8 @@ public class Vista extends JFrame {
     private JTabbedPane tabbedPane = new JTabbedPane();
     public Vista() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Sistema de control de checadas");
+        setResizable(false);
         setBounds(100, 100, 1280, 720);
         setLocationRelativeTo(null);
         contentPane = new JPanel();
