@@ -239,10 +239,9 @@ public class ReportePDF {
 	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
-	                float estimatedContentHeight = 40 + checadasPorId.get(id).size() * 12; // Aproximación
+	                float estimatedContentHeight = 40 + checadasPorId.get(id).size() * 12;
 	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight();
 
-	                // Si el contenido no cabe, crear un salto de página
 	                if (remainingHeight < estimatedContentHeight) {
 	                    document.add(new AreaBreak());
 	                }
@@ -250,6 +249,31 @@ public class ReportePDF {
 	                document.add(info);
 	                document.add(table);
 	                document.add(new Paragraph("\n"));
+	                pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
+	                    @Override
+	                    public void handleEvent(com.itextpdf.kernel.events.Event event) {
+	                        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+	                        PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
+	                        Rectangle pageSize = docEvent.getPage().getPageSize();
+	                        float x = pageSize.getRight() - 50;  // Alineación del número de página a la derecha
+	                        float y = pageSize.getBottom() + 20; // Un poco por encima del borde inferior
+
+	                        // Obtener el número de página
+	                        String pageNumber = "Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
+	                        
+	                        try {
+	                            var font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+	                            canvas.beginText();
+	                            canvas.setFontAndSize(font, 8);
+	                            canvas.moveText(x, y);
+	                            canvas.showText(pageNumber);
+	                            canvas.endText();
+	                        } catch (java.io.IOException e) {
+	                            e.printStackTrace();
+	                        }
+	                        canvas.release();
+	                    }
+	                });
 	            }
 
 	            document.close();
