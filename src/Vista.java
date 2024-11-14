@@ -77,6 +77,7 @@ public class Vista extends JFrame {
         empleadosDatos = new ArrayList<>();
         
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel Checadas");
+        btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT);
         btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
@@ -85,7 +86,8 @@ public class Vista extends JFrame {
         btnSelectFile.setBounds(68, 220, 300, 50);
         contentPane.add(btnSelectFile);
 
-        JButton btnSelectFile2 = new JButton("Seleccionar archivo Excel empleados");
+        JButton btnSelectFile2 = new JButton("Seleccionar archivo Excel Empleados");
+        btnSelectFile2.setHorizontalAlignment(SwingConstants.LEFT);
         btnSelectFile2.setIcon(new ImageIcon(Vista.class.getResource("/img/icon2.png")));
         btnSelectFile2.setForeground(Color.WHITE);
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
@@ -95,9 +97,10 @@ public class Vista extends JFrame {
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
 
-        JButton btnSelectFile3 = new JButton("Seleccionar archivo Excel extra(Empleados)");
+        JButton btnSelectFile3 = new JButton("Seleccionar Excel Horarios(Layout)");
+        btnSelectFile3.setHorizontalAlignment(SwingConstants.LEFT);
         btnSelectFile3.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
-        btnSelectFile3.setForeground(Color.WHITE);
+        btnSelectFile3.setForeground(new Color(255, 255, 255));
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
         btnSelectFile3.setBackground(new Color(54, 165, 85));
@@ -111,14 +114,15 @@ public class Vista extends JFrame {
         headerGreen.setBackground(new Color(54, 165, 85));
         contentPane.add(headerGreen);
 
-        JButton btnSave = new JButton("Generar Reporte");
+        JButton btnSave = new JButton("          Generar Reporte");
+        btnSave.setEnabled(false);
+        btnSave.setHorizontalAlignment(SwingConstants.LEFT);
         btnSave.setIcon(new ImageIcon(Vista.class.getResource("/img/icon3.png")));
-        btnSave.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnSave.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnSave.setFocusable(false);
         btnSave.setForeground(Color.WHITE);
         btnSave.setBackground(new Color(54, 165, 85));
         btnSave.setBounds(70, 488, 300, 50);
-        btnSave.setEnabled(false);
         
         // Add the button to the content pane
         contentPane.add(btnSave);
