@@ -76,6 +76,11 @@ public class Vista extends JFrame {
         checadas = new ArrayList<>();
         empleadosDatos = new ArrayList<>();
         
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  14/11/24");
+        lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
+        lblNewLabel_3.setBounds(1125, 654, 131, 29);
+        contentPane.add(lblNewLabel_3);
+        
         JButton btnSelectFile = new JButton("Seleccionar Archivo Excel Checadas");
         btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT);
         btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
@@ -124,7 +129,6 @@ public class Vista extends JFrame {
         btnSave.setBackground(new Color(54, 165, 85));
         btnSave.setBounds(70, 488, 300, 50);
         
-        // Add the button to the content pane
         contentPane.add(btnSave);
 
         JLabel logo = new JLabel("");
@@ -166,7 +170,7 @@ public class Vista extends JFrame {
         g2dFooter.dispose(); 
 
         footer.setIcon(new ImageIcon(resizedFooterImage));
-        footer.setBounds(0, 535, 1280, 155);
+        footer.setBounds(0, 528, 1280, 155);
 
 
         panelTablasExcel = new JPanel();
@@ -189,7 +193,6 @@ public class Vista extends JFrame {
         lblNewLabel_2.setHorizontalAlignment(SwingConstants.LEFT);
         lblNewLabel_2.setBounds(373, 380, 170, 50);
         contentPane.add(lblNewLabel_2);
-
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -349,7 +352,6 @@ public class Vista extends JFrame {
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
         return timeFormat.format(date);
     }
-
     private void cargarDatosExtra(File file) {
     	empleadosDatos = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
@@ -428,12 +430,11 @@ public class Vista extends JFrame {
                     if(!id.isEmpty()) {
                         EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id,cctNo,diaN,horaEntradaReal,horaSalidaReal, horarioMixto);
                         empleadosDatos.add(empleado1);
-                        System.out.println(empleado1.toString());
+                        //System.out.println(empleado1.toString());
                     }
                     
                 }
             }
-
             lblNewLabel_2.setForeground(new Color(0, 104, 0));
             JOptionPane.showMessageDialog(this, "Datos adicionales cargados y lista de checadas actualizada exitosamente.");
 
@@ -443,11 +444,7 @@ public class Vista extends JFrame {
             lblNewLabel_2.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
-    }
-
-
-
-    
+    }  
     private void cargarEmpleados(File file) {
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -468,7 +465,6 @@ public class Vista extends JFrame {
                             (nombreCell == null || nombreCell.toString().trim().isEmpty())) {
                         continue;
                     }
-
                     String id = "";
                     if (idCell != null) {
                         if (idCell.getCellType() == CellType.NUMERIC) {
@@ -489,9 +485,6 @@ public class Vista extends JFrame {
                 }
             }
             actualizarChecadasConEmpleados();
-
-            
-
             lblNewLabel_1.setForeground(new Color(0, 104, 0));
             JOptionPane.showMessageDialog(this, "Empleados cargados y lista de checadas actualizada exitosamente.");
 
@@ -523,7 +516,6 @@ public class Vista extends JFrame {
                 lblNewLabel.setForeground(new Color(104, 4, 0));
                 return;
             }
-
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
@@ -541,7 +533,7 @@ public class Vista extends JFrame {
                                     break;
                                 case NUMERIC:
                                     double numericValue = cell.getNumericCellValue();
-                                    if (j >= 4 && j <= 7) { // Columnas de hora
+                                    if (j >= 4 && j <= 7) { 
                                         cellValue = convertirDecimalAHora(numericValue);
                                     } else if (numericValue == Math.floor(numericValue)) {
                                         cellValue = String.valueOf((int) numericValue);

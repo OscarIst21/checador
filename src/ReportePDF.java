@@ -11,6 +11,7 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
@@ -101,10 +102,9 @@ public class ReportePDF {
 	                String nombre = checadasPorId.get(id).get(0).getNombre();
 	                String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
 	                Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
-	                        .setFontSize(12)
+	                        .setFontSize(11)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
-	                document.add(title);
 	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1}))
 	                        .useAllAvailableWidth();
 	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha"))
@@ -239,7 +239,14 @@ public class ReportePDF {
 	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
+	                float estimatedContentHeight = 40 + checadasPorId.get(id).size() * 12; // Aproximación
+	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight();
 
+	                // Si el contenido no cabe, crear un salto de página
+	                if (remainingHeight < estimatedContentHeight) {
+	                    document.add(new AreaBreak());
+	                }
+	                document.add(title);
 	                document.add(info);
 	                document.add(table);
 	                document.add(new Paragraph("\n"));
