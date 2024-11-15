@@ -552,7 +552,7 @@ public class Vista extends JFrame {
                             }
                         }
 
-                        if ((i == 1 && j == 2) && !cellValue.isEmpty()) {
+                        if ((i == 1 && j == 1) && !cellValue.isEmpty()) {
                             periodo = cellValue;
                         }
 
