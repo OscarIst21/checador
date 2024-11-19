@@ -40,6 +40,7 @@ import javax.swing.ImageIcon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 
 import java.awt.GridLayout;
 
@@ -58,6 +59,7 @@ public class Vista extends JFrame {
     JLabel lblNewLabel=new JLabel("");
     JLabel lblNewLabel_1=new JLabel("");
     JLabel lblNewLabel_2=new JLabel("");
+    JLabel cargando = new JLabel("");
     JPanel panelTablasExcel=new JPanel();
     private JTabbedPane tabbedPane = new JTabbedPane();
     public Vista() {
@@ -181,27 +183,33 @@ public class Vista extends JFrame {
         contentPane.add(footer);
          lblNewLabel = new JLabel("");
         lblNewLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel.setBounds(373, 220, 170, 50);
+        lblNewLabel.setBounds(383, 220, 170, 50);
         contentPane.add(lblNewLabel);
         
          lblNewLabel_1 = new JLabel("");
         lblNewLabel_1.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel_1.setBounds(373, 300, 170, 50);
+        lblNewLabel_1.setBounds(383, 300, 170, 50);
         contentPane.add(lblNewLabel_1);
         
-         lblNewLabel_2 = new JLabel("");
+        lblNewLabel_2 = new JLabel("");
         lblNewLabel_2.setHorizontalAlignment(SwingConstants.LEFT);
-        lblNewLabel_2.setBounds(373, 380, 170, 50);
+        lblNewLabel_2.setBounds(383, 380, 170, 50);
         contentPane.add(lblNewLabel_2);
+        
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
+                lblNewLabel.setText("Cargando...");
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
+                    
+                    if(!lblNewLabel.getText().equals("Cargando...")) {
+                    	eliminarTablaCargada(lblNewLabel.getText());
+                    }
                     lblNewLabel.setText(fileToOpen.getName());
                     String hoja="Reporte de Excepciones";
                     mostrarTablaDesdeExcel(fileToOpen,hoja);
@@ -209,6 +217,8 @@ public class Vista extends JFrame {
                     btnSelectFile2.setEnabled(true);
                     btnSelectFile3.setEnabled(true);
                 } else {
+
+                    lblNewLabel.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
             }
@@ -217,17 +227,23 @@ public class Vista extends JFrame {
         btnSelectFile2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                lblNewLabel_1.setText("Cargando...");
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
+                    
+                    if(!lblNewLabel_1.getText().equals("Cargando...")) {
+                    	eliminarTablaCargada(lblNewLabel_1.getText());
+                    }
                     lblNewLabel_1.setText(fileToOpen.getName());
                     String hoja="Hoja1";
                     mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarEmpleados(fileToOpen);
                 } else {
+                    lblNewLabel_1.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
             }
@@ -236,18 +252,24 @@ public class Vista extends JFrame {
         btnSelectFile3.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                lblNewLabel_2.setText("Cargando...");
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
+                    
+                    if(!lblNewLabel_2.getText().equals("Cargando...")) {
+                    	eliminarTablaCargada(lblNewLabel_2.getText());
+                    }
                     lblNewLabel_2.setText(fileToOpen.getName());
                     String hoja="Hoja1";
                     mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarDatosExtra(fileToOpen);
                     btnSave.setEnabled(true);
                 } else {
+                    lblNewLabel_2.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
             }
@@ -260,6 +282,19 @@ public class Vista extends JFrame {
                 reporte.generateReport(checadas, periodo, empleadosDatos);
             }
         });
+    }
+    private void eliminarTablaCargada(String nombreTab) {
+        int tabIndex = -1;
+
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            if (tabbedPane.getTitleAt(i).equals(nombreTab)) {
+                tabIndex = i;
+                break;
+            }
+        }
+        if (tabIndex != -1) {
+            tabbedPane.remove(tabIndex);
+        }
     }
     private void mostrarTablaDesdeExcel(File file, String hoja) {
 
@@ -552,8 +587,9 @@ public class Vista extends JFrame {
                             }
                         }
 
-                        if ((i == 1 && j == 1) && !cellValue.isEmpty()) {
+                        if (((i == 1 && j == 1) || (i==1 && j==2))  && !cellValue.isEmpty()) {
                             periodo = cellValue;
+                            //System.out.println(periodo);
                         }
 
                         if (i > 4) {

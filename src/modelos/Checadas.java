@@ -13,7 +13,7 @@ public class Checadas {
     //ID,NombreCOmpleto, empleado puesto,  tipo de jornada,
     public Checadas() {
     }
-
+ 
     public Checadas(String id, String nombre, String empleadoPuesto, String fecha, String horaEntrada, String horaSalida,
                     String horaEntrada2, String horaSalida2,  String jornada) {
         this.id = id;

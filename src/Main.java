@@ -9,7 +9,7 @@ public class Main {
 		                try {
 		                    Vista frame = new Vista();
 		                    frame.setVisible(true);
-		                } catch (Exception e) {
+		                 } catch (Exception e) {
 		                    e.printStackTrace();
 		                }
 
