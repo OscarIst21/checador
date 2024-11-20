@@ -9,14 +9,18 @@ import com.itextpdf.kernel.events.IEventHandler;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.layout.LayoutArea;
+import com.itextpdf.layout.layout.LayoutContext;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.layout.renderer.IRenderer;
 
 import modelos.Checadas;
 import modelos.EmpleadoDatosExtra;
@@ -58,9 +62,10 @@ public class ReportePDF {
 	        }
 
 	        try {
-	            PdfWriter writer = new PdfWriter(filePath);
-	            PdfDocument pdfDoc = new PdfDocument(writer);
-	            Document document = new Document(pdfDoc);
+	        	PdfWriter writer = new PdfWriter(filePath);
+	        	PdfDocument pdfDoc = new PdfDocument(writer);
+	        	pdfDoc.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.LETTER); // Configura el tamaño de hoja a carta
+	        	Document document = new Document(pdfDoc);
 
 	            pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
 	                @Override
@@ -68,15 +73,15 @@ public class ReportePDF {
 	                    PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
 	                    PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                    Rectangle pageSize = docEvent.getPage().getPageSize();
-	                    float y = pageSize.getTop() - 20;
+	                    float y = pageSize.getTop() - 30;
 
 	                    try {
 	                        var font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 	                        String encabezado = "REPORTE DETALLADO DE REGISTRO ENTRADA Y SALIDA EN EL PERIODO: " + periodo;
-	                        float textWidth = font.getWidth(encabezado, 10);
+	                        float textWidth = font.getWidth(encabezado, 11);
 	                        float x = (pageSize.getWidth() - textWidth) / 2;
 	                        canvas.beginText();
-	                        canvas.setFontAndSize(font, 10);
+	                        canvas.setFontAndSize(font, 11);
 	                        canvas.moveText(x, y);
 	                        canvas.showText(encabezado);
 	                        canvas.endText();
@@ -105,36 +110,47 @@ public class ReportePDF {
 	                        .setFontSize(11)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
-	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1}))
+	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f})) 
 	                        .useAllAvailableWidth();
-	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha"))
+	                table.setKeepTogether(true); 
+	                
+	                PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+	                
+	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont)) 
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Día"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont)) 
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont)) 
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont)) 
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont)) 
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
-	                table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado"))
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
 	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
 	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(10));
+	                        .setFontSize(9));
+
 
 	                Duration totalHorasACubrir = Duration.ZERO;
 	                Duration totalHorasTrabajadas = Duration.ZERO;
@@ -143,6 +159,7 @@ public class ReportePDF {
 	                int faltas = 0;
 	                int entradaFaltante = 0;
 	                int salidaFaltante = 0;
+	                int tamañoTabla=0;
 	                for (Checadas checada : checadasPorId.get(id)) {
 	                    String fecha = checada.getFecha() != null ? checada.getFecha() : "Sin Fecha";
 	                    String diaSemana = calcularDiaSemana(fecha).toLowerCase();
@@ -196,34 +213,34 @@ public class ReportePDF {
 	                            salidaFaltante++;
 	                        }
 	                    }
-
-	                    table.addCell(new Cell().add(new Paragraph(fecha))
-	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8)); 
-
-	                    table.addCell(new Cell().add(new Paragraph(diaSemana))
+	                    table.addCell(new Cell().add(new Paragraph(fecha).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
+	                    table.addCell(new Cell().add(new Paragraph(diaSemana).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8)); 
+	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(estatusEntrada))
+	                    table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8));  
+	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
+	                    table.addCell(new Cell().add(new Paragraph(estatusEntrada).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8));  
+	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(estatusSalida))
+	                    table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8));  
+	                            .setFontSize(8));
 
-	                    table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
+	                    table.addCell(new Cell().add(new Paragraph(estatusSalida).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
-	                            .setFontSize(8)); 
+	                            .setFontSize(8));
+
+	                    table.addCell(new Cell().add(new Paragraph(tiempoTrabajo).setFont(boldFont))
+	                            .setTextAlignment(TextAlignment.CENTER)
+	                            .setFontSize(8));
+	                    tamañoTabla++;
 	                }
 
 	                long totalHoras = totalHorasACubrir.toHours();
@@ -239,26 +256,24 @@ public class ReportePDF {
 	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
-	                float estimatedContentHeight = 40 + checadasPorId.get(id).size() * 12;
-	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight();
-
+	                float estimatedContentHeight = 100 + (tamañoTabla * 11);
+	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight()-50;
 	                if (remainingHeight < estimatedContentHeight) {
 	                    document.add(new AreaBreak());
 	                }
+	                document.add(new Paragraph("\n"));
 	                document.add(title);
 	                document.add(info);
 	                document.add(table);
-	                document.add(new Paragraph("\n"));
 	                pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
 	                    @Override
 	                    public void handleEvent(com.itextpdf.kernel.events.Event event) {
 	                        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
 	                        PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                        Rectangle pageSize = docEvent.getPage().getPageSize();
-	                        float x = pageSize.getRight() - 50;  // Alineación del número de página a la derecha
-	                        float y = pageSize.getBottom() + 20; // Un poco por encima del borde inferior
+	                        float x = pageSize.getRight() - 60;  // Alineación del número de página a la derecha
+	                        float y = pageSize.getBottom() + 30; // Un poco por encima del borde inferior
 
-	                        // Obtener el número de página
 	                        String pageNumber = "Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
 	                        
 	                        try {
