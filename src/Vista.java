@@ -64,7 +64,7 @@ public class Vista extends JFrame {
     private JTabbedPane tabbedPane = new JTabbedPane();
     public Vista() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("Sistema de control de checadas");
+        setTitle("SAPI");
         setResizable(false);
         setBounds(100, 100, 1280, 720);
         setLocationRelativeTo(null);
@@ -78,7 +78,7 @@ public class Vista extends JFrame {
         checadas = new ArrayList<>();
         empleadosDatos = new ArrayList<>();
         
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  14/11/24");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  25/11/24");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);

@@ -12,10 +12,6 @@ public class Main {
 		                 } catch (Exception e) {
 		                    e.printStackTrace();
 		                }
-
-		                //Periodo, ID, Fecha, entrada1,salida1,entrada2,salida2,
-		                //ID,NombreCOmpleto, empleado puesto,  tipo de jornada,
-		                //ID, cct no, diaN, horaEntradaR, horaSalidaR, horarioMixto, 
 		            }
 		        });
 		  
