@@ -9,8 +9,6 @@ public class Checadas {
     private String horaEntrada2;
     private String horaSalida2;
     private String jornada;
-    //Periodo, ID, Fecha, entrada1,salida1,entrada2,salida2,
-    //ID,NombreCOmpleto, empleado puesto,  tipo de jornada,
     public Checadas() {
     }
  

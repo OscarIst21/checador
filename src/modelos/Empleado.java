@@ -5,7 +5,6 @@ public class Empleado {
     private String empleadoPuesto;
     private String jornada;
 
-    //ID,NombreCOmpleto, empleado puesto,  tipo de jornada,
     public Empleado() {
     }
 
