@@ -45,7 +45,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ReportePDF {
-
+	
+	
 	public void generateReport(List<Checadas> checadasList, String periodo, List<EmpleadoDatosExtra> empleadosDatos) {
 	    JFileChooser fileChooser = new JFileChooser();
 	    fileChooser.setDialogTitle("Guardar Reporte PDF");

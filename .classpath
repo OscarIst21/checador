@@ -34,5 +34,6 @@
 	<classpathentry kind="lib" path="src/libreria/SparseBitSet-1.2.jar"/>
 	<classpathentry kind="lib" path="src/libreria/xmlbeans-5.1.1.jar"/>
 	<classpathentry kind="lib" path="src/libreria/slf4j-simple-2.1.0-alpha1.jar"/>
+	<classpathentry kind="lib" path="src/libreria/sqlite-jdbc-3.47.1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
