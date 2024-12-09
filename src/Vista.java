@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -483,6 +486,7 @@ public class Vista extends JFrame {
                             id = idCell.toString().trim();
                         }
                     }
+                    String cct=row.getCell(1) != null ? row.getCell(1).toString().trim() : "";
                     String cctNo = row.getCell(2) != null ? row.getCell(2).toString().trim() : "";
 
                     String diaN = "";
@@ -528,70 +532,25 @@ public class Vista extends JFrame {
                         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                         horaSalidaReal = timeFormat.format(dateValue);
                     }
+                    String horaSalidaDiaSiguiente=row.getCell(6) != null ? row.getCell(6).toString().trim() : "";
                     String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
+                    String anio = row.getCell(8) != null ? String.valueOf((int) row.getCell(8).getNumericCellValue()).trim() : "";
+                    String periodo_inicio = row.getCell(9) != null ? String.valueOf((int) row.getCell(9).getNumericCellValue()).trim() : "";
+                    String periodo_termino = row.getCell(10) != null ? String.valueOf((int) row.getCell(10).getNumericCellValue()).trim() : "";
+
                     if (!id.isEmpty()) {
-                        EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id, cctNo, diaN, horaEntradaReal, horaSalidaReal, horarioMixto);
+                        EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id,cct, cctNo, diaN, horaEntradaReal, horaSalidaReal,horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino);
                         empleadosDatos.add(empleado1);
                     }
                 }
             }
 
-            // Ahora actualizar el archivo "bd_layout.excel"
-            File bdLayoutFile = new File(getClass().getResource("/Layout/bd_layout.excel").toURI());
-            try (FileInputStream bdFis = new FileInputStream(bdLayoutFile);
-                 Workbook bdWorkbook = WorkbookFactory.create(bdFis)) {
-
-                Sheet bdSheet = bdWorkbook.getSheet("Hoja1");
-                if (bdSheet == null) {
-                    JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró en bd_layout.excel.");
-                    return;
-                }
-
-                // Recorre los datos cargados y actualiza o agrega según corresponda
-                for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                    boolean found = false;
-
-                    // Recorre las filas del archivo para ver si el ID ya está presente
-                    for (int i = 1; i <= bdSheet.getLastRowNum(); i++) {
-                        Row row = bdSheet.getRow(i);
-                        if (row != null) {
-                            Cell idCell = row.getCell(0);
-                            if (idCell != null && idCell.toString().trim().equals(empleado.getId())) {
-                                // Si el ID ya existe, se actualizan los datos
-                                row.createCell(2).setCellValue(empleado.getCctNo());
-                                row.createCell(3).setCellValue(empleado.getDiaN());
-                                row.createCell(4).setCellValue(empleado.getHoraEntradaReal());
-                                row.createCell(5).setCellValue(empleado.getHoraSalidaReal());
-                                row.createCell(7).setCellValue(empleado.getHorarioMixto());
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    // Si el ID no fue encontrado, se agrega una nueva fila
-                    if (!found) {
-                        int newRowIndex = bdSheet.getLastRowNum() + 1;
-                        Row newRow = bdSheet.createRow(newRowIndex);
-
-                        newRow.createCell(0).setCellValue(empleado.getId());
-                        newRow.createCell(2).setCellValue(empleado.getCctNo());
-                        newRow.createCell(3).setCellValue(empleado.getDiaN());
-                        newRow.createCell(4).setCellValue(empleado.getHoraEntradaReal());
-                        newRow.createCell(5).setCellValue(empleado.getHoraSalidaReal());
-                        newRow.createCell(7).setCellValue(empleado.getHorarioMixto());
-                    }
-                }
-
-                // Guardar los cambios en el archivo bd_layout.excel
-                try (FileOutputStream fos = new FileOutputStream(bdLayoutFile)) {
-                    bdWorkbook.write(fos);
-                }
-            }
+            actualizarArchivoBDLayout(empleadosDatos);
+            
 
             lblNewLabel_2.setForeground(new Color(0, 104, 0));
             btnSelectFile3.setEnabled(false);
-            JOptionPane.showMessageDialog(this, "Datos adicionales cargados y bd_layout.excel actualizado exitosamente.");
+            JOptionPane.showMessageDialog(this, "Datos adicionales cargados exitosamente.");
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
@@ -688,6 +647,92 @@ public class Vista extends JFrame {
             lblNewLabel_1.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
+    }
+
+    private void actualizarArchivoBDLayout(List<EmpleadoDatosExtra> empleadosDatos) {
+        // Ahora actualizar el archivo "bd_layout.xlsx"
+        try {
+            // Cargar el archivo desde el classpath
+            InputStream bdFis = getClass().getResourceAsStream("/Layout/bd_layoutPrincipal.xlsx");
+            
+            if (bdFis == null) {
+                JOptionPane.showMessageDialog(this, "El archivo bd_layout.xlsx no se encontró.");
+                return;
+            }
+
+            Workbook bdWorkbook = WorkbookFactory.create(bdFis);
+            Sheet bdSheet = bdWorkbook.getSheet("Hoja1");
+
+            if (bdSheet == null) {
+                JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró en bd_layout.xlsx.");
+                return;
+            }
+
+            // Recorre los datos cargados y actualiza o agrega según corresponda
+            for (EmpleadoDatosExtra empleado : empleadosDatos) {
+                boolean found = false;
+
+                // Recorre las filas del archivo para ver si el ID ya está presente
+                for (int i = 1; i <= bdSheet.getLastRowNum(); i++) {
+                    Row row2 = bdSheet.getRow(i);
+                    if (row2 != null) {
+                        Cell idCell = row2.getCell(0);
+                        if (idCell != null && idCell.toString().trim().equals(empleado.getId())) {
+                            // Si el ID ya existe, se actualizan los datos
+                            actualizarFila(row2, empleado);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Si el ID no fue encontrado, se agrega una nueva fila
+                if (!found) {
+                    agregarFila(bdSheet, empleado);
+                }
+            }
+
+            // Guardar los cambios en el archivo bd_layout.xlsx
+            File bdLayoutFile = new File("bd_layout.xlsx");  // Ruta al archivo donde se guardará
+            try (FileOutputStream fos = new FileOutputStream(bdLayoutFile)) {
+                bdWorkbook.write(fos);
+            }
+
+            JOptionPane.showMessageDialog(this, "El archivo se actualizó correctamente.");
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar el archivo: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void actualizarFila(Row row, EmpleadoDatosExtra empleado) {
+        row.createCell(1).setCellValue(empleado.getCct());
+        row.createCell(2).setCellValue(empleado.getCctNo());
+        row.createCell(3).setCellValue(empleado.getDiaN());
+        row.createCell(4).setCellValue(empleado.getHoraEntradaReal());
+        row.createCell(5).setCellValue(empleado.getHoraSalidaReal());
+        row.createCell(6).setCellValue(empleado.getHoraSalidaDiaSiguiente());
+        row.createCell(7).setCellValue(empleado.getHorarioMixto());
+        row.createCell(8).setCellValue(empleado.getAnio());
+        row.createCell(9).setCellValue(empleado.getPeriodo_inicio());
+        row.createCell(10).setCellValue(empleado.getPeriodo_termino());
+    }
+
+    private void agregarFila(Sheet bdSheet, EmpleadoDatosExtra empleado) {
+        int newRowIndex = bdSheet.getLastRowNum() + 1;
+        Row newRow = bdSheet.createRow(newRowIndex);
+        newRow.createCell(0).setCellValue(empleado.getId());
+        newRow.createCell(1).setCellValue(empleado.getCct());
+        newRow.createCell(2).setCellValue(empleado.getCctNo());
+        newRow.createCell(3).setCellValue(empleado.getDiaN());
+        newRow.createCell(4).setCellValue(empleado.getHoraEntradaReal());
+        newRow.createCell(5).setCellValue(empleado.getHoraSalidaReal());
+        newRow.createCell(6).setCellValue(empleado.getHoraSalidaDiaSiguiente());
+        newRow.createCell(7).setCellValue(empleado.getHorarioMixto());
+        newRow.createCell(8).setCellValue(empleado.getAnio());
+        newRow.createCell(9).setCellValue(empleado.getPeriodo_inicio());
+        newRow.createCell(10).setCellValue(empleado.getPeriodo_termino());
     }
 
 
