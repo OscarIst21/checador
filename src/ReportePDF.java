@@ -47,7 +47,9 @@ import java.util.stream.Collectors;
 public class ReportePDF {
 	
 	
-	public void generateReport(List<Checadas> checadasList, String periodo, List<EmpleadoDatosExtra> empleadosDatos) {
+	public void generateReport(List<Checadas> checadasList, String periodo) {
+		BaseDeDatosManager dbManager = new BaseDeDatosManager();
+		List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
 	    JFileChooser fileChooser = new JFileChooser();
 	    fileChooser.setDialogTitle("Guardar Reporte PDF");
 	    fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));

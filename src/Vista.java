@@ -90,6 +90,7 @@ public class Vista extends JFrame {
 		  
 
 	}
+
     public Vista() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("SAPI");
@@ -286,6 +287,7 @@ public class Vista extends JFrame {
                     cargarChecador(fileToOpen);
                     btnSelectFile2.setEnabled(true);
                     btnSelectFile3.setEnabled(true);
+                    btnSave.setEnabled(true);
                 } else {
 
                     lblNewLabel.setText("");
@@ -336,7 +338,6 @@ public class Vista extends JFrame {
                     String hoja="Hoja1";
                     mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarDatosExtra(fileToOpen);
-                    btnSave.setEnabled(true);
                 } else {
                     lblNewLabel_2.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
@@ -347,8 +348,10 @@ public class Vista extends JFrame {
         btnSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                actualizarChecadasConEmpleados();
                 reporte = new ReportePDF();
-                reporte.generateReport(checadas, periodo, empleadosDatos);
+                reporte.generateReport(checadas, periodo);
             }
         });
     }
@@ -545,7 +548,8 @@ public class Vista extends JFrame {
                 }
             }
 
-            actualizarArchivoBDLayout(empleadosDatos);
+            BaseDeDatosManager dbManager = new BaseDeDatosManager();
+            dbManager.actualizarDatos(empleadosDatos);
             
 
             lblNewLabel_2.setForeground(new Color(0, 104, 0));
@@ -560,6 +564,8 @@ public class Vista extends JFrame {
     }
 
     private void cargarEmpleados(File file) {
+    	BaseDeDatosManager dbManager = new BaseDeDatosManager(); // Definir globalmente para usarlo en todo el método.
+
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
@@ -615,7 +621,8 @@ public class Vista extends JFrame {
 
                         if (!id.isEmpty()) {
                             Empleado empleado = new Empleado(id, nombre, categoria, jornada);
-                            listaEmpleados.add(empleado);
+
+                            dbManager.insertarOActualizarEmpleado(empleado);
                         }
                     }
                 }
@@ -630,7 +637,7 @@ public class Vista extends JFrame {
             }
 
             if (dataLoaded) {
-                actualizarChecadasConEmpleados();
+
                 lblNewLabel_1.setForeground(new Color(0, 104, 0));
                 btnSelectFile2.setEnabled(false);
                 JOptionPane.showMessageDialog(this, "Empleados cargados desde la hoja: " + hojaProcesada + " y lista de checadas actualizada.");
@@ -649,91 +656,7 @@ public class Vista extends JFrame {
         }
     }
 
-    private void actualizarArchivoBDLayout(List<EmpleadoDatosExtra> empleadosDatos) {
-        // Ahora actualizar el archivo "bd_layout.xlsx"
-        try {
-            // Cargar el archivo desde el classpath
-            InputStream bdFis = getClass().getResourceAsStream("/Layout/bd_layoutPrincipal.xlsx");
-            
-            if (bdFis == null) {
-                JOptionPane.showMessageDialog(this, "El archivo bd_layout.xlsx no se encontró.");
-                return;
-            }
-
-            Workbook bdWorkbook = WorkbookFactory.create(bdFis);
-            Sheet bdSheet = bdWorkbook.getSheet("Hoja1");
-
-            if (bdSheet == null) {
-                JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró en bd_layout.xlsx.");
-                return;
-            }
-
-            // Recorre los datos cargados y actualiza o agrega según corresponda
-            for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                boolean found = false;
-
-                // Recorre las filas del archivo para ver si el ID ya está presente
-                for (int i = 1; i <= bdSheet.getLastRowNum(); i++) {
-                    Row row2 = bdSheet.getRow(i);
-                    if (row2 != null) {
-                        Cell idCell = row2.getCell(0);
-                        if (idCell != null && idCell.toString().trim().equals(empleado.getId())) {
-                            // Si el ID ya existe, se actualizan los datos
-                            actualizarFila(row2, empleado);
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                // Si el ID no fue encontrado, se agrega una nueva fila
-                if (!found) {
-                    agregarFila(bdSheet, empleado);
-                }
-            }
-
-            // Guardar los cambios en el archivo bd_layout.xlsx
-            File bdLayoutFile = new File("bd_layout.xlsx");  // Ruta al archivo donde se guardará
-            try (FileOutputStream fos = new FileOutputStream(bdLayoutFile)) {
-                bdWorkbook.write(fos);
-            }
-
-            JOptionPane.showMessageDialog(this, "El archivo se actualizó correctamente.");
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al actualizar el archivo: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void actualizarFila(Row row, EmpleadoDatosExtra empleado) {
-        row.createCell(1).setCellValue(empleado.getCct());
-        row.createCell(2).setCellValue(empleado.getCctNo());
-        row.createCell(3).setCellValue(empleado.getDiaN());
-        row.createCell(4).setCellValue(empleado.getHoraEntradaReal());
-        row.createCell(5).setCellValue(empleado.getHoraSalidaReal());
-        row.createCell(6).setCellValue(empleado.getHoraSalidaDiaSiguiente());
-        row.createCell(7).setCellValue(empleado.getHorarioMixto());
-        row.createCell(8).setCellValue(empleado.getAnio());
-        row.createCell(9).setCellValue(empleado.getPeriodo_inicio());
-        row.createCell(10).setCellValue(empleado.getPeriodo_termino());
-    }
-
-    private void agregarFila(Sheet bdSheet, EmpleadoDatosExtra empleado) {
-        int newRowIndex = bdSheet.getLastRowNum() + 1;
-        Row newRow = bdSheet.createRow(newRowIndex);
-        newRow.createCell(0).setCellValue(empleado.getId());
-        newRow.createCell(1).setCellValue(empleado.getCct());
-        newRow.createCell(2).setCellValue(empleado.getCctNo());
-        newRow.createCell(3).setCellValue(empleado.getDiaN());
-        newRow.createCell(4).setCellValue(empleado.getHoraEntradaReal());
-        newRow.createCell(5).setCellValue(empleado.getHoraSalidaReal());
-        newRow.createCell(6).setCellValue(empleado.getHoraSalidaDiaSiguiente());
-        newRow.createCell(7).setCellValue(empleado.getHorarioMixto());
-        newRow.createCell(8).setCellValue(empleado.getAnio());
-        newRow.createCell(9).setCellValue(empleado.getPeriodo_inicio());
-        newRow.createCell(10).setCellValue(empleado.getPeriodo_termino());
-    }
+  
 
 
     // Método auxiliar para obtener el valor de una celda como String
@@ -842,6 +765,9 @@ public class Vista extends JFrame {
     }
 
     private void actualizarChecadasConEmpleados() {
+    	BaseDeDatosManager dbManager = new BaseDeDatosManager();
+
+        listaEmpleados =dbManager.obtenerEmpleadosNombre();
         for (Checadas checada : checadas) {
             for (Empleado empleado : listaEmpleados) {
                 if (checada.getId().equals(empleado.getId())) {
