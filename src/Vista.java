@@ -40,6 +40,8 @@ import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Insets;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -74,6 +76,7 @@ public class Vista extends JFrame {
     JButton btnSelectFile= new JButton();
     JButton btnSelectFile2= new JButton();
     JButton btnSelectFile3= new JButton();
+    public boolean reporteExcepcionesCorrecto= false;
     private JTabbedPane tabbedPane = new JTabbedPane();
     public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -109,14 +112,25 @@ public class Vista extends JFrame {
         checadas = new ArrayList<>();
         empleadosDatos = new ArrayList<>();
         
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  25/11/24");
+
+        
+        JLabel lblNewLabel_4 = new JLabel("Colegio de Estudios Científicos y Tecnológicos");
+        lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
+        lblNewLabel_4.setFont(new Font("Tahoma", Font.BOLD, 25));
+        lblNewLabel_4.setBounds(0, 49, 1266, 50);
+        contentPane.add(lblNewLabel_4);
+        
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  01/01/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
         
         btnSelectFile = new JButton("Seleccionar Archivo Excel Checadas");
-        btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT);
-        btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
+        btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT); 
+        btnSelectFile.setHorizontalTextPosition(SwingConstants.RIGHT); 
+        btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/iconXls.png")));
+        btnSelectFile.setMargin(new Insets(0, 10, 0, 0)); 
+
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
         btnSelectFile.setFont(new Font("Tahoma", Font.BOLD, 11));
@@ -124,9 +138,12 @@ public class Vista extends JFrame {
         btnSelectFile.setBounds(68, 244, 300, 50);
         contentPane.add(btnSelectFile);
 
-        btnSelectFile2 = new JButton("Seleccionar archivo Excel Empleados");
-        btnSelectFile2.setHorizontalAlignment(SwingConstants.LEFT);
-        btnSelectFile2.setIcon(new ImageIcon(Vista.class.getResource("/img/icon2.png")));
+        btnSelectFile2 = new JButton("Seleccionar Archivo Excel Empleados");
+        btnSelectFile2.setHorizontalAlignment(SwingConstants.LEFT); 
+        btnSelectFile2.setHorizontalTextPosition(SwingConstants.RIGHT); 
+        btnSelectFile2.setIcon(new ImageIcon(Vista.class.getResource("/img/IconEmpleado.png")));
+        btnSelectFile2.setMargin(new Insets(0, 10, 0, 0)); 
+
         btnSelectFile2.setForeground(Color.WHITE);
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
@@ -135,32 +152,41 @@ public class Vista extends JFrame {
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
 
-        btnSelectFile3 = new JButton("Seleccionar Excel Horarios(Layout)");
-        btnSelectFile3.setHorizontalAlignment(SwingConstants.LEFT);
-        btnSelectFile3.setIcon(new ImageIcon(Vista.class.getResource("/img/icon1.png")));
+        btnSelectFile3 = new JButton("Seleccionar Excel Horarios (Layout)");
+        btnSelectFile3.setHorizontalAlignment(SwingConstants.LEFT); 
+        btnSelectFile3.setHorizontalTextPosition(SwingConstants.RIGHT); 
+        btnSelectFile3.setIcon(new ImageIcon(Vista.class.getResource("/img/IconLayout.png")));
+        btnSelectFile3.setMargin(new Insets(0, 10, 0, 0)); 
+
         btnSelectFile3.setForeground(new Color(255, 255, 255));
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
         btnSelectFile3.setBackground(new Color(54, 165, 85));
         btnSelectFile3.setBounds(68, 404, 300, 50);
         btnSelectFile3.setEnabled(false);
+
         contentPane.add(btnSelectFile3);
+
 
         JLabel headerGreen = new JLabel("");
         headerGreen.setOpaque(true);
-        headerGreen.setBounds(new Rectangle(594, 87, 611, 38));
+        headerGreen.setBounds(new Rectangle(594, 99, 611, 38));
         headerGreen.setBackground(new Color(54, 165, 85));
         contentPane.add(headerGreen);
 
-        JButton btnSave = new JButton("          Generar Reporte");
+        JButton btnSave = new JButton("               Generar Reporte");
         btnSave.setEnabled(false);
         btnSave.setHorizontalAlignment(SwingConstants.LEFT);
-        btnSave.setIcon(new ImageIcon(Vista.class.getResource("/img/icon3.png")));
+        btnSave.setHorizontalTextPosition(SwingConstants.RIGHT);
+        btnSave.setIcon(new ImageIcon(Vista.class.getResource("/img/IconReporte.png")));
+        btnSave.setMargin(new Insets(0, 10, 0, 0)); 
+
         btnSave.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnSave.setFocusable(false);
         btnSave.setForeground(Color.WHITE);
         btnSave.setBackground(new Color(54, 165, 85));
         btnSave.setBounds(70, 512, 300, 50);
+
         
         contentPane.add(btnSave);
 
@@ -185,10 +211,11 @@ public class Vista extends JFrame {
         JLabel encabezado = new JLabel();
         encabezado.setOpaque(true);
         encabezado.setBackground(new Color(244, 124, 0 ));
-        encabezado.setBounds(0, 0, 1280, 73);
+        encabezado.setBounds(0, 0, 1280, 50);
         contentPane.add(encabezado);
 
         JLabel footer = new JLabel("");
+        footer.setFont(new Font("Tahoma", Font.BOLD, 10));
         ImageIcon iconFooter = new ImageIcon(Vista.class.getResource("/img/footer.png"));
         Image footerImage = iconFooter.getImage(); 
 
@@ -207,7 +234,7 @@ public class Vista extends JFrame {
 
 
         panelTablasExcel = new JPanel();
-        panelTablasExcel.setBounds(594, 124, 610, 500);
+        panelTablasExcel.setBounds(594, 136, 610, 500);
         contentPane.add(panelTablasExcel);
         panelTablasExcel.setLayout(new GridLayout(0, 1, 0, 0));
 
@@ -228,7 +255,7 @@ public class Vista extends JFrame {
         contentPane.add(lblNewLabel_2);
         
         JButton btnReiniciar = new JButton("            Reiniciar valores ");
-        btnReiniciar.setIcon(new ImageIcon(Vista.class.getResource("/img/reiniciar.png")));
+        btnReiniciar.setIcon(new ImageIcon(Vista.class.getResource("/img/IconReset.png")));
         btnReiniciar.setHorizontalAlignment(SwingConstants.LEFT);
         btnReiniciar.setForeground(Color.WHITE);
         btnReiniciar.setFont(new Font("Tahoma", Font.BOLD, 12));
@@ -263,6 +290,7 @@ public class Vista extends JFrame {
                 btnSelectFile3.setEnabled(false);
                 btnSave.setEnabled(false);
 
+            	reporteExcepcionesCorrecto=false;
                 // Mensaje de confirmación
                 JOptionPane.showMessageDialog(Vista.this, "Todos los datos y configuraciones han sido reseteados.");
             }
@@ -285,9 +313,11 @@ public class Vista extends JFrame {
                     String hoja="Reporte de Excepciones";
                     mostrarTablaDesdeExcel(fileToOpen,hoja);
                     cargarChecador(fileToOpen);
+                    if(reporteExcepcionesCorrecto) {
                     btnSelectFile2.setEnabled(true);
                     btnSelectFile3.setEnabled(true);
                     btnSave.setEnabled(true);
+                    }
                 } else {
 
                     lblNewLabel.setText("");
@@ -375,7 +405,7 @@ public class Vista extends JFrame {
 
             Sheet sheet = workbook.getSheet(hoja); 
             if (sheet == null) {
-                JOptionPane.showMessageDialog(this, "La hoja seleccionada no se encontró.");
+               // JOptionPane.showMessageDialog(this, "La hoja seleccionada no se encontró.");
                 return;
             }
 
@@ -461,101 +491,90 @@ public class Vista extends JFrame {
     }
     private void cargarDatosExtra(File file) {
         empleadosDatos = new ArrayList<>();
+
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
-            // Cargar los datos del archivo recibido
-            Sheet sheet = workbook.getSheet("Hoja1");
-            if (sheet == null) {
-                JOptionPane.showMessageDialog(this, "La hoja 'Hoja1' no se encontró.");
-                lblNewLabel_2.setForeground(new Color(104, 4, 0));
-                return;
-            }
+            boolean dataLoaded = false;
+            String hojaProcesada = "";
 
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row != null) {
-                    Cell idCell = row.getCell(0);
-                    String id = "";
-                    if (idCell != null) {
-                        if (idCell.getCellType() == CellType.NUMERIC) {
-                            double numericValue = idCell.getNumericCellValue();
-                            if (numericValue == (int) numericValue) {
-                                id = String.valueOf((int) numericValue);
-                            } else {
-                                id = String.valueOf(numericValue);
-                            }
-                        } else {
-                            id = idCell.toString().trim();
-                        }
-                    }
-                    String cct=row.getCell(1) != null ? row.getCell(1).toString().trim() : "";
-                    String cctNo = row.getCell(2) != null ? row.getCell(2).toString().trim() : "";
+            // Iterar sobre todas las hojas del archivo Excel
+            for (Sheet sheet : workbook) {
+                if (sheet == null) continue;
 
-                    String diaN = "";
-                    if (row.getCell(3) != null && row.getCell(3).getCellType() == CellType.NUMERIC) {
-                        double numericValue = row.getCell(3).getNumericCellValue();
-                        if (numericValue == (int) numericValue) {
-                            int dayNumber = (int) numericValue;
+                // Mapear columnas dinámicamente según los nombres en la primera fila
+                Row headerRow = sheet.getRow(0);
+                if (headerRow == null) continue;
 
-                            switch (dayNumber) {
-                                case 1:
-                                    diaN = "lunes";
-                                    break;
-                                case 2:
-                                    diaN = "martes";
-                                    break;
-                                case 3:
-                                    diaN = "miércoles";
-                                    break;
-                                case 4:
-                                    diaN = "jueves";
-                                    break;
-                                case 5:
-                                    diaN = "viernes";
-                                    break;
-                                default:
-                                    diaN = "Día no válido";
-                                    break;
-                            }
-                        } else {
-                            diaN = String.valueOf(numericValue);
-                        }
-                    }
-                    String horaEntradaReal = "";
-                    if (row.getCell(4) != null && row.getCell(4).getCellType() == CellType.NUMERIC) {
-                        java.util.Date dateValue = row.getCell(4).getDateCellValue();
-                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-                        horaEntradaReal = timeFormat.format(dateValue);
-                    }
-
-                    String horaSalidaReal = "";
-                    if (row.getCell(5) != null && row.getCell(5).getCellType() == CellType.NUMERIC) {
-                        java.util.Date dateValue = row.getCell(5).getDateCellValue();
-                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-                        horaSalidaReal = timeFormat.format(dateValue);
-                    }
-                    String horaSalidaDiaSiguiente=row.getCell(6) != null ? row.getCell(6).toString().trim() : "";
-                    String horarioMixto = row.getCell(7) != null ? row.getCell(7).toString().trim() : "";
-                    String anio = row.getCell(8) != null ? String.valueOf((int) row.getCell(8).getNumericCellValue()).trim() : "";
-                    String periodo_inicio = row.getCell(9) != null ? String.valueOf((int) row.getCell(9).getNumericCellValue()).trim() : "";
-                    String periodo_termino = row.getCell(10) != null ? String.valueOf((int) row.getCell(10).getNumericCellValue()).trim() : "";
-
-                    if (!id.isEmpty()) {
-                        EmpleadoDatosExtra empleado1 = new EmpleadoDatosExtra(id,cct, cctNo, diaN, horaEntradaReal, horaSalidaReal,horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino);
-                        empleadosDatos.add(empleado1);
+                Map<String, Integer> columnMap = new HashMap<>();
+                for (Cell cell : headerRow) {
+                    if (cell.getCellType() == CellType.STRING) {
+                        String header = cell.getStringCellValue().trim().toLowerCase();
+                        columnMap.put(header, cell.getColumnIndex());
                     }
                 }
+
+                // Verificar si todas las columnas requeridas están presentes
+                String[] requiredColumns = {
+                    "numero_empleado", "cct", "cct_no", "dia", "hora_entrada", "hora_salida", 
+                    "hora_salida_dia_siguiente", "horario_mixto", "anio", "periodo_inicio", "periodo_termino"
+                };
+                boolean allColumnsFound = true;
+                for (String column : requiredColumns) {
+                    if (!columnMap.containsKey(column)) {
+                        allColumnsFound = false;
+                        break;
+                    }
+                }
+
+                if (!allColumnsFound) {
+                    continue; // Pasar a la siguiente hoja si faltan columnas
+                }
+
+                // Procesar las filas de la hoja
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+
+                    String id = getCellValue(row, columnMap.get("numero_empleado"));
+                    String cct = getCellValue(row, columnMap.get("cct"));
+                    String cctNo = getCellValue(row, columnMap.get("cct_no"));
+                    String dia = getDayName(getCellNumericValue(row, columnMap.get("dia")));
+                    String horaEntradaReal = getTimeValue(row, columnMap.get("hora_entrada"));
+                    String horaSalidaReal = getTimeValue(row, columnMap.get("hora_salida"));
+                    String horaSalidaDiaSiguiente = getCellValue(row, columnMap.get("hora_salida_dia_siguiente"));
+                    String horarioMixto = getCellValue(row, columnMap.get("horario_mixto"));
+                    String anio = getCellValue(row, columnMap.get("anio"));
+                    String periodoInicio = getCellValue(row, columnMap.get("periodo_inicio"));
+                    String periodoTermino = getCellValue(row, columnMap.get("periodo_termino"));
+
+                    if (!id.isEmpty()) {
+                        EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, cct, cctNo, dia, horaEntradaReal, horaSalidaReal,
+                                horaSalidaDiaSiguiente, horarioMixto, anio, periodoInicio, periodoTermino);
+                        empleadosDatos.add(empleado);
+                    }
+                }
+
+                hojaProcesada = sheet.getSheetName(); // Guardar el nombre de la hoja procesada
+                dataLoaded = true;
+                break; // Detener la búsqueda después de encontrar una hoja válida
             }
 
-            BaseDeDatosManager dbManager = new BaseDeDatosManager();
-            dbManager.actualizarDatos(empleadosDatos);
-            
+            if (dataLoaded) {
+                BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                dbManager.actualizarDatos(empleadosDatos);
 
-            lblNewLabel_2.setForeground(new Color(0, 104, 0));
-            btnSelectFile3.setEnabled(false);
-            JOptionPane.showMessageDialog(this, "Datos adicionales cargados exitosamente.");
+                lblNewLabel_2.setForeground(new Color(0, 104, 0));
+                btnSelectFile3.setEnabled(false);
+                JOptionPane.showMessageDialog(this, "Datos adicionales cargados desde la hoja: " + hojaProcesada);
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontraron las columnas requeridas en ninguna hoja.");
+                lblNewLabel_2.setForeground(new Color(104, 4, 0));
+            }
 
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
+            lblNewLabel_2.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             lblNewLabel_2.setForeground(new Color(104, 4, 0));
@@ -563,8 +582,42 @@ public class Vista extends JFrame {
         }
     }
 
+    private String getCellValue(Row row, Integer columnIndex) {
+        if (columnIndex == null) return "";
+        Cell cell = row.getCell(columnIndex);
+        return cell != null ? cell.toString().trim() : "";
+    }
+
+    private String getTimeValue(Row row, Integer columnIndex) {
+        if (columnIndex == null) return "";
+        Cell cell = row.getCell(columnIndex);
+        if (cell != null && cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+            return timeFormat.format(cell.getDateCellValue());
+        }
+        return "";
+    }
+
+    private double getCellNumericValue(Row row, Integer columnIndex) {
+        if (columnIndex == null) return -1;
+        Cell cell = row.getCell(columnIndex);
+        return cell != null && cell.getCellType() == CellType.NUMERIC ? cell.getNumericCellValue() : -1;
+    }
+
+    private String getDayName(double dayNumber) {
+        int day = (int) dayNumber;
+        switch (day) {
+            case 1: return "lunes";
+            case 2: return "martes";
+            case 3: return "miércoles";
+            case 4: return "jueves";
+            case 5: return "viernes";
+            default: return "Día no válido";
+        }
+    }
+
     private void cargarEmpleados(File file) {
-    	BaseDeDatosManager dbManager = new BaseDeDatosManager(); // Definir globalmente para usarlo en todo el método.
+    	BaseDeDatosManager dbManager = new BaseDeDatosManager(); 
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -660,19 +713,6 @@ public class Vista extends JFrame {
 
 
     // Método auxiliar para obtener el valor de una celda como String
-    private String getCellValue(Row row, int columnIndex) {
-        Cell cell = row.getCell(columnIndex);
-        if (cell == null) return "";
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue().trim();
-            case NUMERIC:
-                return String.valueOf((int) cell.getNumericCellValue());
-            default:
-                return cell.toString().trim();
-        }
-    }
-
     private String convertirDecimalAHora(double valorDecimal) {
         int horas = (int) (valorDecimal * 24);
         int minutos = (int) ((valorDecimal * 24 - horas) * 60); 
@@ -752,12 +792,15 @@ public class Vista extends JFrame {
             }
             lblNewLabel.setForeground(new Color(0, 104, 0));
             btnSelectFile.setEnabled(false);
+            reporteExcepcionesCorrecto=true;
             JOptionPane.showMessageDialog(this, "¡Datos Cargados con éxito!");
 
         } catch (IOException e) {
+        	reporteExcepcionesCorrecto=false;
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
+        	reporteExcepcionesCorrecto=false;
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
