@@ -585,8 +585,26 @@ public class Vista extends JFrame {
     private String getCellValue(Row row, Integer columnIndex) {
         if (columnIndex == null) return "";
         Cell cell = row.getCell(columnIndex);
-        return cell != null ? cell.toString().trim() : "";
+        if (cell != null) {
+            if (cell.getCellType() == CellType.STRING) {
+                return cell.getStringCellValue().trim(); // Si ya es texto, solo lo devolvemos.
+            } else if (cell.getCellType() == CellType.NUMERIC) {
+                // Si el número es entero, lo devolvemos como String sin decimales
+                double value = cell.getNumericCellValue();
+                if (value == (long) value) {  // Verificamos si el valor es un número entero
+                    return String.valueOf((long) value);
+                } else {
+                    return String.valueOf(value); // Si es decimal, lo dejamos como está
+                }
+            } else if (cell.getCellType() == CellType.BOOLEAN) {
+                return String.valueOf(cell.getBooleanCellValue());
+            } else if (cell.getCellType() == CellType.FORMULA) {
+                return cell.getCellFormula();
+            }
+        }
+        return "";
     }
+
 
     private String getTimeValue(Row row, Integer columnIndex) {
         if (columnIndex == null) return "";

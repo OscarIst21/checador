@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,21 +8,61 @@ import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
 
 public class BaseDeDatosManager {
-    private static final String DB_URL = "jdbc:sqlite:data/bd_layout.db";
+    private static final String DB_URL;
 
-    public BaseDeDatosManager() {
-        // Crear el directorio 'data' si no existe
-        crearDirectorio();
-        // Crear la base de datos y la tabla si no existen
-        crearBaseDeDatos();
-        crearBaseDeDatosEmpleado();
+    static {
+        String jarPath;
+        try {
+            // Obtener la ruta del JAR o del IDE
+            jarPath = new File(BaseDeDatosManager.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+                    .getParent();
+        } catch (Exception e) {
+            // Ruta alternativa en caso de error
+            jarPath = new File(".").getAbsolutePath();
+        }
+
+        // Definir la ruta de la carpeta data
+        String dataPath = jarPath + File.separator + "data";
+        crearCarpetaSiNoExiste(dataPath); // Crear la carpeta si no existe
+
+        // Configurar la ruta completa del archivo de la base de datos
+        String dbPath = dataPath + File.separator + "bd_layout.db";
+        verificarArchivoBaseDatos(dbPath); // Verificar y crear el archivo si no existe
+
+        // Configurar la URL de la base de datos para SQLite
+        DB_URL = "jdbc:sqlite:" + dbPath;
+        System.out.println("Ruta de la base de datos: " + DB_URL);
     }
 
-    private void crearDirectorio() {
-        File directorio = new File("data");
-        if (!directorio.exists()) {
-            directorio.mkdirs(); // Crea el directorio si no existe
+    private static void crearCarpetaSiNoExiste(String rutaCarpeta) {
+        File carpeta = new File(rutaCarpeta);
+        if (!carpeta.exists()) {
+            if (carpeta.mkdirs()) {
+                System.out.println("Carpeta creada: " + rutaCarpeta);
+            } else {
+                System.err.println("No se pudo crear la carpeta: " + rutaCarpeta);
+            }
         }
+    }
+
+    private static void verificarArchivoBaseDatos(String rutaBaseDatos) {
+        File archivoBD = new File(rutaBaseDatos);
+        if (!archivoBD.exists()) {
+            try {
+                if (archivoBD.createNewFile()) {
+                    System.out.println("Base de datos creada en: " + archivoBD.getAbsolutePath());
+                } else {
+                    System.err.println("No se pudo crear la base de datos: " + archivoBD.getAbsolutePath());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public BaseDeDatosManager() {
+        crearBaseDeDatos();
+        crearBaseDeDatosEmpleado();
     }
 
     private void crearBaseDeDatos() {
@@ -91,12 +132,11 @@ public class BaseDeDatosManager {
     public List<EmpleadoDatosExtra> obtenerEmpleados() {
         List<EmpleadoDatosExtra> empleados = new ArrayList<>();
         String query = "SELECT id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino FROM empleados";
-        
+
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
-            
-            // Recorrer el resultado de la consulta
+
             while (rs.next()) {
                 EmpleadoDatosExtra empleado = new EmpleadoDatosExtra();
                 empleado.setId(rs.getString("id"));
@@ -110,15 +150,15 @@ public class BaseDeDatosManager {
                 empleado.setAnio(rs.getString("anio"));
                 empleado.setPeriodo_inicio(rs.getString("periodo_inicio"));
                 empleado.setPeriodo_termino(rs.getString("periodo_termino"));
-                empleados.add(empleado); // Añadir a la lista
+                empleados.add(empleado);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
-        return empleados; // Devolver la lista de empleados
+
+        return empleados;
     }
-    
+
     private void crearBaseDeDatosEmpleado() {
         String crearTablaSQL = """
             CREATE TABLE IF NOT EXISTS empleadosNombre (
@@ -158,7 +198,6 @@ public class BaseDeDatosManager {
         }
     }
 
-    // Método para obtener todos los empleados desde la base de datos
     public List<Empleado> obtenerEmpleadosNombre() {
         List<Empleado> empleados = new ArrayList<>();
         String query = "SELECT id, nombre, puesto, jornada FROM empleadosNombre";
@@ -167,7 +206,6 @@ public class BaseDeDatosManager {
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
 
-            // Recorrer el resultado de la consulta
             while (rs.next()) {
                 Empleado empleado = new Empleado();
                 empleado.setId(rs.getString("id"));
