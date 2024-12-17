@@ -55,6 +55,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 
 import java.awt.GridLayout;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.LineBorder;
 
 public class Vista extends JFrame {
 
@@ -114,10 +116,10 @@ public class Vista extends JFrame {
         
 
         
-        JLabel lblNewLabel_4 = new JLabel("Colegio de Estudios Científicos y Tecnológicos");
+        JLabel lblNewLabel_4 = new JLabel("Colegio de Estudios Científicos y Tecnológicos del estado de Baja California Sur");
         lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
-        lblNewLabel_4.setFont(new Font("Tahoma", Font.BOLD, 25));
-        lblNewLabel_4.setBounds(0, 49, 1266, 50);
+        lblNewLabel_4.setFont(new Font("Arial Narrow", Font.BOLD, 24));
+        lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
         
         JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  01/01/25");
@@ -170,7 +172,7 @@ public class Vista extends JFrame {
 
         JLabel headerGreen = new JLabel("");
         headerGreen.setOpaque(true);
-        headerGreen.setBounds(new Rectangle(594, 99, 611, 38));
+        headerGreen.setBounds(new Rectangle(594, 115, 611, 22));
         headerGreen.setBackground(new Color(54, 165, 85));
         contentPane.add(headerGreen);
 
@@ -185,27 +187,23 @@ public class Vista extends JFrame {
         btnSave.setFocusable(false);
         btnSave.setForeground(Color.WHITE);
         btnSave.setBackground(new Color(54, 165, 85));
-        btnSave.setBounds(70, 512, 300, 50);
+        btnSave.setBounds(68, 524, 300, 50);
 
         
         contentPane.add(btnSave);
 
         JLabel logo = new JLabel("");
-        ImageIcon icon = new ImageIcon(Vista.class.getResource("/img/logo2.png"));
-        Image image = icon.getImage(); 
+        ImageIcon icon = new ImageIcon(Vista.class.getResource("/img/logo.png"));
+        Image image = icon.getImage();
 
-        int width = 120;
-        int height = 115;
-        BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g2d = resizedImage.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC); // Usar el escalado bicúbico
-        g2d.drawImage(image, 0, 0, width, height, null);
-        g2d.dispose();
+        int width = 150; 
+        int height = 132; 
+        Image resizedImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 
         logo.setIcon(new ImageIcon(resizedImage));
-        logo.setBounds(20, 10, width, height);
+        logo.setBounds(20, 10, width, height); 
         contentPane.add(logo);
+
 
 
         JLabel encabezado = new JLabel();
@@ -234,7 +232,8 @@ public class Vista extends JFrame {
 
 
         panelTablasExcel = new JPanel();
-        panelTablasExcel.setBounds(594, 136, 610, 500);
+        panelTablasExcel.setBorder(new LineBorder(new Color(0, 0, 0)));
+        panelTablasExcel.setBounds(594, 136, 610, 475);
         contentPane.add(panelTablasExcel);
         panelTablasExcel.setLayout(new GridLayout(0, 1, 0, 0));
 
@@ -261,7 +260,7 @@ public class Vista extends JFrame {
         btnReiniciar.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnReiniciar.setFocusable(false);
         btnReiniciar.setBackground(new Color(54, 165, 85));
-        btnReiniciar.setBounds(68, 145, 300, 50);
+        btnReiniciar.setBounds(68, 164, 300, 50);
         contentPane.add(btnReiniciar);
         
         btnReiniciar.addActionListener(new ActionListener() {

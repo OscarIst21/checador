@@ -1,5 +1,7 @@
 import com.itextpdf.io.exceptions.IOException;
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.colors.ColorConstants;
@@ -77,20 +79,45 @@ public class ReportePDF {
 	                    PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                    Rectangle pageSize = docEvent.getPage().getPageSize();
 	                    float y = pageSize.getTop() - 30;
+	                    try {
+	                        // Logo centrado
+	                        String imagePath = "src/img/logoPagina.png"; // Ruta a tu imagen
+	                        ImageData imageData = ImageDataFactory.create(imagePath);
+	                        com.itextpdf.layout.element.Image image = new com.itextpdf.layout.element.Image(imageData);
+
+	                        float imageX = 35;  // Centrado en X
+	                        float imageY = pageSize.getTop() - image.getImageScaledHeight() - 5; // Ajusta la distancia desde el borde superior
+
+	                        image.scaleToFit(50, 50); 
+
+	                        canvas.addImageAt(imageData, imageX, imageY, true);
+	                    } catch (Exception e) {
+	                        e.printStackTrace();
+	                    }
 
 	                    try {
 	                        var font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 	                        String encabezado = "REPORTE DETALLADO DE REGISTRO ENTRADA Y SALIDA EN EL PERIODO: " + periodo;
 	                        float textWidth = font.getWidth(encabezado, 11);
 	                        float x = (pageSize.getWidth() - textWidth) / 2;
+
 	                        canvas.beginText();
 	                        canvas.setFontAndSize(font, 11);
-	                        canvas.moveText(x, y);
+	                        canvas.moveText(x, y - 35); 
 	                        canvas.showText(encabezado);
 	                        canvas.endText();
+
+	                        y -= 200; 
+	                        canvas.beginText();
+	                        canvas.setFontAndSize(font, 11);
+	                        canvas.moveText(x, y); 
+	                        canvas.showText("   "); // Párrafo vacío
+	                        canvas.endText();
+
 	                    } catch (java.io.IOException e) {
 	                        e.printStackTrace();
 	                    }
+
 	                    canvas.release();
 	                }
 	            });
@@ -105,12 +132,12 @@ public class ReportePDF {
 
 	            Map<String, List<Checadas>> checadasPorId = checadasList.stream()
 	                    .collect(Collectors.groupingBy(Checadas::getId));
-
+	            boolean primeraVezEnPagina = true;
 	            for (String id : checadasPorId.keySet()) {
 	                String nombre = checadasPorId.get(id).get(0).getNombre();
 	                String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
 	                Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
-	                        .setFontSize(11)
+	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
 	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f})) 
@@ -263,35 +290,45 @@ public class ReportePDF {
 	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight()-50;
 	                if (remainingHeight < estimatedContentHeight) {
 	                    document.add(new AreaBreak());
+	                    primeraVezEnPagina=true;
 	                }
-	                document.add(new Paragraph("\n"));
+	                if (primeraVezEnPagina) {
+	                    document.add(new Paragraph(" ").setMarginTop(20)); // Este margen es solo para el primer bloque de empleados
+	                    primeraVezEnPagina = false;  // Después de este bloque, ya no agregamos el margen
+	                }
+	             // Crear un párrafo vacío con un margen superior
+	                document.add(new Paragraph(" ").setMarginTop(20)); // Ajusta el valor del margen según lo que necesites
 	                document.add(title);
 	                document.add(info);
 	                document.add(table);
+
 	                pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
 	                    @Override
 	                    public void handleEvent(com.itextpdf.kernel.events.Event event) {
 	                        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
 	                        PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                        Rectangle pageSize = docEvent.getPage().getPageSize();
-	                        float x = pageSize.getRight() - 60;  // Alineación del número de página a la derecha
-	                        float y = pageSize.getBottom() + 30; // Un poco por encima del borde inferior
+	                        
+	                        // Número de página
+	                        float xPageNumber = pageSize.getRight() - 60;  // Derecha
+	                        float yPageNumber = pageSize.getBottom() + 30; // Altura
 
 	                        String pageNumber = "Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
-	                        
 	                        try {
 	                            var font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
 	                            canvas.beginText();
 	                            canvas.setFontAndSize(font, 8);
-	                            canvas.moveText(x, y);
+	                            canvas.moveText(xPageNumber, yPageNumber);
 	                            canvas.showText(pageNumber);
 	                            canvas.endText();
 	                        } catch (java.io.IOException e) {
 	                            e.printStackTrace();
 	                        }
+
 	                        canvas.release();
 	                    }
 	                });
+
 	            }
 
 	            document.close();
