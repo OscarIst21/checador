@@ -33,6 +33,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -80,15 +82,21 @@ public class ReportePDF {
 	                    Rectangle pageSize = docEvent.getPage().getPageSize();
 	                    float y = pageSize.getTop() - 30;
 	                    try {
-	                        // Logo centrado
-	                        String imagePath = "src/img/logoPagina.png"; // Ruta a tu imagen
-	                        ImageData imageData = ImageDataFactory.create(imagePath);
+	                        // Carga la imagen como recurso desde el JAR
+	                        InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
+	                        if (imageStream == null) {
+	                            throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
+	                        }
+	                        
+	                        // Crear ImageData desde el InputStream
+	                        ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
 	                        com.itextpdf.layout.element.Image image = new com.itextpdf.layout.element.Image(imageData);
 
-	                        float imageX = 35;  // Centrado en X
+	                        // Posiciona la imagen
+	                        float imageX = 35;  // Ajusta para centrar en X
 	                        float imageY = pageSize.getTop() - image.getImageScaledHeight() - 5; // Ajusta la distancia desde el borde superior
 
-	                        image.scaleToFit(50, 50); 
+	                        image.scaleToFit(50, 50);
 
 	                        canvas.addImageAt(imageData, imageX, imageY, true);
 	                    } catch (Exception e) {
