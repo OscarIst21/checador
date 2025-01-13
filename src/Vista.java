@@ -1,18 +1,23 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -126,7 +131,7 @@ public class Vista extends JFrame {
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
         
-        btnSelectFile = new JButton("Seleccionar Archivo Excel Checadas");
+        btnSelectFile = new JButton("Seleccionar Archivo Checadas");
         btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT); 
         btnSelectFile.setHorizontalTextPosition(SwingConstants.RIGHT); 
         btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/iconXls.png")));
@@ -297,32 +302,56 @@ public class Vista extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
+                fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos permitidos (.xls, .xlsx, .dat)", "xls", "xlsx", "dat"));
                 lblNewLabel.setText("Cargando...");
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
-                    
-                    if(!lblNewLabel.getText().equals("Cargando...")) {
-                    	eliminarTablaCargada(lblNewLabel.getText());
+
+                    if (!lblNewLabel.getText().equals("Cargando...")) {
+                        eliminarTablaCargada(lblNewLabel.getText());
                     }
                     lblNewLabel.setText(fileToOpen.getName());
-                    String hoja="Reporte de Excepciones";
-                    mostrarTablaDesdeExcel(fileToOpen,hoja);
-                    cargarChecador(fileToOpen);
-                    if(reporteExcepcionesCorrecto) {
-                    btnSelectFile2.setEnabled(true);
-                    btnSelectFile3.setEnabled(true);
-                    btnSave.setEnabled(true);
-                    }
-                } else {
 
+                    // Obtener la extensión del archivo seleccionado
+                    String extension = getFileExtension(fileToOpen);
+
+                    try {
+                        if (extension.equals("xls") || extension.equals("xlsx")) {
+                            String hoja = "Reporte de Excepciones";
+                            mostrarTablaDesdeExcel(fileToOpen, hoja);
+                            cargarChecador(fileToOpen);
+                        } else if (extension.equals("dat")) {
+                            leerArchivoDAT(fileToOpen); // Llama al método interno para procesar .dat
+                            //mostrarTablaDesdeChecadas(); // Muestra la tabla con la lista 'checadas'
+                        } else {
+                            JOptionPane.showMessageDialog(Vista.this, "Formato de archivo no soportado.");
+                            lblNewLabel.setText("");
+                        }
+
+                        // Habilitar botones si el archivo fue procesado correctamente
+                        if (reporteExcepcionesCorrecto) {
+                            btnSelectFile2.setEnabled(true);
+                            btnSelectFile3.setEnabled(true);
+                            btnSave.setEnabled(true);
+                        }
+
+                    } catch (Exception ex) {
+                        reporteExcepcionesCorrecto = false;
+                        JOptionPane.showMessageDialog(Vista.this, "Error al procesar el archivo: " + ex.getMessage());
+                        lblNewLabel.setForeground(new Color(104, 4, 0));
+                        ex.printStackTrace();
+                    }
+
+                } else {
                     lblNewLabel.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
             }
         });
+
+
 
         btnSelectFile2.addActionListener(new ActionListener() {
             @Override
@@ -382,6 +411,15 @@ public class Vista extends JFrame {
                 reporte.generateReport(checadas, periodo);
             }
         });
+    }
+
+    private String getFileExtension(File file) {
+        String name = file.getName();
+        int lastIndex = name.lastIndexOf('.');
+        if (lastIndex > 0 && lastIndex < name.length() - 1) {
+            return name.substring(lastIndex + 1).toLowerCase(); // Devuelve la extensión en minúsculas
+        }
+        return ""; 
     }
     private void eliminarTablaCargada(String nombreTab) {
         int tabIndex = -1;
@@ -452,6 +490,7 @@ public class Vista extends JFrame {
             e.printStackTrace();
         }
     }
+    
     private Object formatCell(Cell cell, int columnIndex) {
         String cellValue = "";
 
@@ -734,6 +773,88 @@ public class Vista extends JFrame {
         int minutos = (int) ((valorDecimal * 24 - horas) * 60); 
         return String.format("%02d:%02d", horas, minutos);
     }
+    public void leerArchivoDAT(File file) {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String linea;
+            Map<String, Map<String, Set<String>>> registrosPorEmpleado = new HashMap<>(); // Usar Set para evitar duplicados
+
+            // Leer y organizar los registros
+            while ((linea = br.readLine()) != null) {
+                linea = linea.trim();
+                if (!linea.isEmpty()) {
+                    String[] partes = linea.split("\\s+");
+                    if (partes.length >= 3) {
+                        String id = partes[0];
+                        String fecha = partes[1];
+                        String horaCompleta = partes[2];
+
+                        // Recortar la hora a "HH:mm" ignorando los segundos
+                        String hora = horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
+
+                        // Usar un Set para evitar duplicados de hora para el mismo empleado y fecha
+                        registrosPorEmpleado
+                            .computeIfAbsent(id, k -> new HashMap<>())
+                            .computeIfAbsent(fecha, k -> new HashSet<>()) // Usar Set para evitar duplicados de hora
+                            .add(hora);
+                    }
+                }
+            }
+
+            // Procesar registros agrupados
+            for (Map.Entry<String, Map<String, Set<String>>> entradaEmpleado : registrosPorEmpleado.entrySet()) {
+                String id = entradaEmpleado.getKey();
+                Map<String, Set<String>> registrosPorFecha = entradaEmpleado.getValue();
+
+                for (Map.Entry<String, Set<String>> entradaFecha : registrosPorFecha.entrySet()) {
+                    String fecha = entradaFecha.getKey();
+                    Set<String> horas = entradaFecha.getValue(); // Set de horas (sin duplicados)
+
+                    // Ordenar las horas
+                    List<String> listaHoras = new ArrayList<>(horas);
+                    listaHoras.sort(Comparator.naturalOrder());
+
+                    // Emparejar entradas y salidas
+                    for (int i = 0; i < listaHoras.size(); i += 2) {
+                        String horaEntrada = listaHoras.get(i);
+                        String horaSalida = (i + 1 < listaHoras.size()) ? listaHoras.get(i + 1) : ""; // Caso sin salida
+
+                        // Almacenar en la lista de checadas
+                        checadas.add(new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", ""));
+                        Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", "");
+                        System.out.println(checada.toString());
+                    }
+                }
+            }
+
+            // Ordenar la lista de checadas
+            checadas.sort(Comparator.comparing(Checadas::getFecha).thenComparing(Checadas::getHoraEntrada));
+
+            // Obtener el periodo
+            if (!checadas.isEmpty()) {
+                String primeraFecha = checadas.get(0).getFecha();
+                String ultimaFecha = checadas.get(checadas.size() - 1).getFecha();
+                periodo = primeraFecha + " - " + ultimaFecha;
+            }
+
+            // Configuración visual
+            lblNewLabel.setForeground(new Color(0, 104, 0));
+            btnSelectFile.setEnabled(false);
+            reporteExcepcionesCorrecto = true;
+            JOptionPane.showMessageDialog(this, "¡Datos cargados con éxito desde archivo .dat!");
+
+        } catch (IOException e) {
+            reporteExcepcionesCorrecto = false;
+            JOptionPane.showMessageDialog(this, "Error leyendo el archivo .dat: " + e.getMessage());
+            lblNewLabel.setForeground(new Color(104, 4, 0));
+        } catch (Exception e) {
+            reporteExcepcionesCorrecto = false;
+            JOptionPane.showMessageDialog(this, "Error procesando los datos: " + e.getMessage());
+            lblNewLabel.setForeground(new Color(104, 4, 0));
+        }
+    }
+
+
+
 
     private void cargarChecador(File file) {
         try (FileInputStream fis = new FileInputStream(file);
