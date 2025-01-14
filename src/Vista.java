@@ -11,7 +11,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -126,7 +130,7 @@ public class Vista extends JFrame {
         lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
         
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.0  06/01/25");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.1  14/01/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
@@ -323,8 +327,8 @@ public class Vista extends JFrame {
                             mostrarTablaDesdeExcel(fileToOpen, hoja);
                             cargarChecador(fileToOpen);
                         } else if (extension.equals("dat")) {
-                            leerArchivoDAT(fileToOpen); // Llama al método interno para procesar .dat
-                            //mostrarTablaDesdeChecadas(); // Muestra la tabla con la lista 'checadas'
+                            mostrarTablaDesdeDat(fileToOpen);
+                            leerArchivoDAT(fileToOpen); 
                         } else {
                             JOptionPane.showMessageDialog(Vista.this, "Formato de archivo no soportado.");
                             lblNewLabel.setText("");
@@ -491,6 +495,57 @@ public class Vista extends JFrame {
         }
     }
     
+    private void mostrarTablaDesdeDat(File file) {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            DefaultTableModel tableModel = new DefaultTableModel();
+
+            // Configurar encabezados fijos
+            String[] encabezados = {"ID", "Fecha", "Hora", "1", "0", "1", "0"};
+            for (String encabezado : encabezados) {
+                tableModel.addColumn(encabezado);
+            }
+
+            // Leer las líneas y agregar filas
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                linea = linea.trim();
+                if (!linea.isEmpty()) {
+                    String[] datosFila = linea.split("\\s+");
+
+                    // Ajustar el tamaño de las filas si faltan columnas
+                    if (datosFila.length < encabezados.length) {
+                        datosFila = Arrays.copyOf(datosFila, encabezados.length);
+                    }
+
+                    tableModel.addRow(datosFila);
+                }
+            }
+
+            // Configurar la tabla
+            JTable table = new JTable(tableModel);
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+            // Agregar la tabla al panel/tab
+            String tabName = file.getName();
+            tabbedPane.addTab(tabName, scrollPane);
+
+            panelTablasExcel.removeAll();
+            panelTablasExcel.add(tabbedPane);
+            panelTablasExcel.revalidate();
+            panelTablasExcel.repaint();
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el archivo .dat: " + e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error procesando el archivo .dat: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     private Object formatCell(Cell cell, int columnIndex) {
         String cellValue = "";
 
@@ -776,9 +831,8 @@ public class Vista extends JFrame {
     public void leerArchivoDAT(File file) {
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String linea;
-            Map<String, Map<String, Set<String>>> registrosPorEmpleado = new HashMap<>(); // Usar Set para evitar duplicados
+            Map<String, Map<String, List<LocalTime>>> registrosPorEmpleado = new HashMap<>(); 
 
-            // Leer y organizar los registros
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
                 if (!linea.isEmpty()) {
@@ -788,35 +842,45 @@ public class Vista extends JFrame {
                         String fecha = partes[1];
                         String horaCompleta = partes[2];
 
-                        // Recortar la hora a "HH:mm" ignorando los segundos
-                        String hora = horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
+                        // Recortar la hora a "HH:mm" e ignorar los segundos
+                        String horaStr = horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
+                        LocalTime hora = LocalTime.parse(horaStr, DateTimeFormatter.ofPattern("HH:mm"));
 
-                        // Usar un Set para evitar duplicados de hora para el mismo empleado y fecha
-                        registrosPorEmpleado
-                            .computeIfAbsent(id, k -> new HashMap<>())
-                            .computeIfAbsent(fecha, k -> new HashSet<>()) // Usar Set para evitar duplicados de hora
-                            .add(hora);
+                        // Validar intervalos para evitar registros en poco tiempo
+                        Map<String, List<LocalTime>> registrosPorFecha = registrosPorEmpleado.computeIfAbsent(id, k -> new HashMap<>());
+                        List<LocalTime> horas = registrosPorFecha.computeIfAbsent(fecha, k -> new ArrayList<>());
+
+                        // Validar si la diferencia con la última hora registrada es menor a 40 minutos
+                        if (!horas.isEmpty()) {
+                            LocalTime ultimaHora = horas.get(horas.size() - 1);
+                            long diferencia = ChronoUnit.MINUTES.between(ultimaHora, hora);
+                            if (diferencia < 40) {
+                                continue; // Omitir checada si está dentro del intervalo
+                            }
+                        }
+
+                        // Agregar la hora si pasa la validación
+                        horas.add(hora);
                     }
                 }
             }
 
             // Procesar registros agrupados
-            for (Map.Entry<String, Map<String, Set<String>>> entradaEmpleado : registrosPorEmpleado.entrySet()) {
+            for (Map.Entry<String, Map<String, List<LocalTime>>> entradaEmpleado : registrosPorEmpleado.entrySet()) {
                 String id = entradaEmpleado.getKey();
-                Map<String, Set<String>> registrosPorFecha = entradaEmpleado.getValue();
+                Map<String, List<LocalTime>> registrosPorFecha = entradaEmpleado.getValue();
 
-                for (Map.Entry<String, Set<String>> entradaFecha : registrosPorFecha.entrySet()) {
+                for (Map.Entry<String, List<LocalTime>> entradaFecha : registrosPorFecha.entrySet()) {
                     String fecha = entradaFecha.getKey();
-                    Set<String> horas = entradaFecha.getValue(); // Set de horas (sin duplicados)
+                    List<LocalTime> horas = entradaFecha.getValue();
 
                     // Ordenar las horas
-                    List<String> listaHoras = new ArrayList<>(horas);
-                    listaHoras.sort(Comparator.naturalOrder());
+                    horas.sort(Comparator.naturalOrder());
 
                     // Emparejar entradas y salidas
-                    for (int i = 0; i < listaHoras.size(); i += 2) {
-                        String horaEntrada = listaHoras.get(i);
-                        String horaSalida = (i + 1 < listaHoras.size()) ? listaHoras.get(i + 1) : ""; // Caso sin salida
+                    for (int i = 0; i < horas.size(); i += 2) {
+                        String horaEntrada = horas.get(i).toString();
+                        String horaSalida = (i + 1 < horas.size()) ? horas.get(i + 1).toString() : ""; // Caso sin salida
 
                         // Almacenar en la lista de checadas
                         checadas.add(new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", ""));
@@ -905,7 +969,6 @@ public class Vista extends JFrame {
 
                         if (((i == 1 && j == 1) || (i==1 && j==2))  && !cellValue.isEmpty()) {
                             periodo = cellValue;
-                            //System.out.println(periodo);
                         }
 
                         if (i > 4) {
