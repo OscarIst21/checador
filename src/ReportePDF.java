@@ -71,7 +71,7 @@ public class ReportePDF {
 	        try {
 	        	PdfWriter writer = new PdfWriter(filePath);
 	        	PdfDocument pdfDoc = new PdfDocument(writer);
-	        	pdfDoc.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.LETTER); // Configura el tamaño de hoja a carta
+	        	pdfDoc.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.LETTER); 
 	        	Document document = new Document(pdfDoc);
 
 	            pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
@@ -81,28 +81,32 @@ public class ReportePDF {
 	                    PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                    Rectangle pageSize = docEvent.getPage().getPageSize();
 	                    float y = pageSize.getTop() - 30;
-	                    float marginTop = 30;
+	                    float marginTop = 20;
 	                    try {
 	                        // Carga la imagen desde el recurso solo una vez (cacheada)
 	                        InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
 	                        if (imageStream == null) {
 	                            throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
 	                        }
-	                        
+
 	                        ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
 	                        com.itextpdf.layout.element.Image image = new com.itextpdf.layout.element.Image(imageData);
 
-	                        // Escalado dinámico basado en el tamaño de la página
-	                        float imageMaxWidth = 50;
-	                        float imageMaxHeight = 50;
-	                        image.scaleToFit(imageMaxWidth, imageMaxHeight);
+	                        // Redimensiona la imagen a 150x43 px
+	                        float targetWidth = 113;
+	                        float targetHeight = 32;
+	                        image.scaleToFit(targetWidth, targetHeight);
 
-	                        // Calcula la posición dinámica
-	                        float imageX = 35; 
-	                        float imageY = pageSize.getTop() - image.getImageScaledHeight() - marginTop;
-	                        canvas.addImageAt(imageData, imageX, imageY, true);
+	                        // Calcula la posición de la imagen
+	                        float imageX = 40;
+	                        float imageY = pageSize.getTop() - targetHeight - marginTop; // Ajustamos según el tamaño de la imagen
 
-	                        PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD); // Fuente en negritas
+	                        // Ahora agregamos la imagen redimensionada a la página
+	                        image.setFixedPosition(imageX, imageY); // Fija la posición de la imagen en la página
+	                        document.add(image); // Añadimos la imagen al documento
+
+	                        // Agregar el texto después de la imagen
+	                        PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 	                        canvas.beginText();
 	                        canvas.setFontAndSize(boldFont, 10);
 	                        canvas.setFillColor(new DeviceRgb(244, 124, 0)); // Color naranja
@@ -110,13 +114,14 @@ public class ReportePDF {
 	                        String text = "Procesado en Dirección General - Departamento de Informática";
 	                        float textWidth = boldFont.getWidth(text, 10); // Calcula el ancho del texto
 	                        float textX = pageSize.getRight() - textWidth - 35; // Alinea el texto a la derecha con un margen
-	                        float textY = imageY + 20; // Centrar el texto verticalmente con respecto a la imagen
+	                        float textY = imageY +14; // Centra el texto verticalmente con respecto a la imagen
 	                        canvas.moveText(textX, textY);
 	                        canvas.showText(text);
 	                        canvas.endText();
 	                    } catch (Exception e) {
 	                        e.printStackTrace();
 	                    }
+
 
 	                    try {
 	                        var font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
