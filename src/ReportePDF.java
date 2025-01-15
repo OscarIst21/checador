@@ -81,24 +81,39 @@ public class ReportePDF {
 	                    PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
 	                    Rectangle pageSize = docEvent.getPage().getPageSize();
 	                    float y = pageSize.getTop() - 30;
+	                    float marginTop = 30;
 	                    try {
-	                        // Carga la imagen como recurso desde el JAR
+	                        // Carga la imagen desde el recurso solo una vez (cacheada)
 	                        InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
 	                        if (imageStream == null) {
 	                            throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
 	                        }
 	                        
-	                        // Crear ImageData desde el InputStream
 	                        ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
 	                        com.itextpdf.layout.element.Image image = new com.itextpdf.layout.element.Image(imageData);
 
-	                        // Posiciona la imagen
-	                        float imageX = 35;  // Ajusta para centrar en X
-	                        float imageY = pageSize.getTop() - image.getImageScaledHeight() - 5; // Ajusta la distancia desde el borde superior
+	                        // Escalado dinámico basado en el tamaño de la página
+	                        float imageMaxWidth = 50;
+	                        float imageMaxHeight = 50;
+	                        image.scaleToFit(imageMaxWidth, imageMaxHeight);
 
-	                        image.scaleToFit(50, 50);
-
+	                        // Calcula la posición dinámica
+	                        float imageX = 35; 
+	                        float imageY = pageSize.getTop() - image.getImageScaledHeight() - marginTop;
 	                        canvas.addImageAt(imageData, imageX, imageY, true);
+
+	                        PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD); // Fuente en negritas
+	                        canvas.beginText();
+	                        canvas.setFontAndSize(boldFont, 10);
+	                        canvas.setFillColor(new DeviceRgb(244, 124, 0)); // Color naranja
+
+	                        String text = "Procesado en Dirección General - Departamento de Informática";
+	                        float textWidth = boldFont.getWidth(text, 10); // Calcula el ancho del texto
+	                        float textX = pageSize.getRight() - textWidth - 35; // Alinea el texto a la derecha con un margen
+	                        float textY = imageY + 20; // Centrar el texto verticalmente con respecto a la imagen
+	                        canvas.moveText(textX, textY);
+	                        canvas.showText(text);
+	                        canvas.endText();
 	                    } catch (Exception e) {
 	                        e.printStackTrace();
 	                    }
@@ -109,6 +124,7 @@ public class ReportePDF {
 	                        float textWidth = font.getWidth(encabezado, 11);
 	                        float x = (pageSize.getWidth() - textWidth) / 2;
 
+	                        canvas.setFillColor(new DeviceRgb(0, 0, 0)); 
 	                        canvas.beginText();
 	                        canvas.setFontAndSize(font, 11);
 	                        canvas.moveText(x, y - 35); 
@@ -148,44 +164,46 @@ public class ReportePDF {
 	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
-	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f})) 
+	                DeviceRgb headerColor = new DeviceRgb(244, 124, 0); 
+
+	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
 	                        .useAllAvailableWidth();
-	                table.setKeepTogether(true); 
-	                
+	                table.setKeepTogether(true);
+
 	                PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-	                
-	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont)) 
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont))
+	                        .setBackgroundColor(headerColor)
 	                        .setTextAlignment(TextAlignment.CENTER)
 	                        .setFontSize(9));
 
-	                table.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont)) 
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
+	                table.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont))
+	                        .setBackgroundColor(headerColor)
 	                        .setTextAlignment(TextAlignment.CENTER)
 	                        .setFontSize(9));
 
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont)) 
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont)) 
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont)) 
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
+	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont))
+	                        .setBackgroundColor(headerColor)
 	                        .setTextAlignment(TextAlignment.CENTER)
 	                        .setFontSize(9));
 
 	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
+	                        .setBackgroundColor(headerColor)
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont))
+	                        .setBackgroundColor(headerColor)
+	                        .setTextAlignment(TextAlignment.CENTER)
+	                        .setFontSize(9));
+
+	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
+	                        .setBackgroundColor(headerColor)
 	                        .setTextAlignment(TextAlignment.CENTER)
 	                        .setFontSize(9));
 
 	                table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
-	                        .setBackgroundColor(new DeviceRgb(255, 158, 56))
+	                        .setBackgroundColor(headerColor)
 	                        .setTextAlignment(TextAlignment.CENTER)
 	                        .setFontSize(9));
 

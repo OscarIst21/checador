@@ -88,6 +88,7 @@ public class Vista extends JFrame {
     JButton btnSelectFile2= new JButton();
     JButton btnSelectFile3= new JButton();
     public boolean reporteExcepcionesCorrecto= false;
+    private String lastPath = System.getProperty("user.home");
     private JTabbedPane tabbedPane = new JTabbedPane();
     public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -130,7 +131,7 @@ public class Vista extends JFrame {
         lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
         
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.1  14/01/25");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.2  15/01/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
@@ -287,8 +288,6 @@ public class Vista extends JFrame {
                 checadas.clear();
                 listaEmpleados.clear();
                 empleadosDatos.clear();
-
-                // Eliminar todas las pestañas del JTabbedPane
                 tabbedPane.removeAll();
 
                 // Restaurar estados de botones
@@ -305,13 +304,16 @@ public class Vista extends JFrame {
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
+                // Configurar el JFileChooser con la última ruta
+                JFileChooser fileChooser = new JFileChooser(lastPath);
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos permitidos (.xls, .xlsx, .dat)", "xls", "xlsx", "dat"));
                 lblNewLabel.setText("Cargando...");
+                
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
+                    lastPath = fileToOpen.getParent(); // Actualizar la última ruta
 
                     if (!lblNewLabel.getText().equals("Cargando...")) {
                         eliminarTablaCargada(lblNewLabel.getText());
@@ -354,25 +356,27 @@ public class Vista extends JFrame {
                 }
             }
         });
-
-
-
         btnSelectFile2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 lblNewLabel_1.setText("Cargando...");
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
+
+                // Usa la misma ruta del primer JFileChooser
+                fileChooser.setCurrentDirectory(new File(lastPath));
+
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
-                    
-                    if(!lblNewLabel_1.getText().equals("Cargando...")) {
-                    	eliminarTablaCargada(lblNewLabel_1.getText());
+
+                    if (!lblNewLabel_1.getText().equals("Cargando...")) {
+                        eliminarTablaCargada(lblNewLabel_1.getText());
                     }
                     lblNewLabel_1.setText(fileToOpen.getName());
-                    
+
+                    // Cargar empleados con el archivo seleccionado
                     cargarEmpleados(fileToOpen);
                 } else {
                     lblNewLabel_1.setText("");
@@ -380,31 +384,40 @@ public class Vista extends JFrame {
                 }
             }
         });
-
         btnSelectFile3.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 lblNewLabel_2.setText("Cargando...");
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
+
+                // Usa la misma ruta que en los otros JFileChooser
+                fileChooser.setCurrentDirectory(new File(lastPath));
+
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
                     File fileToOpen = fileChooser.getSelectedFile();
-                    
-                    if(!lblNewLabel_2.getText().equals("Cargando...")) {
-                    	eliminarTablaCargada(lblNewLabel_2.getText());
+
+                    if (!lblNewLabel_2.getText().equals("Cargando...")) {
+                        eliminarTablaCargada(lblNewLabel_2.getText());
                     }
                     lblNewLabel_2.setText(fileToOpen.getName());
-                    String hoja="Hoja1";
-                    mostrarTablaDesdeExcel(fileToOpen,hoja);
+
+                    // Procesa el archivo Excel
+                    String hoja = "Hoja1";
+                    mostrarTablaDesdeExcel(fileToOpen, hoja);
                     cargarDatosExtra(fileToOpen);
+
+                    // Actualiza la última ruta seleccionada
+                    lastPath = fileToOpen.getParent();
                 } else {
                     lblNewLabel_2.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
                 }
             }
         });
+
 
         btnSave.addActionListener(new ActionListener() {
             @Override
