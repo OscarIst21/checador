@@ -84,26 +84,24 @@ public class ReportePDF {
 	                    float marginTop = 20;
 	                    try {
 	                        // Carga la imagen desde el recurso solo una vez (cacheada)
-	                        InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
-	                        if (imageStream == null) {
-	                            throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
-	                        }
+	                    	 InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
+	                         if (imageStream == null) {
+	                             throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
+	                         }
+	                         ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
 
-	                        ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
-	                        com.itextpdf.layout.element.Image image = new com.itextpdf.layout.element.Image(imageData);
+	                         // Posiciones y dimensiones de la imagen
+	                         float targetWidth = 113;
+	                         float targetHeight = 32;
+	                         float imageX = 40;
+	                         float imageY = pageSize.getTop() - targetHeight - marginTop;
 
-	                        // Redimensiona la imagen a 150x43 px
-	                        float targetWidth = 113;
-	                        float targetHeight = 32;
-	                        image.scaleToFit(targetWidth, targetHeight);
-
-	                        // Calcula la posición de la imagen
-	                        float imageX = 40;
-	                        float imageY = pageSize.getTop() - targetHeight - marginTop; // Ajustamos según el tamaño de la imagen
-
-	                        // Ahora agregamos la imagen redimensionada a la página
-	                        image.setFixedPosition(imageX, imageY); // Fija la posición de la imagen en la página
-	                        document.add(image); // Añadimos la imagen al documento
+	                         // Dibujar la imagen en el canvas
+	                         canvas.addImageFittedIntoRectangle(
+	                             imageData,
+	                             new Rectangle(imageX, imageY, targetWidth, targetHeight),
+	                             false
+	                         );
 
 	                        // Agregar el texto después de la imagen
 	                        PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);

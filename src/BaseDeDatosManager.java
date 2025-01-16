@@ -27,7 +27,7 @@ public class BaseDeDatosManager {
         crearCarpetaSiNoExiste(dataPath);
 
         // Configurar la ruta completa para la base de datos
-        String dbPath = dataPath + File.separator + "bd_layout.db";
+        String dbPath = dataPath + File.separator + "bd_empleados.db";
         // Verificar si el archivo de la base de datos existe y crearlo si no
         verificarArchivoBaseDatos(dbPath);
 
@@ -74,7 +74,7 @@ public class BaseDeDatosManager {
     private static void inicializarBaseDatos(String rutaBaseDatos) {
         // SQL para crear la tabla 'empleados' con todas las columnas necesarias
         String crearTablaEmpleadosSQL = """
-            CREATE TABLE IF NOT EXISTS empleados (
+            CREATE TABLE IF NOT EXISTS horarios (
                 id TEXT,
                 cct TEXT,
                 cctNo TEXT,
@@ -111,7 +111,7 @@ public class BaseDeDatosManager {
     }
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
         String insertarOActualizarSQL = """
-            INSERT INTO empleados (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
+            INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id, diaN) DO UPDATE SET
                 cct = excluded.cct,
@@ -150,7 +150,7 @@ public class BaseDeDatosManager {
 
     public List<EmpleadoDatosExtra> obtenerEmpleados() {
         List<EmpleadoDatosExtra> empleados = new ArrayList<>();
-        String query = "SELECT id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino FROM empleados";
+        String query = "SELECT id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino FROM horarios";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement();

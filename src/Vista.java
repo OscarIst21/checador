@@ -646,6 +646,7 @@ public class Vista extends JFrame {
                     String cctNo = getCellValue(row, columnMap.get("cct_no"));
                     String dia = getDayName(getCellNumericValue(row, columnMap.get("dia")));
                     String horaEntradaReal = getTimeValue(row, columnMap.get("hora_entrada"));
+                    System.out.println("Hora: "+horaEntradaReal);
                     String horaSalidaReal = getTimeValue(row, columnMap.get("hora_salida"));
                     String horaSalidaDiaSiguiente = getCellValue(row, columnMap.get("hora_salida_dia_siguiente"));
                     String horarioMixto = getCellValue(row, columnMap.get("horario_mixto"));
@@ -709,23 +710,55 @@ public class Vista extends JFrame {
         }
         return "";
     }
-
-
-    private String getTimeValue(Row row, Integer columnIndex) {
-        if (columnIndex == null) return "";
+    private String getTimeValue(Row row, Integer columnIndex) { 
+        if (columnIndex == null) return "Columna no válida"; 
         Cell cell = row.getCell(columnIndex);
-        if (cell != null && cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-            return timeFormat.format(cell.getDateCellValue());
+        if (cell == null) return "Celda vacía"; 
+
+        System.out.println("Tipo de celda: " + cell.getCellType());
+        System.out.println("Valor crudo de la celda: " + cell.toString());
+
+        if (cell.getCellType() == CellType.NUMERIC) {
+            if (DateUtil.isCellDateFormatted(cell)) {
+                // Formatear para solo horas y minutos
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                return timeFormat.format(cell.getDateCellValue());
+            } else {
+                System.out.println("El valor numérico no es una fecha/hora reconocida.");
+            }
+        } else if (cell.getCellType() == CellType.STRING) {
+            String timeValue = cell.getStringCellValue().trim();
+            System.out.println("Contenido de la celda como texto: " + timeValue);
+            // Extraer horas y minutos del texto en formato hh:mm:ss
+            if (timeValue.matches("\\d{1,2}:\\d{2}:\\d{2}")) { 
+                return timeValue.substring(0, 5); // Tomar solo "hh:mm"
+            }
         }
-        return "";
+
+        return "Valor no reconocido"; 
     }
+
 
     private double getCellNumericValue(Row row, Integer columnIndex) {
-        if (columnIndex == null) return -1;
+        if (columnIndex == null) return -1; // Columna no válida
         Cell cell = row.getCell(columnIndex);
-        return cell != null && cell.getCellType() == CellType.NUMERIC ? cell.getNumericCellValue() : -1;
+        if (cell == null) return -1; // Celda vacía
+        
+        switch (cell.getCellType()) {
+            case NUMERIC:
+                return cell.getNumericCellValue(); // Retornar el valor numérico directamente
+            case STRING:
+                try {
+                    // Intentar convertir texto numérico a un número
+                    return Double.parseDouble(cell.getStringCellValue().trim());
+                } catch (NumberFormatException e) {
+                    return -1; // No se pudo convertir el texto a número
+                }
+            default:
+                return -1; // Tipo de celda no compatible
+        }
     }
+
 
     private String getDayName(double dayNumber) {
         int day = (int) dayNumber;
@@ -735,6 +768,8 @@ public class Vista extends JFrame {
             case 3: return "miércoles";
             case 4: return "jueves";
             case 5: return "viernes";
+            case 6: return "sabado";
+            case 7: return "domingo";
             default: return "Día no válido";
         }
     }
@@ -787,7 +822,7 @@ public class Vista extends JFrame {
                 }
 
                 // Si se encuentran todas las columnas, procesar los datos
-                for (int j = 1; j <= sheet.getLastRowNum(); j++) {
+                for (int j = 1; j <= sheet.getLastRowNum()+1; j++) {
                     Row row = sheet.getRow(j);
                     if (row != null) {
                         String id = getCellValue(row, columnMap.get("EMPLEADO_NO"));
@@ -898,7 +933,7 @@ public class Vista extends JFrame {
                         // Almacenar en la lista de checadas
                         checadas.add(new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", ""));
                         Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", "");
-                        System.out.println(checada.toString());
+                        //System.out.println(checada.toString());
                     }
                 }
             }
