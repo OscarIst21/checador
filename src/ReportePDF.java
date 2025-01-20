@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -148,13 +149,13 @@ public class ReportePDF {
 	                    canvas.release();
 	                }
 	            });
-
-	            Map<String, Map<String, EmpleadoDatosExtra>> empleadoIndex = new HashMap<>();
+	            Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
 	            for (EmpleadoDatosExtra empleado : empleadosDatos) {
 	                String diaEmpleado = empleado.getDiaN().toLowerCase();
 	                empleadoIndex
 	                    .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
-	                    .put(diaEmpleado, empleado);
+	                    .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
+	                    .add(empleado);
 	            }
 
 	            Map<String, List<Checadas>> checadasPorId = checadasList.stream()
@@ -213,12 +214,12 @@ public class ReportePDF {
 
 	                Duration totalHorasACubrir = Duration.ZERO;
 	                Duration totalHorasTrabajadas = Duration.ZERO;
-	                int retardos=0;
-	                int mediosRetardos=0;
+	                int retardos = 0;
+	                int mediosRetardos = 0;
 	                int faltas = 0;
 	                int entradaFaltante = 0;
 	                int salidaFaltante = 0;
-	                int tamañoTabla=0;
+	                int tamañoTabla = 0;
 	                for (Checadas checada : checadasPorId.get(id)) {
 	                    String fecha = checada.getFecha() != null ? checada.getFecha() : "Sin Fecha";
 	                    String diaSemana = calcularDiaSemana(fecha).toLowerCase();
@@ -227,12 +228,16 @@ public class ReportePDF {
 	                    String horaSalidaReal = "00:00";
 	                    Duration duracionACubrir = Duration.ZERO;
 
+	                    // Ajuste para manejar múltiples horarios por día
 	                    if (empleadoIndex.containsKey(id) && empleadoIndex.get(id).containsKey(diaSemana)) {
-	                        EmpleadoDatosExtra empleadoData = empleadoIndex.get(id).get(diaSemana);
-	                        horaEntradaReal = empleadoData.getHoraEntradaReal();
-	                        horaSalidaReal = empleadoData.getHoraSalidaReal();
-	                        duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
-	                        totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+	                        List<EmpleadoDatosExtra> empleadosData = empleadoIndex.get(id).get(diaSemana);
+	                        for (EmpleadoDatosExtra empleadoData : empleadosData) {
+	                            // Aquí se debe tomar el primer horario disponible o el adecuado para la checada
+	                            horaEntradaReal = empleadoData.getHoraEntradaReal();
+	                            horaSalidaReal = empleadoData.getHoraSalidaReal();
+	                            duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+	                            totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+	                        }
 	                    }
 
 	                    String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
@@ -245,24 +250,24 @@ public class ReportePDF {
 	                    if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
 	                        totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
 	                    }
-	                    if("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-	                    	retardos++;
+	                    if ("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+	                        retardos++;
 	                    }
-	                    if("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-	                    	retardos++;
+	                    if ("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+	                        retardos++;
 	                    }
-	                    
-	                    if("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-	                    	retardos++;
+
+	                    if ("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+	                        retardos++;
 	                    }
-	                    if("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-	                    	retardos++;
+	                    if ("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+	                        retardos++;
 	                    }
-	                    if(mediosRetardos>=10) {
-	                    	faltas++;
+	                    if (mediosRetardos >= 10) {
+	                        faltas++;
 	                    }
-	                    
-	                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos>=5) || ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
+
+	                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos >= 5) || ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
 	                        faltas++;
 	                    } else {
 	                        if (horaEntrada.equals("00:00")) {
@@ -272,6 +277,7 @@ public class ReportePDF {
 	                            salidaFaltante++;
 	                        }
 	                    }
+
 	                    table.addCell(new Cell().add(new Paragraph(fecha).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));
@@ -280,6 +286,7 @@ public class ReportePDF {
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));
 
+	                    // Aseguramos que la hora de entrada y salida real sean las correctas
 	                    table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada).setFont(boldFont))
 	                            .setTextAlignment(TextAlignment.CENTER)
 	                            .setFontSize(8));
@@ -302,6 +309,7 @@ public class ReportePDF {
 	                    tamañoTabla++;
 	                }
 
+
 	                long totalHoras = totalHorasACubrir.toHours();
 	                long totalMinutos = totalHorasACubrir.toMinutes() % 60;
 	                long horasTrabajadas = totalHorasTrabajadas.toHours();
@@ -316,16 +324,16 @@ public class ReportePDF {
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
 	                float estimatedContentHeight = 100 + (tamañoTabla * 11);
-	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight()-50;
+	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight() - 50;
 	                if (remainingHeight < estimatedContentHeight) {
 	                    document.add(new AreaBreak());
-	                    primeraVezEnPagina=true;
+	                    primeraVezEnPagina = true;
 	                }
 	                if (primeraVezEnPagina) {
 	                    document.add(new Paragraph(" ").setMarginTop(20)); // Este margen es solo para el primer bloque de empleados
 	                    primeraVezEnPagina = false;  // Después de este bloque, ya no agregamos el margen
 	                }
-	             // Crear un párrafo vacío con un margen superior
+	                // Crear un párrafo vacío con un margen superior
 	                document.add(new Paragraph(" ").setMarginTop(20)); // Ajusta el valor del margen según lo que necesites
 	                document.add(title);
 	                document.add(info);
@@ -361,6 +369,7 @@ public class ReportePDF {
 	            }
 
 	            document.close();
+
 	            System.out.println("PDF generado en: " + filePath);
 
 	            if (Desktop.isDesktopSupported()) {

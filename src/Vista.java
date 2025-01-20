@@ -715,8 +715,8 @@ public class Vista extends JFrame {
         Cell cell = row.getCell(columnIndex);
         if (cell == null) return "Celda vacía"; 
 
-        System.out.println("Tipo de celda: " + cell.getCellType());
-        System.out.println("Valor crudo de la celda: " + cell.toString());
+        //System.out.println("Tipo de celda: " + cell.getCellType());
+        //System.out.println("Valor crudo de la celda: " + cell.toString());
 
         if (cell.getCellType() == CellType.NUMERIC) {
             if (DateUtil.isCellDateFormatted(cell)) {
@@ -724,11 +724,11 @@ public class Vista extends JFrame {
                 SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                 return timeFormat.format(cell.getDateCellValue());
             } else {
-                System.out.println("El valor numérico no es una fecha/hora reconocida.");
+                //System.out.println("El valor numérico no es una fecha/hora reconocida.");
             }
         } else if (cell.getCellType() == CellType.STRING) {
             String timeValue = cell.getStringCellValue().trim();
-            System.out.println("Contenido de la celda como texto: " + timeValue);
+            //System.out.println("Contenido de la celda como texto: " + timeValue);
             // Extraer horas y minutos del texto en formato hh:mm:ss
             if (timeValue.matches("\\d{1,2}:\\d{2}:\\d{2}")) { 
                 return timeValue.substring(0, 5); // Tomar solo "hh:mm"

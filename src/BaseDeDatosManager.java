@@ -73,22 +73,23 @@ public class BaseDeDatosManager {
     // Método para inicializar la base de datos y crear las tablas
     private static void inicializarBaseDatos(String rutaBaseDatos) {
         // SQL para crear la tabla 'empleados' con todas las columnas necesarias
-        String crearTablaEmpleadosSQL = """
-            CREATE TABLE IF NOT EXISTS horarios (
-                id TEXT,
-                cct TEXT,
-                cctNo TEXT,
-                diaN TEXT,
-                horaEntradaReal TEXT,
-                horaSalidaReal TEXT,
-                horaSalidaDiaSiguiente TEXT,
-                horarioMixto TEXT,
-                anio TEXT,
-                periodo_inicio TEXT,
-                periodo_termino TEXT,
-                PRIMARY KEY (id, diaN)
-            );
-        """;
+    	String crearTablaEmpleadosSQL = """
+    		    CREATE TABLE IF NOT EXISTS horarios (
+    		        id TEXT,
+    		        cct TEXT,
+    		        cctNo TEXT,
+    		        diaN TEXT,
+    		        horaEntradaReal TEXT,
+    		        horaSalidaReal TEXT,
+    		        horaSalidaDiaSiguiente TEXT,
+    		        horarioMixto TEXT,
+    		        anio TEXT,
+    		        periodo_inicio TEXT,
+    		        periodo_termino TEXT,
+    		        PRIMARY KEY (id, diaN, horaEntradaReal)
+    		    );
+    		""";
+
 
         // SQL para crear la tabla 'empleadosNombre' con las columnas necesarias
         String crearTablaEmpleadosNombreSQL = """
@@ -110,42 +111,40 @@ public class BaseDeDatosManager {
         }
     }
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
-        String insertarOActualizarSQL = """
-            INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id, diaN) DO UPDATE SET
-                cct = excluded.cct,
-                cctNo = excluded.cctNo,
-                diaN = excluded.diaN,
-                horaEntradaReal = excluded.horaEntradaReal,
-                horaSalidaReal = excluded.horaSalidaReal,
-                horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
-                horarioMixto = excluded.horarioMixto,
-                anio = excluded.anio,
-                periodo_inicio = excluded.periodo_inicio,
-                periodo_termino = excluded.periodo_termino;
-        """;
+    	String insertarOActualizarSQL = """
+    		    INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
+    		    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    		    ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
+    		        cct = excluded.cct,
+    		        cctNo = excluded.cctNo,
+    		        horaSalidaReal = excluded.horaSalidaReal,
+    		        horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
+    		        horarioMixto = excluded.horarioMixto,
+    		        anio = excluded.anio,
+    		        periodo_inicio = excluded.periodo_inicio,
+    		        periodo_termino = excluded.periodo_termino;
+    		""";
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
-            for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                pstmt.setString(1, empleado.getId());
-                pstmt.setString(2, empleado.getCct());
-                pstmt.setString(3, empleado.getCctNo());
-                pstmt.setString(4, empleado.getDiaN());
-                pstmt.setString(5, empleado.getHoraEntradaReal());
-                pstmt.setString(6, empleado.getHoraSalidaReal());
-                pstmt.setString(7, empleado.getHoraSalidaDiaSiguiente());
-                pstmt.setString(8, empleado.getHorarioMixto());
-                pstmt.setString(9, empleado.getAnio());
-                pstmt.setString(10, empleado.getPeriodo_inicio());
-                pstmt.setString(11, empleado.getPeriodo_termino());
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    		try (Connection conn = DriverManager.getConnection(DB_URL);
+    		     PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
+    		    for (EmpleadoDatosExtra empleado : empleadosDatos) {
+    		        pstmt.setString(1, empleado.getId());
+    		        pstmt.setString(2, empleado.getCct());
+    		        pstmt.setString(3, empleado.getCctNo());
+    		        pstmt.setString(4, empleado.getDiaN());
+    		        pstmt.setString(5, empleado.getHoraEntradaReal());
+    		        pstmt.setString(6, empleado.getHoraSalidaReal());
+    		        pstmt.setString(7, empleado.getHoraSalidaDiaSiguiente());
+    		        pstmt.setString(8, empleado.getHorarioMixto());
+    		        pstmt.setString(9, empleado.getAnio());
+    		        pstmt.setString(10, empleado.getPeriodo_inicio());
+    		        pstmt.setString(11, empleado.getPeriodo_termino());
+    		        pstmt.addBatch();
+    		    }
+    		    pstmt.executeBatch();
+    		} catch (SQLException e) {
+    		    e.printStackTrace();
+    		}
     }
 
     public List<EmpleadoDatosExtra> obtenerEmpleados() {
@@ -170,6 +169,10 @@ public class BaseDeDatosManager {
                 empleado.setPeriodo_inicio(rs.getString("periodo_inicio"));
                 empleado.setPeriodo_termino(rs.getString("periodo_termino"));
                 empleados.add(empleado);
+                if(empleado.getId().equals("1700")) {
+
+                    System.out.println(empleado);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
