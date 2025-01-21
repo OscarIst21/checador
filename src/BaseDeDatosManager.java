@@ -169,10 +169,7 @@ public class BaseDeDatosManager {
                 empleado.setPeriodo_inicio(rs.getString("periodo_inicio"));
                 empleado.setPeriodo_termino(rs.getString("periodo_termino"));
                 empleados.add(empleado);
-                if(empleado.getId().equals("1700")) {
-
-                    System.out.println(empleado);
-                }
+               
             }
         } catch (SQLException e) {
             e.printStackTrace();

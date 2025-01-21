@@ -16,6 +16,7 @@ import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.IElement;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.layout.LayoutArea;
@@ -30,8 +31,12 @@ import modelos.EmpleadoDatosExtra;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -53,11 +58,83 @@ public class ReportePDF {
 	
 	
 	public void generateReport(List<Checadas> checadasList, String periodo) {
-		BaseDeDatosManager dbManager = new BaseDeDatosManager();
-		List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
+		String[] planteles = {"Seleccione un plantel",
+			    "Emsad01", "Emsad03", "Emsad06", "Emsad07", "Emsad09", 
+			    "Emsad10", "Emsad11", "Emsad12", "Emsad13", "Emsad14", 
+			    "Emsad16", "Cecyt01", "Cecyt02", "Cecyt03", "Cecyt04", 
+			    "Cecyt05", "Cecyt06", "Cecyt07", "Cecyt08", "Cecyt09", 
+			    "Cecyt10", "Cecyt11"
+			};
+
+			JComboBox<String> plantelComboBox = new JComboBox<>(planteles);
+			ImageIcon customIcon = null;
+
+			try (InputStream imageStream = getClass().getResourceAsStream("/img/iconReporte.png")) {
+			    if (imageStream == null) {
+			        throw new Exception("No se encontró la imagen: /img/iconReporte.png");
+			    }
+			    // Leer la imagen y crear el ImageIcon
+			    byte[] imageBytes = imageStream.readAllBytes();
+			    Image img = Toolkit.getDefaultToolkit().createImage(imageBytes);
+			    customIcon = new ImageIcon(img);
+			} catch (Exception e) {
+			    System.err.println("Error al cargar el ícono: " + e.getMessage());
+			    // Usa un ícono predeterminado si ocurre un error
+			    customIcon = (ImageIcon) UIManager.getIcon("OptionPane.informationIcon");
+			}
+
+			// Crear el panel con el mensaje y el JComboBox
+			JPanel panel = new JPanel(new BorderLayout(5, 5));
+			JLabel label = new JLabel("¿A qué plantel corresponde el reporte?");
+			label.setFont(new Font("Arial", Font.PLAIN, 14)); // Puedes ajustar el estilo del texto
+			panel.add(label, BorderLayout.NORTH);
+			panel.add(plantelComboBox, BorderLayout.CENTER);
+
+			// Mostrar el JOptionPane con el panel
+			int option = JOptionPane.showConfirmDialog(
+			    null,
+			    panel,
+			    "Seleccione el plantel",
+			    JOptionPane.OK_CANCEL_OPTION,
+			    JOptionPane.PLAIN_MESSAGE,
+			    customIcon // Aquí se usa el ícono cargado
+			);
+
+			// Verificar si el usuario seleccionó "OK"
+			if (option != JOptionPane.OK_OPTION) {
+			    JOptionPane.showMessageDialog(
+			        null,
+			        "No se seleccionó ningún plantel. Operación cancelada.",
+			        "Operación cancelada",
+			        JOptionPane.WARNING_MESSAGE
+			    );
+			    return; // Salir del método si se cancela
+			}
+
+			// Obtener el plantel seleccionado
+			String plantelSeleccionado = (String) plantelComboBox.getSelectedItem();
+
+			// Verificar si el usuario eligió una opción válida
+			if ("Seleccione un plantel".equals(plantelSeleccionado)) {
+			    JOptionPane.showMessageDialog(
+			        null,
+			        "Debe seleccionar un plantel antes de continuar.",
+			        "Selección inválida",
+			        JOptionPane.ERROR_MESSAGE
+			    );
+			    return; // Salir del método si la selección no es válida
+			}
+
+	    BaseDeDatosManager dbManager = new BaseDeDatosManager();
+	    List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
+
+	    // Crear el selector de archivos
 	    JFileChooser fileChooser = new JFileChooser();
 	    fileChooser.setDialogTitle("Guardar Reporte PDF");
 	    fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+
+	    // Establecer un nombre predeterminado que incluya el período
+	    fileChooser.setSelectedFile(new File(periodo +"_"+ plantelSeleccionado +".pdf"));
 
 	    int userSelection = fileChooser.showSaveDialog(null);
 
@@ -65,6 +142,7 @@ public class ReportePDF {
 	        File file = fileChooser.getSelectedFile();
 	        String filePath = file.getAbsolutePath();
 
+	        // Asegurarse de que el archivo tenga la extensión ".pdf"
 	        if (!filePath.endsWith(".pdf")) {
 	            filePath += ".pdf";
 	        }
@@ -169,47 +247,9 @@ public class ReportePDF {
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
 	                DeviceRgb headerColor = new DeviceRgb(244, 124, 0); 
-
-	                Table table = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
-	                        .useAllAvailableWidth();
-	                table.setKeepTogether(true);
-
 	                PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 
-	                table.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
-
-	                table.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
-	                        .setBackgroundColor(headerColor)
-	                        .setTextAlignment(TextAlignment.CENTER)
-	                        .setFontSize(9));
+	                Table table = crearTabla(headerColor, boldFont);
 
 
 	                Duration totalHorasACubrir = Duration.ZERO;
@@ -220,6 +260,9 @@ public class ReportePDF {
 	                int entradaFaltante = 0;
 	                int salidaFaltante = 0;
 	                int tamañoTabla = 0;
+	             // Lista global de horarios descartados, inicializar fuera del ciclo
+	                Map<String, Map<String, List<EmpleadoDatosExtra>>> horariosDescartados = new HashMap<>();
+
 	                for (Checadas checada : checadasPorId.get(id)) {
 	                    String fecha = checada.getFecha() != null ? checada.getFecha() : "Sin Fecha";
 	                    String diaSemana = calcularDiaSemana(fecha).toLowerCase();
@@ -228,18 +271,40 @@ public class ReportePDF {
 	                    String horaSalidaReal = "00:00";
 	                    Duration duracionACubrir = Duration.ZERO;
 
-	                    // Ajuste para manejar múltiples horarios por día
+	                    // Asegurarse de que las estructuras necesarias existan en horariosDescartados
+	                    horariosDescartados.putIfAbsent(id, new HashMap<>());
+	                    horariosDescartados.get(id).putIfAbsent(diaSemana, new ArrayList<>());
+
 	                    if (empleadoIndex.containsKey(id) && empleadoIndex.get(id).containsKey(diaSemana)) {
-	                        List<EmpleadoDatosExtra> empleadosData = empleadoIndex.get(id).get(diaSemana);
-	                        for (EmpleadoDatosExtra empleadoData : empleadosData) {
-	                            // Aquí se debe tomar el primer horario disponible o el adecuado para la checada
+	                        List<EmpleadoDatosExtra> horariosDisponibles = empleadoIndex.get(id).get(diaSemana);
+	                        List<EmpleadoDatosExtra> descartados = horariosDescartados.get(id).get(diaSemana);
+
+	                        if (!horariosDisponibles.isEmpty()) {
+	                            // Usar el primer horario disponible
+	                            EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
 	                            horaEntradaReal = empleadoData.getHoraEntradaReal();
 	                            horaSalidaReal = empleadoData.getHoraSalidaReal();
 	                            duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
 	                            totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+
+	                            // Mover el horario usado a la lista de descartados
+	                            descartados.add(empleadoData);
+	                        } else if (!descartados.isEmpty()) {
+	                            // Reiniciar los horarios disponibles desde la lista de descartados
+	                            horariosDisponibles.addAll(descartados);
+	                            descartados.clear(); // Limpiar la lista de descartados después de reiniciar
+
+	                            // Usar el primer horario ahora disponible
+	                            EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
+	                            horaEntradaReal = empleadoData.getHoraEntradaReal();
+	                            horaSalidaReal = empleadoData.getHoraSalidaReal();
+	                            duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+	                            totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+
+	                            // Mover nuevamente a descartados
+	                            descartados.add(empleadoData);
 	                        }
 	                    }
-
 	                    String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
 	                    String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
 	                    String estatusEntrada = estatusChequeo(horaEntrada, horaEntradaReal);
@@ -323,6 +388,7 @@ public class ReportePDF {
 	                        .setFontSize(10)
 	                        .setBold()
 	                        .setTextAlignment(TextAlignment.LEFT);
+	                
 	                float estimatedContentHeight = 100 + (tamañoTabla * 11);
 	                float remainingHeight = document.getRenderer().getCurrentArea().getBBox().getHeight() - 50;
 	                if (remainingHeight < estimatedContentHeight) {
@@ -333,11 +399,31 @@ public class ReportePDF {
 	                    document.add(new Paragraph(" ").setMarginTop(20)); // Este margen es solo para el primer bloque de empleados
 	                    primeraVezEnPagina = false;  // Después de este bloque, ya no agregamos el margen
 	                }
-	                // Crear un párrafo vacío con un margen superior
-	                document.add(new Paragraph(" ").setMarginTop(20)); // Ajusta el valor del margen según lo que necesites
-	                document.add(title);
-	                document.add(info);
-	                document.add(table);
+	              
+	                if (tamañoTabla > 35) {
+	                    // Dividir la tabla con un límite de 25 filas
+	                    List<Table> tablasDivididas = dividirTabla(table, 35);
+
+	                    for (int i = 0; i < tablasDivididas.size(); i++) {
+	                        Table tabla = tablasDivididas.get(i);
+	                        if(i!=0) {
+	                            document.add(new Paragraph(" ").setMarginTop(40));
+	                        }else {
+
+	                            document.add(new Paragraph(" ").setMarginTop(15));
+	                        }
+	                        document.add(title);
+	                        document.add(info);
+	                        document.add(tabla);
+	                    }
+	                } else {
+	                    // Si no necesita dividirse, agregar la tabla como está
+	                    document.add(new Paragraph(" ").setMarginTop(10)); // Ajusta el valor del margen según lo que necesites
+	                    document.add(title);
+	                    document.add(info);
+	                    document.add(table);
+	                }
+
 
 	                pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
 	                    @Override
@@ -384,6 +470,83 @@ public class ReportePDF {
 	            e.printStackTrace();
 	        }
 	    }
+	}
+	private List<Table> dividirTabla(Table tablaOriginal, int maxFilasPorTabla) throws java.io.IOException {
+		int numColumnas = tablaOriginal.getNumberOfColumns();
+		
+	    DeviceRgb headerColor = new DeviceRgb(244, 124, 0);
+	    PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+
+	    // Crear las dos nuevas tablas con encabezados
+	    Table primeraTabla = crearTabla(headerColor, boldFont);
+	    Table segundaTabla = crearTabla(headerColor, boldFont);
+	    int filaActual = 0;
+
+	    // Iterar sobre las celdas de la tabla original
+	    for (IElement elemento : tablaOriginal.getChildren()) {
+	        if (elemento instanceof Cell) {
+	            Cell celda = (Cell) elemento;
+
+	            // Determinar a qué tabla agregar la celda
+	            if (filaActual < maxFilasPorTabla * numColumnas) {
+	                primeraTabla.addCell(celda);
+	            } else {
+	                segundaTabla.addCell(celda);
+	            }
+
+	            // Incrementar el contador de filas
+	            filaActual++;
+	        }
+	    }
+
+	    // Crear la lista para devolver las tablas
+	    List<Table> tablasDivididas = new ArrayList<>();
+	    if (!primeraTabla.isEmpty()) {
+	        tablasDivididas.add(primeraTabla);
+	    }
+	    if (!segundaTabla.isEmpty()) {
+	        tablasDivididas.add(segundaTabla);
+	    }
+
+	    return tablasDivididas;
+	}
+
+	private Table crearTabla(DeviceRgb headerColor, PdfFont boldFont) {
+	    // Crear una tabla con 7 columnas (ajusta según tu estructura)
+	    Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
+	            .useAllAvailableWidth();
+
+	    // Agregar los encabezados
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+	    tabla.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
+	            .setBackgroundColor(headerColor)
+	            .setTextAlignment(TextAlignment.CENTER)
+	            .setFontSize(9));
+
+	    return tabla;
 	}
 
 
