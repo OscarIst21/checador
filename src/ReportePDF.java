@@ -55,9 +55,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ReportePDF {
-	
+	 private static String ultimaRuta = System.getProperty("user.home");
 	
 	public void generateReport(List<Checadas> checadasList, String periodo) {
+		
 		String[] planteles = {"Seleccione un plantel",
 			    "Emsad01", "Emsad03", "Emsad06", "Emsad07", "Emsad09", 
 			    "Emsad10", "Emsad11", "Emsad12", "Emsad13", "Emsad14", 
@@ -73,15 +74,14 @@ public class ReportePDF {
 			    if (imageStream == null) {
 			        throw new Exception("No se encontró la imagen: /img/iconReporte.png");
 			    }
-			    // Leer la imagen y crear el ImageIcon
+			    // Leer los bytes y crear un ImageIcon directamente
 			    byte[] imageBytes = imageStream.readAllBytes();
-			    Image img = Toolkit.getDefaultToolkit().createImage(imageBytes);
-			    customIcon = new ImageIcon(img);
+			    customIcon = new ImageIcon(imageBytes);
 			} catch (Exception e) {
 			    System.err.println("Error al cargar el ícono: " + e.getMessage());
-			    // Usa un ícono predeterminado si ocurre un error
 			    customIcon = (ImageIcon) UIManager.getIcon("OptionPane.informationIcon");
 			}
+
 
 			// Crear el panel con el mensaje y el JComboBox
 			JPanel panel = new JPanel(new BorderLayout(5, 5));
@@ -124,28 +124,25 @@ public class ReportePDF {
 			    );
 			    return; // Salir del método si la selección no es válida
 			}
+			 BaseDeDatosManager dbManager = new BaseDeDatosManager();
+		        List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
 
-	    BaseDeDatosManager dbManager = new BaseDeDatosManager();
-	    List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
+		        JFileChooser fileChooser = new JFileChooser(ultimaRuta); // Usar la última ruta
+		        fileChooser.setDialogTitle("Guardar Reporte PDF");
+		        fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
 
-	    // Crear el selector de archivos
-	    JFileChooser fileChooser = new JFileChooser();
-	    fileChooser.setDialogTitle("Guardar Reporte PDF");
-	    fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+		        fileChooser.setSelectedFile(new File(periodo + "_" + plantelSeleccionado + ".pdf"));
 
-	    // Establecer un nombre predeterminado que incluya el período
-	    fileChooser.setSelectedFile(new File(periodo +"_"+ plantelSeleccionado +".pdf"));
+		        int userSelection = fileChooser.showSaveDialog(null);
 
-	    int userSelection = fileChooser.showSaveDialog(null);
+		        if (userSelection == JFileChooser.APPROVE_OPTION) {
+		            File file = fileChooser.getSelectedFile();
+		            ultimaRuta = file.getParent(); // Guardar la última ruta
+		            String filePath = file.getAbsolutePath();
 
-	    if (userSelection == JFileChooser.APPROVE_OPTION) {
-	        File file = fileChooser.getSelectedFile();
-	        String filePath = file.getAbsolutePath();
-
-	        // Asegurarse de que el archivo tenga la extensión ".pdf"
-	        if (!filePath.endsWith(".pdf")) {
-	            filePath += ".pdf";
-	        }
+		            if (!filePath.endsWith(".pdf")) {
+		                filePath += ".pdf";
+		            }
 
 	        try {
 	        	PdfWriter writer = new PdfWriter(filePath);
