@@ -181,6 +181,7 @@ public class ReportePDF {
                 String fechaInicioStr = JOptionPane.showInputDialog("Ingrese la fecha de inicio (yyyy-MM-dd):");
                 String fechaFinStr = JOptionPane.showInputDialog("Ingrese la fecha de fin (yyyy-MM-dd):");
 
+<<<<<<< HEAD
                 // Definir el formateador de fecha
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -211,8 +212,32 @@ public class ReportePDF {
                  .collect(Collectors.groupingBy(Checadas::getId));
 
              boolean primeraVezEnPagina = true;
+=======
+                Map<String, List<Checadas>> checadasPorId = checadasList.stream()
+                    .collect(Collectors.groupingBy(Checadas::getId));
+                boolean primeraVezEnPagina = true;
+                int filasPorPagina = 35;
+                Map<String, Integer> paginasPorId = new HashMap<>();
+                Map<String, Integer> cantidadPorId = new HashMap<>();
+                int totalChecadas = 0;
+                int paginasNecesarias = 0;
+>>>>>>> 6a9140b2e77dad323b801437f7b8794c8780ee6c
 
                 for (String id : checadasPorId.keySet()) {
+                    int cantidadChecadas = checadasPorId.get(id).size();
+                    totalChecadas += cantidadChecadas; // Acumulamos el total de checadas
+                    paginasNecesarias = (int) Math.ceil((double) cantidadChecadas / filasPorPagina);
+
+                    paginasPorId.put(id, paginasNecesarias);
+                    cantidadPorId.put(id, cantidadChecadas);
+                }
+
+                System.out.println("Total de checadas: " + totalChecadas);
+                System.out.println("Cantidad de checadas por ID: " + cantidadPorId);
+                System.out.println("Páginas necesarias por ID: " + paginasPorId);
+
+                for (String id : checadasPorId.keySet()) {
+                	
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
