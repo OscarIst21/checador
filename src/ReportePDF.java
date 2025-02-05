@@ -165,11 +165,7 @@ public class ReportePDF {
                         PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
                         PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
                         Rectangle pageSize = docEvent.getPage().getPageSize();
-                        try {
-                            dibujarEncabezado(canvas, pageSize, periodo);
-                        } catch (java.io.IOException e) {
-                            e.printStackTrace();
-                        }
+                        agregarNumeroPagina(pdfDoc);
                         canvas.release();
                     }
                 });
@@ -182,17 +178,45 @@ public class ReportePDF {
                         .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
                         .add(empleado);
                 }
+                String fechaInicioStr = JOptionPane.showInputDialog("Ingrese la fecha de inicio (yyyy-MM-dd):");
+                String fechaFinStr = JOptionPane.showInputDialog("Ingrese la fecha de fin (yyyy-MM-dd):");
 
-                Map<String, List<Checadas>> checadasPorId = checadasList.stream()
-                    .collect(Collectors.groupingBy(Checadas::getId));
-                boolean primeraVezEnPagina = true;
+                // Definir el formateador de fecha
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                try {
+                    // Parsear las fechas de inicio y fin
+                    LocalDate fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
+                    LocalDate fechaFin = LocalDate.parse(fechaFinStr, formatter);
+
+                    // Aquí puedes realizar cualquier operación con las fechas
+                    JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
+
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.");
+                }
+
+             // Definir las fechas de inicio y fin
+             LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
+             LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
+
+             // Filtrar las checadas dentro del rango de fechas
+             Map<String, List<Checadas>> checadasPorId = checadasList.stream()
+                 .filter(checada -> {
+                     // Convertir el String a LocalDate usando el formato
+                     LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
+                     return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) && 
+                            (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
+                 })
+                 .collect(Collectors.groupingBy(Checadas::getId));
+
+             boolean primeraVezEnPagina = true;
 
                 for (String id : checadasPorId.keySet()) {
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
-                        .setFontSize(10)
-                        .setBold()
+                        .setFontSize(8)
                         .setTextAlignment(TextAlignment.LEFT);
 
                     DeviceRgb headerColor = new DeviceRgb(244, 124, 0);
@@ -247,7 +271,7 @@ public class ReportePDF {
                         String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
                         String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
                         String estatusEntrada = estatusChequeo(horaEntrada, horaEntradaReal);
-                        String estatusSalida = estatusChequeo(horaSalida, horaSalidaReal);
+                        String estatusSalida = estatusSalida(horaSalida, horaSalidaReal);
                         String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
                         Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
 
@@ -285,31 +309,31 @@ public class ReportePDF {
 
                         table.addCell(new Cell().add(new Paragraph(fecha).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(diaSemana).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(estatusEntrada).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(estatusSalida).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
 
                         table.addCell(new Cell().add(new Paragraph(tiempoTrabajo).setFont(boldFont))
                             .setTextAlignment(TextAlignment.CENTER)
-                            .setFontSize(8));
+                            .setFontSize(6));
                         tamañoTabla++;
                     }
 
@@ -323,22 +347,15 @@ public class ReportePDF {
                         "  Faltas días: " + faltas +
                         "  Entrada faltante: " + entradaFaltante +
                         "  Salida faltante: " + salidaFaltante)
-                        .setFontSize(10)
-                        .setBold()
+                        .setFontSize(7)
                         .setTextAlignment(TextAlignment.LEFT);
 
                     
-                    if (primeraVezEnPagina) {
-                        document.add(new Paragraph(" ").setMarginTop(30));
-                        primeraVezEnPagina = false;
-                    }
+                    
                     estimatedContentHeight = 70 + (tamañoTabla * 11);
                     remainingHeight = calcularEspacioDisponible(document);
-                   if (remainingHeight < estimatedContentHeight) {
-                   		document.add(new AreaBreak());
-                       primeraVezEnPagina = true;
-                   }
-                    if (tamañoTabla > 34) {
+                   
+                    if (tamañoTabla > 40) {
                         List<Table> tablasDivididas = dividirTabla(table, 34);
                         for (int i = 0; i < tablasDivididas.size(); i++) {
                             Table tabla = tablasDivididas.get(i);
@@ -346,7 +363,6 @@ public class ReportePDF {
                             if (i != 0) {
                                 document.add(new AreaBreak());
                                 document.add(new Paragraph(" ").setMarginTop(30));
-                                agregarNumeroPagina(pdfDoc);
                                 primeraVezEnPagina = true;
                             }
                             primeraVezEnPagina = true;
@@ -356,6 +372,12 @@ public class ReportePDF {
                         estimatedContentHeight = 100 + (tamañoTabla * 11);
                         agregarTablaConControl(document, table, title, info, estimatedContentHeight);
                     }
+                    if (remainingHeight < estimatedContentHeight) {
+                	   	
+                       	primeraVezEnPagina = true;
+                  		document.add(new AreaBreak());
+                      
+                   }
                      
                 }
 
@@ -447,34 +469,34 @@ public class ReportePDF {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
                 .useAllAvailableWidth();
 
-        tabla.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont))
+        tabla.addHeaderCell(new Cell().add(new Paragraph("Fecha"))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
         tabla.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
                 .setBackgroundColor(headerColor)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(9));
+                .setFontSize(7));
 
         return tabla;
     }
@@ -520,6 +542,34 @@ public class ReportePDF {
         document.add(title);
         document.add(info);
         document.add(table);
+    }
+
+    public String estatusSalida(String horaSalida, String horaReal) {
+        if (horaSalida.equals("00:00") || horaSalida.isEmpty()) {
+            return "Falta";
+        }
+        if (horaReal == null || horaReal.equals("00:00")) {
+            return "";
+        }
+
+        String[] partesSalida = horaSalida.split(":");
+        String[] partesReal = horaReal.split(":");
+
+        int horasSalida = Integer.parseInt(partesSalida[0]);
+        int minutosSalida = Integer.parseInt(partesSalida[1]);
+
+        int horasReal = Integer.parseInt(partesReal[0]);
+        int minutosReal = Integer.parseInt(partesReal[1]);
+
+        int diferenciaEnMinutos = (horasSalida - horasReal) * 60 + (minutosSalida - minutosReal);
+
+        if (diferenciaEnMinutos < 0) {
+            return "Salida anticipada"; // Si la salida es antes de la hora real
+        } else if (diferenciaEnMinutos <= 30) {
+            return "Tolerancia"; // Si la salida es menos de 30 minutos después de la hora real
+        } else {
+            return "30 min después"; // Si la salida es más de 30 minutos después de la hora real
+        }
     }
 
     public String estatusChequeo(String horaChequeo, String horaReal) {
