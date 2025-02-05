@@ -186,8 +186,27 @@ public class ReportePDF {
                 Map<String, List<Checadas>> checadasPorId = checadasList.stream()
                     .collect(Collectors.groupingBy(Checadas::getId));
                 boolean primeraVezEnPagina = true;
+                int filasPorPagina = 35;
+                Map<String, Integer> paginasPorId = new HashMap<>();
+                Map<String, Integer> cantidadPorId = new HashMap<>();
+                int totalChecadas = 0;
+                int paginasNecesarias = 0;
 
                 for (String id : checadasPorId.keySet()) {
+                    int cantidadChecadas = checadasPorId.get(id).size();
+                    totalChecadas += cantidadChecadas; // Acumulamos el total de checadas
+                    paginasNecesarias = (int) Math.ceil((double) cantidadChecadas / filasPorPagina);
+
+                    paginasPorId.put(id, paginasNecesarias);
+                    cantidadPorId.put(id, cantidadChecadas);
+                }
+
+                System.out.println("Total de checadas: " + totalChecadas);
+                System.out.println("Cantidad de checadas por ID: " + cantidadPorId);
+                System.out.println("Páginas necesarias por ID: " + paginasPorId);
+
+                for (String id : checadasPorId.keySet()) {
+                	
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
