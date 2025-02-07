@@ -15,6 +15,7 @@ import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.IElement;
@@ -61,8 +62,6 @@ public class ReportePDF {
     private static String ultimaRuta = System.getProperty("user.home");
 
     int tamañoTabla = 0;
-    float estimatedContentHeight ;
-    float remainingHeight ;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
     LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
@@ -191,7 +190,6 @@ public class ReportePDF {
                         agregarNumeroPagina(pdfDoc);
                         try {
                             dibujarEncabezado(canvas, pageSize, periodoFinal);
-                            document.add(new Paragraph(" ").setMarginTop(60));
                         } catch (java.io.IOException e) {
                             e.printStackTrace();
                         }
@@ -224,7 +222,8 @@ public class ReportePDF {
             	    String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
             	    Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
             	        .setFontSize(8)
-            	        .setTextAlignment(TextAlignment.LEFT);
+            	        .setTextAlignment(TextAlignment.LEFT)
+            	        .setMultipliedLeading(0.6f);
 
             	    PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
             	    Table table = crearTabla();
@@ -342,38 +341,45 @@ public class ReportePDF {
             	        // Agregar la fila a la tabla
             	        table.addCell(new Cell().add(new Paragraph(checada.getFecha()).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(diaSemana).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(estatusEntrada).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(estatusSalida).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        table.addCell(new Cell().add(new Paragraph(tiempoTrabajo).setFont(boldFont))
             	                .setTextAlignment(TextAlignment.LEFT)
-            	                .setFontSize(6)
-            	                .setBorder(Border.NO_BORDER));
+            	                .setFontSize(6).setBorder(Border.NO_BORDER)
+            	                .setPadding(2) // Reduce el espacio interno de la celda
+            	                .setMargin(0)); // Elimina el espacio externo
 
             	        tamañoTabla++;
             	    }
@@ -383,29 +389,68 @@ public class ReportePDF {
                     long horasTrabajadas = totalHorasTrabajadas.toHours();
                     long minutosTrabajados = totalHorasTrabajadas.toMinutes() % 60;
 
-                    Paragraph info = new Paragraph("Total de horas a cubrir: " + totalHoras + ":" + (totalMinutos < 10 ? "0" + totalMinutos : totalMinutos) +
-                        "  Horas trabajadas: " + horasTrabajadas + ":" + (minutosTrabajados < 10 ? "0" + minutosTrabajados : minutosTrabajados) +
-                        "  Faltas días: " + faltas +
-                        "  Entrada faltante: " + entradaFaltante +
-                        "  Salida faltante: " + salidaFaltante)
-                        .setFontSize(7)
-                        .setTextAlignment(TextAlignment.LEFT);
+                 // Crear la tabla con 5 columnas
+                    Table info = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1}))
+                            .useAllAvailableWidth()
+                            .setBorder(Border.NO_BORDER); 
 
-                    
-                    float remainingHeight = calcularEspacioDisponible(document);
-                    float estimatedContentHeight = 120 + (tamañoTabla * 11);
+                    // Agregar cada dato en su celda sin bordes
+                    info.addCell(new Cell().add(new Paragraph("Total horas: " + totalHoras + ":" + 
+                            (totalMinutos < 10 ? "0" + totalMinutos : totalMinutos)))
+                            .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
 
-                    // Verificar si hay suficiente espacio para la tabla
-                    if (remainingHeight < estimatedContentHeight) {
-                        document.add(new AreaBreak()); // Agregar un salto de página
+                    info.addCell(new Cell().add(new Paragraph("Horas trabajadas: " + horasTrabajadas + ":" + 
+                            (minutosTrabajados < 10 ? "0" + minutosTrabajados : minutosTrabajados)))
+                            .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
+
+                    info.addCell(new Cell().add(new Paragraph("Faltas días: " + faltas))
+                            .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
+
+                    info.addCell(new Cell().add(new Paragraph("Entrada faltante: " + entradaFaltante))
+                            .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
+
+                    info.addCell(new Cell().add(new Paragraph("Salida faltante: " + salidaFaltante))
+                            .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
+
+                    // Agregar fila vacía con borde inferior delgado
+                    info.addCell(new Cell(1, 5) // 1 fila, 5 columnas unidas
+                    		.setBorderBottom(new SolidBorder(0.2f)));
+
+
+                    if (primeraVezEnPagina) {
+                        document.add(new Paragraph(" ").setMarginTop(35));
+                        primeraVezEnPagina = false;
                     }
 
-                    // Agregar el título, la tabla y la información
-                    document.add(title);
-                    document.add(table);
-                    document.add(info);
-                }
+                    // Calcular espacio disponible en la página actual
+                    float remainingHeight = calcularEspacioDisponible(document);
+                    float estimatedContentHeight = 120 + (tamañoTabla * 10);
+                    float alturaFila = 10; // Estimación de la altura de cada fila
+                    int maxFilas = calcularMaxFilas(document);
 
+                    if (remainingHeight < estimatedContentHeight) {
+                        document.add(title);
+
+                        // Dividir la tabla usando maxFilas calculado
+                        List<Table> tablasDivididas = dividirTabla(table, maxFilas);
+                        
+                        int i = 0;
+                        for (Table tablaParcial : tablasDivididas) {
+                            if (i == 1) {
+                                document.add(new AreaBreak());
+                                document.add(new Paragraph(" ").setMarginTop(35));
+                            }
+                            document.add(tablaParcial);
+                            i++;
+                        }
+                        document.add(info);
+                    } else {
+                        document.add(title);
+                        document.add(table);
+                        document.add(info);
+                    }
+                    
+             	}
                 agregarNumeroPagina(pdfDoc);
                 document.close();
 
@@ -424,6 +469,16 @@ public class ReportePDF {
             }
         }
     }
+    private int calcularMaxFilas(Document document) {
+        float espacioDisponible = calcularEspacioDisponible(document); // Espacio disponible en la página
+        float espacioFijo = 30; // Ajusta según lo que ocupan otros elementos (title, info, márgenes, etc.)
+
+        float espacioRestante = espacioDisponible - espacioFijo;
+        float alturaFila = 7 + 4; // Tamaño de fuente 7 + margen de seguridad 4
+
+        return (int) (espacioRestante / alturaFila); // Número máximo de filas que caben
+    }
+
     private void agregarNumeroPagina(PdfDocument pdfDoc) {
         pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
             @Override
@@ -452,48 +507,41 @@ public class ReportePDF {
         });
     }
     private void dibujarEncabezado(PdfCanvas canvas, Rectangle pageSize, String periodo) throws java.io.IOException {
-        float marginTop = 50; // Aumenta el margen superior para evitar superposiciones
-        float y = pageSize.getTop() - marginTop; // Posición inicial del encabezado
+        float marginTop = 20;
+        float y = pageSize.getTop() - 30;
 
-        // Dibujar el logo
         InputStream imageStream = getClass().getResourceAsStream("/img/logoPagina.png");
         if (imageStream == null) {
             throw new FileNotFoundException("No se encontró la imagen: /img/logoPagina.png");
         }
         ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
-        float targetWidth = 100; // Ancho reducido
-        float targetHeight = 28; // Alto reducido
+        float targetWidth = 113;
+        float targetHeight = 32;
         float imageX = 40;
         float imageY = pageSize.getTop() - targetHeight - marginTop;
         canvas.addImageFittedIntoRectangle(imageData, new Rectangle(imageX, imageY, targetWidth, targetHeight), false);
 
-        // Dibujar el texto del encabezado
         PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
         canvas.beginText();
-        canvas.setFontAndSize(boldFont, 8); // Tamaño de fuente reducido
+        canvas.setFontAndSize(boldFont, 10);
         canvas.setFillColor(new DeviceRgb(57, 166, 100));
         String text = "Procesado en Dirección General - Departamento de Informática";
-        float textWidth = boldFont.getWidth(text, 8);
+        float textWidth = boldFont.getWidth(text, 10);
         float textX = pageSize.getRight() - textWidth - 35;
-        float textY = imageY + 14; // Ajustar la posición vertical
+        float textY = imageY + 14;
         canvas.moveText(textX, textY);
         canvas.showText(text);
         canvas.endText();
 
-        // Título del reporte
         String encabezado = "REPORTE DETALLADO DE REGISTRO ENTRADA Y SALIDA EN EL PERIODO: " + periodo;
-        float textWidthEncabezado = boldFont.getWidth(encabezado, 9); // Tamaño de fuente reducido
+        float textWidthEncabezado = boldFont.getWidth(encabezado, 11);
         float x = (pageSize.getWidth() - textWidthEncabezado) / 2;
         canvas.setFillColor(new DeviceRgb(0, 0, 0));
         canvas.beginText();
-        canvas.setFontAndSize(boldFont, 9); // Tamaño de fuente reducido
-        canvas.moveText(x, y - 25); // Ajustar la posición vertical
+        canvas.setFontAndSize(boldFont, 11);
+        canvas.moveText(x, y - 35);
         canvas.showText(encabezado);
         canvas.endText();
-
-        // Agregar espacio adicional después del encabezado
-        float espacioDespuesDelEncabezado = 60; // Espacio adicional después del encabezado
-        canvas.moveText(0, -espacioDespuesDelEncabezado); // Mueve el cursor hacia abajo
     }
     private Table crearTabla() throws java.io.IOException {
         // Crear la tabla con 7 columnas y sin bordes
@@ -586,6 +634,8 @@ public class ReportePDF {
 
         return tablasDivididas;
     }
+
+
     private float calcularEspacioDisponible(Document document) {
         // Obtener la altura disponible en la página actual
         LayoutArea currentArea = document.getRenderer().getCurrentArea();
