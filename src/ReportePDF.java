@@ -146,7 +146,7 @@ public class ReportePDF {
             // Parsear las fechas de inicio y fin
              fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
              fechaFin = LocalDate.parse(fechaFinStr, formatter);
-
+             tamañoTabla=(int)ChronoUnit.DAYS.between(fechaInicio, fechaFin);
             // Aquí puedes realizar cualquier operación con las fechas
             JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
              periodoReporte=fechaInicio+" - "+fechaFin;
@@ -235,7 +235,6 @@ public class ReportePDF {
             	    int faltas = 0;
             	    int entradaFaltante = 0;
             	    int salidaFaltante = 0;
-            	    tamañoTabla = 0;
 
             	    Map<String, Map<String, List<EmpleadoDatosExtra>>> horariosDescartados = new HashMap<>();
 
@@ -381,7 +380,7 @@ public class ReportePDF {
             	                .setPadding(2) // Reduce el espacio interno de la celda
             	                .setMargin(0)); // Elimina el espacio externo
 
-            	        tamañoTabla++;
+            	        //tamañoTabla++;
             	    }
 
                     long totalHoras = totalHorasACubrir.toHours();
@@ -424,11 +423,22 @@ public class ReportePDF {
 
                     // Calcular espacio disponible en la página actual
                     float remainingHeight = calcularEspacioDisponible(document);
-                    float estimatedContentHeight = 120 + (tamañoTabla * 10);
+                    float estimatedContentHeight = 90 + (tamañoTabla * 10);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
 
                     if (remainingHeight < estimatedContentHeight) {
+                    	if(remainingHeight<40) {
+
+                            document.add(new AreaBreak());
+                            document.add(new Paragraph(" ").setMarginTop(35));
+
+                            document.add(title);
+                            document.add(table);
+                            document.add(info);
+                            break;
+                    	}
+                    	
                         document.add(title);
 
                         // Dividir la tabla usando maxFilas calculado
@@ -555,37 +565,37 @@ public class ReportePDF {
         // Encabezado con texto alineado a la izquierda y sin bordes
         tabla.addHeaderCell(new Cell().add(new Paragraph("Fecha").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)  // Alineado a la izquierda
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Día").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Entrada").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Hora Salida").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Estatus").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         tabla.addHeaderCell(new Cell().add(new Paragraph("Tiempo Trabajado").setFont(boldFont))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setFontSize(7)
+                .setFontSize(7).setBackgroundColor(new DeviceRgb(57, 166, 100))
                 .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
 
         return tabla;
@@ -607,33 +617,42 @@ public class ReportePDF {
 
     private List<Table> dividirTabla(Table tablaOriginal, int maxFilasPorTabla) throws Exception {
         int numColumnas = tablaOriginal.getNumberOfColumns();
-        DeviceRgb headerColor = new DeviceRgb(244, 124, 0);
-        PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
 
         List<Table> tablasDivididas = new ArrayList<>();
-        Table tablaActual = crearTabla();
-        int filaActual = 0;
+        Table tablaMax = crearTabla();
+        Table tablaResto = crearTabla();
 
+        int filaActual = 0;
+        boolean maxTablaLlena = false;
+
+        // Itera sobre todas las celdas de la tabla original
         for (IElement elemento : tablaOriginal.getChildren()) {
             if (elemento instanceof Cell) {
                 Cell celda = (Cell) elemento;
-                tablaActual.addCell(celda);
-                filaActual++;
+                
+                // Agregar la celda a la primera tabla hasta alcanzar el límite de filas
+                if (!maxTablaLlena) {
+                    tablaMax.addCell(celda);
+                    filaActual++;
 
-                if (filaActual >= maxFilasPorTabla * numColumnas) {
-                    tablasDivididas.add(tablaActual);
-                    tablaActual = crearTabla();
-                    filaActual = 0;
+                    // Si se alcanzó el máximo de filas para la primera tabla, empieza a llenar la segunda
+                    if (filaActual >= maxFilasPorTabla * numColumnas) {
+                        maxTablaLlena = true;
+                    }
+                } else {
+                    // Rellenar la segunda tabla con las celdas restantes
+                    tablaResto.addCell(celda);
                 }
             }
         }
 
-        if (!tablaActual.isEmpty()) {
-            tablasDivididas.add(tablaActual);
-        }
+        // Agregar ambas tablas a la lista
+        tablasDivididas.add(tablaMax);
+        tablasDivididas.add(tablaResto);
 
         return tablasDivididas;
     }
+
 
 
     private float calcularEspacioDisponible(Document document) {
@@ -654,12 +673,6 @@ public class ReportePDF {
         document.add(title);
         document.add(table);
         document.add(info);
-
-        // Agregar una línea separadora
-        Paragraph line = new Paragraph("____________________________________________________")
-                .setTextAlignment(TextAlignment.CENTER)
-                .setFontSize(6);
-        document.add(line);
     }
 
     public String estatusSalida(String horaSalida, String horaReal) {
