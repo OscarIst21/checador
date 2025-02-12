@@ -453,7 +453,7 @@ public class ReportePDF {
                     float estimatedContentHeight = 120 + (tamañoTabla * 11);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
-                    if(remainingHeight<45) {
+                    if(remainingHeight<35) {
 
                         document.add(new AreaBreak());
                         document.add(new Paragraph(" ").setMarginTop(35));
