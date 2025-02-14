@@ -65,7 +65,7 @@ public class ReportePDF {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
     LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
-    public void generateReport(List<Checadas> checadasList, String periodo) {
+    public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
     	String periodoReporte=periodo;
         String[] planteles = {
             "Seleccione un plantel", "Dirección General", "Contraloria y Juridico", "Caseta de vigilancia", 
@@ -181,22 +181,27 @@ public class ReportePDF {
                 Document document = new Document(pdfDoc);
                 
                 final String periodoFinal = periodoReporte;
-                pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
-                    @Override
-                    public void handleEvent(com.itextpdf.kernel.events.Event event) {
-                        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
-                        PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
-                        Rectangle pageSize = docEvent.getPage().getPageSize();
-                        agregarNumeroPagina(pdfDoc);
-                        try {
-                            dibujarEncabezado(canvas, pageSize, periodoFinal);
-                        } catch (java.io.IOException e) {
-                            e.printStackTrace();
+                if (incluirEncabezado || incluirNumeroPagina) {
+                    pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
+                        @Override
+                        public void handleEvent(com.itextpdf.kernel.events.Event event) {
+                            PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+                            PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
+                            Rectangle pageSize = docEvent.getPage().getPageSize();
+                            if (incluirNumeroPagina) {
+                                agregarNumeroPagina(pdfDoc);
+                            }
+                            try {
+                            	if(incluirEncabezado) {
+                                dibujarEncabezado(canvas, pageSize, periodoFinal);
+                            	}
+                            } catch (java.io.IOException e) {
+                                e.printStackTrace();
+                            }
+                            canvas.release();
                         }
-                        canvas.release();
-                    }
-                });
-
+                    });
+                }
                 Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
                 for (EmpleadoDatosExtra empleado : empleadosDatos) {
                     String diaEmpleado = empleado.getDiaN().toLowerCase();
@@ -443,7 +448,7 @@ public class ReportePDF {
                             .setBorderBottom(new SolidBorder(0.05f)));
 
 
-                    if (primeraVezEnPagina) {
+                    if (primeraVezEnPagina && incluirEncabezado) {
                         document.add(new Paragraph(" ").setMarginTop(35));
                         primeraVezEnPagina = false;
                     }
@@ -453,6 +458,7 @@ public class ReportePDF {
                     float estimatedContentHeight = 120 + (tamañoTabla * 11);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
+                    if(incluirEncabezado) {
                     if(remainingHeight<35) {
 
                         document.add(new AreaBreak());
@@ -487,8 +493,13 @@ public class ReportePDF {
                         document.add(new Paragraph(" ").setMarginTop(7));
                     }
                     
-             	}
-                agregarNumeroPagina(pdfDoc);
+             	}else
+             	{
+             		document.add(title);
+                    document.add(table);
+                    document.add(info);
+                    document.add(new Paragraph(" ").setMarginTop(7));
+             	}}
                 document.close();
 
                 System.out.println("PDF generado en: " + filePath);

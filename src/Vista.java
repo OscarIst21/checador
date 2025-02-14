@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -31,6 +32,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JToggleButton;
 import javax.swing.JOptionPane;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -89,6 +91,8 @@ public class Vista extends JFrame {
     JButton btnSelectFile3= new JButton();
     public boolean reporteExcepcionesCorrecto= false;
     private String lastPath = System.getProperty("user.home");
+    private boolean incluirEncabezado = true; // Por defecto, incluir encabezado
+    private boolean incluirNumeroPagina = true; 
     private JTabbedPane tabbedPane = new JTabbedPane();
     public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -196,7 +200,7 @@ public class Vista extends JFrame {
         btnSave.setFocusable(false);
         btnSave.setForeground(Color.WHITE);
         btnSave.setBackground(new Color(54, 165, 85));
-        btnSave.setBounds(68, 524, 300, 50);
+        btnSave.setBounds(68, 524, 245, 50);
 
         
         contentPane.add(btnSave);
@@ -237,7 +241,7 @@ public class Vista extends JFrame {
         g2dFooter.dispose(); 
 
         footer.setIcon(new ImageIcon(resizedFooterImage));
-        footer.setBounds(0, 528, 1280, 155);
+        footer.setBounds(-14, 541, 1280, 155);
 
 
         panelTablasExcel = new JPanel();
@@ -272,6 +276,13 @@ public class Vista extends JFrame {
         btnReiniciar.setBounds(68, 164, 300, 50);
         contentPane.add(btnReiniciar);
         
+        JButton btnConfig = new JButton("");
+        btnConfig.setIcon(new ImageIcon(Vista.class.getResource("/img/IconConfiguracion.png")));
+        btnConfig.setBounds(318, 524, 50, 50);
+        btnConfig.setFocusable(false);
+        btnConfig.setBackground(new Color(54, 165, 85));
+        contentPane.add(btnConfig);
+        
         btnReiniciar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -299,6 +310,37 @@ public class Vista extends JFrame {
             	reporteExcepcionesCorrecto=false;
                 // Mensaje de confirmación
                 JOptionPane.showMessageDialog(Vista.this, "Todos los datos y configuraciones han sido reseteados.");
+            }
+        });
+        btnConfig.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Crear un panel para las opciones de configuración
+                JPanel configPanel = new JPanel(new GridLayout(2, 1)); // 2 filas, 1 columna
+
+                // Crear botones de tipo "apagador" (JCheckBox)
+                JCheckBox encabezadoCheckBox = new JCheckBox("Incluir encabezado", incluirEncabezado);
+                JCheckBox numeroPaginaCheckBox = new JCheckBox("Incluir número de página", incluirNumeroPagina);
+
+                // Agregar los botones al panel
+                configPanel.add(encabezadoCheckBox);
+                configPanel.add(numeroPaginaCheckBox);
+
+                // Mostrar el JOptionPane con las opciones
+                int result = JOptionPane.showConfirmDialog(
+                    Vista.this, // Ventana padre
+                    configPanel, // Panel con las opciones
+                    "Configuración de Reporte", // Título del diálogo
+                    JOptionPane.OK_CANCEL_OPTION, // Botones OK y Cancelar
+                    JOptionPane.PLAIN_MESSAGE // Sin ícono
+                );
+
+                // Si el usuario hace clic en "OK", guardar las configuraciones
+                if (result == JOptionPane.OK_OPTION) {
+                    incluirEncabezado = encabezadoCheckBox.isSelected();
+                    incluirNumeroPagina = numeroPaginaCheckBox.isSelected();
+                    JOptionPane.showMessageDialog(Vista.this, "Configuración guardada correctamente.");
+                }
             }
         });
         btnSelectFile.addActionListener(new ActionListener() {
@@ -417,15 +459,12 @@ public class Vista extends JFrame {
                 }
             }
         });
-
-
         btnSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
                 actualizarChecadasConEmpleados();
                 reporte = new ReportePDF();
-                reporte.generateReport(checadas, periodo);
+                reporte.generateReport(checadas, periodo, incluirEncabezado, incluirNumeroPagina);
             }
         });
     }
@@ -451,6 +490,7 @@ public class Vista extends JFrame {
             tabbedPane.remove(tabIndex);
         }
     }
+  
     private void mostrarTablaDesdeExcel(File file, String hoja) {
 
         try (FileInputStream fis = new FileInputStream(file);
