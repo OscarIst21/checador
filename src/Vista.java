@@ -133,23 +133,33 @@ public class Vista extends JFrame {
         
 
         
+        JButton btnAyuda = new JButton("Ayuda");
+        btnAyuda.setIcon(new ImageIcon(Vista.class.getResource("/img/iconAyuda.png")));
+        btnAyuda.setBounds(1164, 8, 92, 35);
+        btnAyuda.setBackground(new Color(54, 165, 85));
+        btnAyuda.setFocusable(false);
+        btnAyuda.setHorizontalAlignment(SwingConstants.LEFT); 
+        btnAyuda.setHorizontalTextPosition(SwingConstants.RIGHT); 
+        btnAyuda.setMargin(new Insets(0, 10, 0, 0)); 
+        btnAyuda.setForeground(new Color(255, 255, 255));
+        contentPane.add(btnAyuda);
+        
         JLabel lblNewLabel_4 = new JLabel("Colegio de Estudios Científicos y Tecnológicos del estado de Baja California Sur");
         lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
         lblNewLabel_4.setFont(new Font("Arial Narrow", Font.BOLD, 24));
         lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
         
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.4  12/02/25");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.5  19/02/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
         
-        btnSelectFile = new JButton("Seleccionar Archivo Checadas");
+        btnSelectFile = new JButton("   Seleccionar Archivo Checadas");
         btnSelectFile.setHorizontalAlignment(SwingConstants.LEFT); 
         btnSelectFile.setHorizontalTextPosition(SwingConstants.RIGHT); 
         btnSelectFile.setIcon(new ImageIcon(Vista.class.getResource("/img/iconXls.png")));
         btnSelectFile.setMargin(new Insets(0, 10, 0, 0)); 
-
         btnSelectFile.setForeground(new Color(255, 255, 255));
         btnSelectFile.setFocusable(false);
         btnSelectFile.setFont(new Font("Tahoma", Font.BOLD, 11));
@@ -157,7 +167,7 @@ public class Vista extends JFrame {
         btnSelectFile.setBounds(68, 244, 300, 50);
         contentPane.add(btnSelectFile);
 
-        btnSelectFile2 = new JButton("Seleccionar Archivo Excel Empleados");
+        btnSelectFile2 = new JButton("  Seleccionar Archivo Empleados");
         btnSelectFile2.setHorizontalAlignment(SwingConstants.LEFT); 
         btnSelectFile2.setHorizontalTextPosition(SwingConstants.RIGHT); 
         btnSelectFile2.setIcon(new ImageIcon(Vista.class.getResource("/img/IconEmpleado.png")));
@@ -167,11 +177,11 @@ public class Vista extends JFrame {
         btnSelectFile2.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile2.setFocusable(false);
         btnSelectFile2.setBackground(new Color(54, 165, 85));
-        btnSelectFile2.setBounds(68, 324, 300, 50);
+        btnSelectFile2.setBounds(68, 324, 245, 50);
         btnSelectFile2.setEnabled(false);
         contentPane.add(btnSelectFile2);
 
-        btnSelectFile3 = new JButton("Seleccionar Excel Horarios (Layout)");
+        btnSelectFile3 = new JButton("  Seleccionar Archivo Horarios");
         btnSelectFile3.setHorizontalAlignment(SwingConstants.LEFT); 
         btnSelectFile3.setHorizontalTextPosition(SwingConstants.RIGHT); 
         btnSelectFile3.setIcon(new ImageIcon(Vista.class.getResource("/img/IconLayout.png")));
@@ -181,7 +191,7 @@ public class Vista extends JFrame {
         btnSelectFile3.setFont(new Font("Tahoma", Font.BOLD, 11));
         btnSelectFile3.setFocusable(false);
         btnSelectFile3.setBackground(new Color(54, 165, 85));
-        btnSelectFile3.setBounds(68, 404, 300, 50);
+        btnSelectFile3.setBounds(68, 404, 245, 50);
         btnSelectFile3.setEnabled(false);
 
         contentPane.add(btnSelectFile3);
@@ -193,7 +203,7 @@ public class Vista extends JFrame {
         headerGreen.setBackground(new Color(54, 165, 85));
         contentPane.add(headerGreen);
 
-        JButton btnSave = new JButton("               Generar Reporte");
+        JButton btnSave = new JButton("          Generar Reporte");
         btnSave.setEnabled(false);
         btnSave.setHorizontalAlignment(SwingConstants.LEFT);
         btnSave.setHorizontalTextPosition(SwingConstants.RIGHT);
@@ -286,6 +296,21 @@ public class Vista extends JFrame {
         btnConfig.setFocusable(false);
         btnConfig.setBackground(new Color(54, 165, 85));
         contentPane.add(btnConfig);
+        
+        JButton btnEditarHorario = new JButton("");
+        btnEditarHorario.setIcon(new ImageIcon(Vista.class.getResource("/img/IconEditar.png")));
+        btnEditarHorario.setFocusable(false);
+        btnEditarHorario.setBackground(new Color(54, 165, 85));
+        btnEditarHorario.setBounds(318, 404, 50, 50);
+        contentPane.add(btnEditarHorario);
+        
+        JButton btnEditarEmpleado = new JButton("");
+        btnEditarEmpleado.setIcon(new ImageIcon(Vista.class.getResource("/img/IconEditar.png")));
+        btnEditarEmpleado.setFocusable(false);
+        btnEditarEmpleado.setBackground(new Color(54, 165, 85));
+        btnEditarEmpleado.setBounds(318, 324, 50, 50);
+        contentPane.add(btnEditarEmpleado);
+
         
         btnReiniciar.addActionListener(new ActionListener() {
             @Override
