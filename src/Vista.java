@@ -50,10 +50,12 @@ import modelos.EmpleadoDatosExtra;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.LayoutManager;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -523,9 +525,232 @@ public class Vista extends JFrame {
                 filtroIdGuardado=null;
             }
         });
+        btnEditarEmpleado.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JDialog dialog = new JDialog(Vista.this, "Editar Empleado", true);
+                dialog.setContentPane(crearPanelEditarEmpleado());
+                dialog.pack();
+                dialog.setLocationRelativeTo(Vista.this);
+                dialog.setVisible(true);
+            }
+        });
 
+        btnEditarHorario.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JDialog dialog = new JDialog(Vista.this, "Editar Horario", true);
+                dialog.setContentPane(crearPanelEditarHorario());
+                dialog.pack();
+                dialog.setLocationRelativeTo(Vista.this);
+                dialog.setVisible(true);
+            }
+        });
+    }
+    private JPanel crearPanelEditarEmpleado() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10)); // BorderLayout con márgenes
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Márgenes externos
+
+        // Panel para los campos de entrada
+        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10)); // 4 filas, 2 columnas, con márgenes
+        JLabel lblId = new JLabel("ID:");
+        JTextField txtId = new JTextField();
+        JLabel lblNombre = new JLabel("Nombre:");
+        JTextField txtNombre = new JTextField();
+        JLabel lblPuesto = new JLabel("Puesto:");
+        JTextField txtPuesto = new JTextField();
+        JLabel lblJornada = new JLabel("Tipo de Jornada:");
+        JTextField txtJornada = new JTextField();
+
+        camposPanel.add(lblId);
+        camposPanel.add(txtId);
+        camposPanel.add(lblNombre);
+        camposPanel.add(txtNombre);
+        camposPanel.add(lblPuesto);
+        camposPanel.add(txtPuesto);
+        camposPanel.add(lblJornada);
+        camposPanel.add(txtJornada);
+
+        // Panel para los botones
+        JPanel botonesPanel = new JPanel((LayoutManager) new FlowLayout(FlowLayout.CENTER, 10, 10)); // Botones centrados
+        JButton btnBuscar = new JButton("Buscar");
+        JButton btnGuardar = new JButton("Guardar");
+
+        botonesPanel.add(btnBuscar);
+        botonesPanel.add(btnGuardar);
+
+        // Agregar los paneles al panel principal
+        panel.add(camposPanel, BorderLayout.CENTER);
+        panel.add(botonesPanel, BorderLayout.SOUTH);
+
+        // ActionListeners para los botones
+        btnBuscar.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            if (!id.isEmpty()) {
+                BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                Empleado empleado = dbManager.obtenerEmpleadoPorId(id);
+                if (empleado != null) {
+                    txtNombre.setText(empleado.getNombre());
+                    txtPuesto.setText(empleado.getEmpleadoPuesto());
+                    txtJornada.setText(empleado.getJornada());
+                } else {
+                    JOptionPane.showMessageDialog(this, "No se encontró un empleado con esa ID.");
+                    txtNombre.setText("");
+                    txtPuesto.setText("");
+                    txtJornada.setText("");
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+            }
+        });
+
+        btnGuardar.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            String nombre = txtNombre.getText().trim();
+            String puesto = txtPuesto.getText().trim();
+            String jornada = txtJornada.getText().trim();
+
+            if (!id.isEmpty() && !nombre.isEmpty() && !puesto.isEmpty() && !jornada.isEmpty()) {
+                BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                Empleado empleado = new Empleado(id, nombre, puesto, jornada);
+                dbManager.insertarOActualizarEmpleado(empleado);
+                JOptionPane.showMessageDialog(this, "Empleado guardado con éxito.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.");
+            }
+        });
+
+        return panel;
     }
 
+    private JPanel crearPanelEditarHorario() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10)); // BorderLayout con márgenes
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Márgenes externos
+
+        // Panel para los campos de entrada
+        JPanel camposPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // GridLayout dinámico
+        JLabel lblId = new JLabel("ID:");
+        JTextField txtId = new JTextField();
+        JCheckBox chkMultiplesHorarios = new JCheckBox("¿Tiene más de un horario por día?");
+        JTextField[] txtHorarios = new JTextField[14]; // 7 días + 7 días adicionales si hay múltiples horarios
+
+        camposPanel.add(lblId);
+        camposPanel.add(txtId);
+        camposPanel.add(chkMultiplesHorarios);
+        camposPanel.add(new JLabel()); // Espacio en blanco
+
+        String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        for (int i = 0; i < 7; i++) {
+            camposPanel.add(new JLabel(dias[i]));
+            txtHorarios[i] = new JTextField();
+            camposPanel.add(txtHorarios[i]);
+
+            if (chkMultiplesHorarios.isSelected()) {
+                camposPanel.add(new JLabel(dias[i] + " (Segundo horario)"));
+                txtHorarios[i + 7] = new JTextField();
+                camposPanel.add(txtHorarios[i + 7]);
+            }
+        }
+
+        // Panel para los botones
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Botones centrados
+        JButton btnBuscar = new JButton("Buscar");
+        JButton btnGuardar = new JButton("Guardar");
+
+        botonesPanel.add(btnBuscar);
+        botonesPanel.add(btnGuardar);
+
+        // Agregar los paneles al panel principal
+        panel.add(camposPanel, BorderLayout.CENTER);
+        panel.add(botonesPanel, BorderLayout.SOUTH);
+
+        // ActionListeners para los botones
+        btnBuscar.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            if (!id.isEmpty()) {
+                BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                List<EmpleadoDatosExtra> horarios = dbManager.obtenerHorariosPorId(id);
+
+                if (!horarios.isEmpty()) {
+                    for (EmpleadoDatosExtra horario : horarios) {
+                        int diaIndex = obtenerIndiceDia(horario.getDiaN());
+                        if (diaIndex != -1) {
+                            txtHorarios[diaIndex].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
+                            if (chkMultiplesHorarios.isSelected() && diaIndex + 7 < txtHorarios.length) {
+                                txtHorarios[diaIndex + 7].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
+                            }
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "No se encontraron horarios para el empleado con ID: " + id);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+            }
+        });
+
+        btnGuardar.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            if (!id.isEmpty()) {
+                BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                List<EmpleadoDatosExtra> horarios = new ArrayList<>();
+
+                for (int i = 0; i < 7; i++) {
+                    String horario = txtHorarios[i].getText().trim();
+                    if (!horario.isEmpty()) {
+                        String[] partes = horario.split(" - ");
+                        if (partes.length == 2) {
+                            EmpleadoDatosExtra horarioEntrada = new EmpleadoDatosExtra();
+                            horarioEntrada.setId(id);
+                            horarioEntrada.setDiaN(dias[i]);
+                            horarioEntrada.setHoraEntradaReal(partes[0]);
+                            horarioEntrada.setHoraSalidaReal(partes[1]);
+                            horarios.add(horarioEntrada);
+                        }
+                    }
+
+                    if (chkMultiplesHorarios.isSelected() && i + 7 < txtHorarios.length) {
+                        String horario2 = txtHorarios[i + 7].getText().trim();
+                        if (!horario2.isEmpty()) {
+                            String[] partes = horario2.split(" - ");
+                            if (partes.length == 2) {
+                                EmpleadoDatosExtra horarioSalida = new EmpleadoDatosExtra();
+                                horarioSalida.setId(id);
+                                horarioSalida.setDiaN(dias[i]);
+                                horarioSalida.setHoraEntradaReal(partes[0]);
+                                horarioSalida.setHoraSalidaReal(partes[1]);
+                                horarios.add(horarioSalida);
+                            }
+                        }
+                    }
+                }
+
+                dbManager.insertarOActualizarHorarios(horarios);
+                JOptionPane.showMessageDialog(this, "Horarios guardados con éxito.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+            }
+        });
+
+        return panel;
+    }
+    private int obtenerIndiceDia(String dia) {
+        String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
+        for (int i = 0; i < dias.length; i++) {
+            if (dias[i].equalsIgnoreCase(dia)) {
+                return i; // Devuelve el índice del día en el arreglo
+            }
+        }
+        return -1; // Si no se encuentra el día
+    }
+
+    private String obtenerNombreDia(int indice) {
+        String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        if (indice >= 0 && indice < dias.length) {
+            return dias[indice]; // Devuelve el nombre del día según el índice
+        }
+        return "";
+    }
     private String getFileExtension(File file) {
         String name = file.getName();
         int lastIndex = name.lastIndexOf('.');

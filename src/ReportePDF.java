@@ -190,7 +190,7 @@ public class ReportePDF {
 
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+                return;F
             }
         }
 
