@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -32,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JOptionPane;
 import javax.swing.border.EmptyBorder;
@@ -94,6 +96,8 @@ public class Vista extends JFrame {
     private boolean incluirEncabezado = true; // Por defecto, incluir encabezado
     private boolean incluirNumeroPagina = true; 
     private JTabbedPane tabbedPane = new JTabbedPane();
+    private String filtroIdGuardado = ""; // Variable para almacenar las IDs ingresadas
+
     public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		       EventQueue.invokeLater(new Runnable() {
@@ -316,15 +320,22 @@ public class Vista extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Crear un panel para las opciones de configuración
-                JPanel configPanel = new JPanel(new GridLayout(2, 1)); // 2 filas, 1 columna
+                JPanel configPanel = new JPanel(new GridLayout(4, 1)); // 4 filas, 1 columna
 
                 // Crear botones de tipo "apagador" (JCheckBox)
                 JCheckBox encabezadoCheckBox = new JCheckBox("Incluir encabezado", incluirEncabezado);
                 JCheckBox numeroPaginaCheckBox = new JCheckBox("Incluir número de página", incluirNumeroPagina);
 
-                // Agregar los botones al panel
+                // Crear un campo de texto para filtrar por ID
+                JLabel filtroIdLabel = new JLabel("Filtrar por ID (separados por coma):");
+                JTextField filtroIdField = new JTextField(20);
+                filtroIdField.setText(filtroIdGuardado); // Restaurar el valor guardado
+
+                // Agregar los componentes al panel
                 configPanel.add(encabezadoCheckBox);
                 configPanel.add(numeroPaginaCheckBox);
+                configPanel.add(filtroIdLabel);
+                configPanel.add(filtroIdField);
 
                 // Mostrar el JOptionPane con las opciones
                 int result = JOptionPane.showConfirmDialog(
@@ -339,10 +350,13 @@ public class Vista extends JFrame {
                 if (result == JOptionPane.OK_OPTION) {
                     incluirEncabezado = encabezadoCheckBox.isSelected();
                     incluirNumeroPagina = numeroPaginaCheckBox.isSelected();
-                    JOptionPane.showMessageDialog(Vista.this, "Configuración guardada correctamente.");
+
+                    // Guardar el filtro ingresado
+                    filtroIdGuardado = filtroIdField.getText().trim();
                 }
             }
         });
+
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -462,11 +476,29 @@ public class Vista extends JFrame {
         btnSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Usar las IDs guardadas en la configuración
+                String idsFiltro = filtroIdGuardado;
+                
+                // Filtrar las checadas si se ingresaron IDs
+                List<Checadas> checadasFiltradas = checadas;
+                if (idsFiltro != null && !idsFiltro.trim().isEmpty()) {
+                    String[] idsArray = idsFiltro.split(",");
+                    for (int i = 0; i < idsArray.length; i++) {
+                        idsArray[i] = idsArray[i].trim();
+                    }
+                    checadasFiltradas = checadas.stream()
+                        .filter(checada -> Arrays.asList(idsArray).contains(checada.getId()))
+                        .collect(Collectors.toList());
+                }
+
+                // Actualizar las checadas con los empleados y generar el reporte
                 actualizarChecadasConEmpleados();
                 reporte = new ReportePDF();
-                reporte.generateReport(checadas, periodo, incluirEncabezado, incluirNumeroPagina);
+                reporte.generateReport(checadasFiltradas, periodo, incluirEncabezado, incluirNumeroPagina);
+                filtroIdGuardado=null;
             }
         });
+
     }
 
     private String getFileExtension(File file) {

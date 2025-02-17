@@ -37,6 +37,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -138,24 +139,61 @@ public class ReportePDF {
             );
             return;
         }
-        String fechaInicioStr = JOptionPane.showInputDialog("Ingrese la fecha de inicio (yyyy-MM-dd):");
-        String fechaFinStr = JOptionPane.showInputDialog("Ingrese la fecha de fin (yyyy-MM-dd):");
-        List<String> dias=null;
+     // Crear un panel para ingresar las fechas
+        JPanel fechaPanel = new JPanel(new GridLayout(2, 2, 5, 5)); // 2 filas, 2 columnas, con separación
 
-        try {
-            // Parsear las fechas de inicio y fin
-             fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
-             fechaFin = LocalDate.parse(fechaFinStr, formatter);
+        // Etiquetas y campos de texto
+        JLabel fechaInicioLabel = new JLabel("Fecha de inicio (yyyy-MM-dd):");
+        JTextField fechaInicioField = new JTextField(10);
 
-            // Aquí puedes realizar cualquier operación con las fechas
-            JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
-             periodoReporte=fechaInicio+" - "+fechaFin;
-             dias= obtenerDiasEntreFechas(fechaInicio, fechaFin);
+        JLabel fechaFinLabel = new JLabel("Fecha de fin (yyyy-MM-dd):");
+        JTextField fechaFinField = new JTextField(10);
 
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.");
-            return;
+        // Agregar componentes al panel
+        fechaPanel.add(fechaInicioLabel);
+        fechaPanel.add(fechaInicioField);
+        fechaPanel.add(fechaFinLabel);
+        fechaPanel.add(fechaFinField);
+
+        // Mostrar el cuadro de diálogo
+        int result = JOptionPane.showConfirmDialog(
+            null, // Ventana padre (null para centrarlo)
+            fechaPanel, 
+            "Ingrese el rango de fechas", 
+            JOptionPane.OK_CANCEL_OPTION, 
+            JOptionPane.PLAIN_MESSAGE
+        );
+
+        List<String> dias = null;
+        if (result == JOptionPane.OK_OPTION) {
+            String fechaInicioStr = fechaInicioField.getText().trim();
+            String fechaFinStr = fechaFinField.getText().trim();
+
+            try {
+                // Parsear las fechas de inicio y fin
+                 fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
+                 fechaFin = LocalDate.parse(fechaFinStr, formatter);
+
+                // Validar que la fecha de inicio no sea posterior a la de fin
+                if (fechaInicio.isAfter(fechaFin)) {
+                    JOptionPane.showMessageDialog(null, "Error: La fecha de inicio no puede ser posterior a la fecha de fin.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                    
+                }
+
+                // Generar mensaje y obtener los días entre fechas
+                JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
+                periodoReporte = fechaInicio + " - " + fechaFin;
+                dias = obtenerDiasEntreFechas(fechaInicio, fechaFin);
+
+                // Aquí puedes continuar con el resto del código...
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
+
         BaseDeDatosManager dbManager = new BaseDeDatosManager();
         List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
 
