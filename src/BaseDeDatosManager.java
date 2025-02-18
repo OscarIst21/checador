@@ -72,26 +72,23 @@ public class BaseDeDatosManager {
 
     // Método para inicializar la base de datos y crear las tablas
     private static void inicializarBaseDatos(String rutaBaseDatos) {
-        // SQL para crear la tabla 'empleados' con todas las columnas necesarias
-    	String crearTablaEmpleadosSQL = """
-    		    CREATE TABLE IF NOT EXISTS horarios (
-    		        id TEXT,
-    		        cct TEXT,
-    		        cctNo TEXT,
-    		        diaN TEXT,
-    		        horaEntradaReal TEXT,
-    		        horaSalidaReal TEXT,
-    		        horaSalidaDiaSiguiente TEXT,
-    		        horarioMixto TEXT,
-    		        anio TEXT,
-    		        periodo_inicio TEXT,
-    		        periodo_termino TEXT,
-    		        PRIMARY KEY (id, diaN, horaEntradaReal)
-    		    );
-    		""";
+        String crearTablaHorariosSQL = """
+            CREATE TABLE IF NOT EXISTS horarios (
+                id TEXT,
+                cct TEXT,
+                cctNo TEXT,
+                diaN TEXT,
+                horaEntradaReal TEXT,
+                horaSalidaReal TEXT,
+                horaSalidaDiaSiguiente TEXT,
+                horarioMixto TEXT,
+                anio TEXT,
+                periodo_inicio TEXT,
+                periodo_termino TEXT,
+                PRIMARY KEY (id, diaN, horaEntradaReal)
+            );
+        """;
 
-
-        // SQL para crear la tabla 'empleadosNombre' con las columnas necesarias
         String crearTablaEmpleadosNombreSQL = """
             CREATE TABLE IF NOT EXISTS empleadosNombre (
                 id TEXT PRIMARY KEY,
@@ -103,48 +100,49 @@ public class BaseDeDatosManager {
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + rutaBaseDatos);
              Statement stmt = conn.createStatement()) {
-            stmt.execute(crearTablaEmpleadosSQL); // Crear la tabla 'empleados'
+            stmt.execute(crearTablaHorariosSQL); // Crear la tabla 'horarios'
             stmt.execute(crearTablaEmpleadosNombreSQL); // Crear la tabla 'empleadosNombre'
-            System.out.println("Tablas 'empleados' y 'empleadosNombre' creadas (o ya existen).");
+            System.out.println("Tablas 'horarios' y 'empleadosNombre' creadas (o ya existen).");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
-    	String insertarOActualizarSQL = """
-    		    INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
-    		    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    		    ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
-    		        cct = excluded.cct,
-    		        cctNo = excluded.cctNo,
-    		        horaSalidaReal = excluded.horaSalidaReal,
-    		        horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
-    		        horarioMixto = excluded.horarioMixto,
-    		        anio = excluded.anio,
-    		        periodo_inicio = excluded.periodo_inicio,
-    		        periodo_termino = excluded.periodo_termino;
-    		""";
+        String insertarOActualizarSQL = """
+            INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
+                cct = excluded.cct,
+                cctNo = excluded.cctNo,
+                horaSalidaReal = excluded.horaSalidaReal,
+                horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
+                horarioMixto = excluded.horarioMixto,
+                anio = excluded.anio,
+                periodo_inicio = excluded.periodo_inicio,
+                periodo_termino = excluded.periodo_termino;
+        """;
 
-    		try (Connection conn = DriverManager.getConnection(DB_URL);
-    		     PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
-    		    for (EmpleadoDatosExtra empleado : empleadosDatos) {
-    		        pstmt.setString(1, empleado.getId());
-    		        pstmt.setString(2, empleado.getCct());
-    		        pstmt.setString(3, empleado.getCctNo());
-    		        pstmt.setString(4, empleado.getDiaN());
-    		        pstmt.setString(5, empleado.getHoraEntradaReal());
-    		        pstmt.setString(6, empleado.getHoraSalidaReal());
-    		        pstmt.setString(7, empleado.getHoraSalidaDiaSiguiente());
-    		        pstmt.setString(8, empleado.getHorarioMixto());
-    		        pstmt.setString(9, empleado.getAnio());
-    		        pstmt.setString(10, empleado.getPeriodo_inicio());
-    		        pstmt.setString(11, empleado.getPeriodo_termino());
-    		        pstmt.addBatch();
-    		    }
-    		    pstmt.executeBatch();
-    		} catch (SQLException e) {
-    		    e.printStackTrace();
-    		}
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
+            for (EmpleadoDatosExtra empleado : empleadosDatos) {
+                pstmt.setString(1, empleado.getId());
+                pstmt.setString(2, empleado.getCct());
+                pstmt.setString(3, empleado.getCctNo());
+                pstmt.setString(4, empleado.getDiaN());
+                pstmt.setString(5, empleado.getHoraEntradaReal());
+                pstmt.setString(6, empleado.getHoraSalidaReal());
+                pstmt.setString(7, empleado.getHoraSalidaDiaSiguiente());
+                pstmt.setString(8, empleado.getHorarioMixto());
+                pstmt.setString(9, empleado.getAnio());
+                pstmt.setString(10, empleado.getPeriodo_inicio());
+                pstmt.setString(11, empleado.getPeriodo_termino());
+                pstmt.addBatch();
+                System.out.println("Insertando/Actualizando: " + empleado.toString()); // Depuración
+            }
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     public Empleado obtenerEmpleadoPorId(String id) {
         String query = "SELECT id, nombre, puesto, jornada FROM empleadosNombre WHERE id = ?";
@@ -198,6 +196,40 @@ public class BaseDeDatosManager {
 
         return horarios;
     }
+    public void actualizarHorarioPorDia(String id, String dia, String horaEntrada, String horaSalida) {
+        String actualizarSQL = """
+            UPDATE horarios
+            SET horaEntradaReal = ?, horaSalidaReal = ?
+            WHERE id = ? AND diaN = ?;
+        """;
+
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(actualizarSQL)) {
+            pstmt.setString(1, horaEntrada);
+            pstmt.setString(2, horaSalida);
+            pstmt.setString(3, id);
+            pstmt.setString(4, dia);
+            int filasAfectadas = pstmt.executeUpdate();
+            
+            if (filasAfectadas == 0) {
+                // Si no existe el horario, insertarlo
+                String insertarSQL = """
+                    INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
+                    VALUES (?, ?, ?, ?);
+                """;
+                try (PreparedStatement pstmtInsert = conn.prepareStatement(insertarSQL)) {
+                    pstmtInsert.setString(1, id);
+                    pstmtInsert.setString(2, dia);
+                    pstmtInsert.setString(3, horaEntrada);
+                    pstmtInsert.setString(4, horaSalida);
+                    pstmtInsert.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void insertarOActualizarHorarios(List<EmpleadoDatosExtra> horarios) {
         String insertarOActualizarSQL = """
             INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)

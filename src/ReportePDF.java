@@ -70,7 +70,7 @@ public class ReportePDF {
     	String periodoReporte=periodo;
         String[] planteles = {
             "Seleccione un plantel", "Dirección General", "Contraloria y Juridico", "Caseta de vigilancia", 
-            "Emsad01", "Emsad03", "Emsad06", "Emsad07", "Emsad09", "Emsad10", "Emsad11", "Emsad12", 
+            "Emsad01", "Emsad03", "Emsad06", "Emsad07","Emsad08", "Emsad09", "Emsad10", "Emsad11", "Emsad12", 
             "Emsad13", "Emsad14", "Emsad16", "Cecyt01", "Cecyt02", "Cecyt03", "Cecyt04", "Cecyt05", 
             "Cecyt06", "Cecyt07", "Cecyt08", "Cecyt09", "Cecyt10", "Cecyt11"
         };
@@ -190,7 +190,7 @@ public class ReportePDF {
 
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;F
+                return;
             }
         }
 
@@ -744,32 +744,43 @@ public class ReportePDF {
     }
 
     public String estatusChequeo(String horaChequeo, String horaReal) {
-        if (horaChequeo.equals("00:00") || horaChequeo.isEmpty()) {
+        // Check if the input is null or empty
+        if (horaChequeo == null || horaChequeo.isEmpty() || horaChequeo.equals("00:00")) {
             return "Falta";
         }
-        if (horaReal == null || horaReal.equals("00:00")) {
+        if (horaReal == null || horaReal.isEmpty() || horaReal.equals("00:00")) {
             return "";
         }
 
-        String[] partesChequeo = horaChequeo.split(":");
-        String[] partesReal = horaReal.split(":");
+        // Check if the input is in the expected format (HH:mm)
+        if (!horaChequeo.matches("\\d{2}:\\d{2}") || !horaReal.matches("\\d{2}:\\d{2}")) {
+            return "Formato de hora incorrecto";
+        }
 
-        int horasChequeo = Integer.parseInt(partesChequeo[0]);
-        int minutosChequeo = Integer.parseInt(partesChequeo[1]);
+        try {
+            String[] partesChequeo = horaChequeo.split(":");
+            String[] partesReal = horaReal.split(":");
 
-        int horasReal = Integer.parseInt(partesReal[0]);
-        int minutosReal = Integer.parseInt(partesReal[1]);
+            int horasChequeo = Integer.parseInt(partesChequeo[0]);
+            int minutosChequeo = Integer.parseInt(partesChequeo[1]);
 
-        int diferenciaEnMinutos = (horasChequeo - horasReal) * 60 + (minutosChequeo - minutosReal);
+            int horasReal = Integer.parseInt(partesReal[0]);
+            int minutosReal = Integer.parseInt(partesReal[1]);
 
-        if (diferenciaEnMinutos <= 10) {
-            return "Tolerancia";
-        } else if (diferenciaEnMinutos <= 20) {
-            return "Medio Retardo";
-        } else if (diferenciaEnMinutos <= 30) {
-            return "Retardo completo";
-        } else {
-            return "Falta Entrada";
+            int diferenciaEnMinutos = (horasChequeo - horasReal) * 60 + (minutosChequeo - minutosReal);
+
+            if (diferenciaEnMinutos <= 10) {
+                return "Tolerancia";
+            } else if (diferenciaEnMinutos <= 20) {
+                return "Medio Retardo";
+            } else if (diferenciaEnMinutos <= 30) {
+                return "Retardo completo";
+            } else {
+                return "Falta Entrada";
+            }
+        } catch (NumberFormatException e) {
+            // Handle the case where parsing fails
+            return "Formato de hora incorrecto";
         }
     }
 

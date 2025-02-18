@@ -49,6 +49,7 @@ import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -65,8 +66,10 @@ import javax.swing.ImageIcon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
+import java.awt.Window;
 
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import java.awt.GridLayout;
@@ -313,7 +316,23 @@ public class Vista extends JFrame {
         btnEditarEmpleado.setBounds(318, 324, 50, 50);
         contentPane.add(btnEditarEmpleado);
 
-        
+        btnAyuda.addActionListener(e -> {
+            // Mensaje explicativo del flujo de trabajo y la función de cada botón
+            String mensaje = 
+                "Flujo de trabajo del sistema SAPI:\n\n" +
+                "1. **Subir Archivo de Checadas**: Selecciona el archivo que contiene las checadas de los empleados. Este archivo debe estar en formato Excel (.xls, .xlsx) o .dat.\n\n" +
+                "2. **Subir Archivo de Empleados**: Selecciona el archivo que contiene la información de los empleados. Este archivo debe estar en formato Excel (.xls, .xlsx).\n\n" +
+                "3. **Subir Archivo de Horarios**: Selecciona el archivo que contiene los horarios de los empleados. Este archivo debe estar en formato Excel (.xls, .xlsx).\n\n" +
+                "4. **Generar Reporte**: Una vez que hayas subido los archivos necesarios, puedes generar un reporte en formato PDF con la información de asistencia de los empleados.\n\n" +
+                "5. **Reiniciar Valores**: Este botón te permite reiniciar todos los valores y comenzar de nuevo el proceso.\n\n" +
+                "6. **Configuración**: Aquí puedes configurar opciones adicionales como incluir encabezado, número de página y filtrar por ID.\n\n" +
+                "7. **Editar Empleado**: Permite editar la información de un empleado específico.\n\n" +
+                "8. **Editar Horario**: Permite editar el horario de un empleado específico.\n\n" +
+                "Para más detalles, consulte la documentación del sistema.";
+
+            // Mostrar el mensaje en un JOptionPane
+            JOptionPane.showMessageDialog(null, mensaje, "Ayuda - Flujo de trabajo y funciones", JOptionPane.INFORMATION_MESSAGE);
+        });
         btnReiniciar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -548,19 +567,21 @@ public class Vista extends JFrame {
         });
     }
     private JPanel crearPanelEditarEmpleado() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10)); // BorderLayout con márgenes
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Márgenes externos
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(10, 10)); // BorderLayout con espacios entre componentes
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20)); // Márgenes externos más grandes
+        panel.setPreferredSize(new Dimension(500, 250)); // Tamaño por defecto
 
         // Panel para los campos de entrada
-        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10)); // 4 filas, 2 columnas, con márgenes
+        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10)); // Espacio entre filas y columnas
         JLabel lblId = new JLabel("ID:");
-        JTextField txtId = new JTextField();
+        JTextField txtId = new JTextField(15);
         JLabel lblNombre = new JLabel("Nombre:");
-        JTextField txtNombre = new JTextField();
+        JTextField txtNombre = new JTextField(15);
         JLabel lblPuesto = new JLabel("Puesto:");
-        JTextField txtPuesto = new JTextField();
+        JTextField txtPuesto = new JTextField(15);
         JLabel lblJornada = new JLabel("Tipo de Jornada:");
-        JTextField txtJornada = new JTextField();
+        JTextField txtJornada = new JTextField(15);
 
         camposPanel.add(lblId);
         camposPanel.add(txtId);
@@ -572,7 +593,7 @@ public class Vista extends JFrame {
         camposPanel.add(txtJornada);
 
         // Panel para los botones
-        JPanel botonesPanel = new JPanel((LayoutManager) new FlowLayout(FlowLayout.CENTER, 10, 10)); // Botones centrados
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10)); // Espaciado mejorado
         JButton btnBuscar = new JButton("Buscar");
         JButton btnGuardar = new JButton("Guardar");
 
@@ -594,13 +615,13 @@ public class Vista extends JFrame {
                     txtPuesto.setText(empleado.getEmpleadoPuesto());
                     txtJornada.setText(empleado.getJornada());
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se encontró un empleado con esa ID.");
+                    JOptionPane.showMessageDialog(panel, "No se encontró un empleado con esa ID.");
                     txtNombre.setText("");
                     txtPuesto.setText("");
                     txtJornada.setText("");
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+                JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
             }
         });
 
@@ -614,11 +635,18 @@ public class Vista extends JFrame {
                 BaseDeDatosManager dbManager = new BaseDeDatosManager();
                 Empleado empleado = new Empleado(id, nombre, puesto, jornada);
                 dbManager.insertarOActualizarEmpleado(empleado);
-                JOptionPane.showMessageDialog(this, "Empleado guardado con éxito.");
+                JOptionPane.showMessageDialog(panel, "Empleado guardado con éxito.");
+
+                // Cierra el JDialog que contiene este panel
+                Window ventana = SwingUtilities.getWindowAncestor(panel);
+                if (ventana instanceof JDialog) {
+                    ventana.dispose(); 
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.");
+                JOptionPane.showMessageDialog(panel, "Por favor, complete todos los campos.");
             }
         });
+
 
         return panel;
     }
@@ -627,6 +655,9 @@ public class Vista extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10)); // BorderLayout con márgenes
         panel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Márgenes externos
 
+        // Establecer tamaño por defecto para el panel
+        panel.setPreferredSize(new Dimension(500, 600)); // Tamaño predeterminado (600px de ancho, 400px de alto)
+
         // Panel para los campos de entrada
         JPanel camposPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // GridLayout dinámico
         JLabel lblId = new JLabel("ID:");
@@ -634,23 +665,48 @@ public class Vista extends JFrame {
         JCheckBox chkMultiplesHorarios = new JCheckBox("¿Tiene más de un horario por día?");
         JTextField[] txtHorarios = new JTextField[14]; // 7 días + 7 días adicionales si hay múltiples horarios
 
+        // Inicializar los JTextField
+        for (int i = 0; i < txtHorarios.length; i++) {
+            txtHorarios[i] = new JTextField();
+        }
+
         camposPanel.add(lblId);
         camposPanel.add(txtId);
         camposPanel.add(chkMultiplesHorarios);
         camposPanel.add(new JLabel()); // Espacio en blanco
 
-        String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
-        for (int i = 0; i < 7; i++) {
-            camposPanel.add(new JLabel(dias[i]));
-            txtHorarios[i] = new JTextField();
-            camposPanel.add(txtHorarios[i]);
+        String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
+        
+        // Función para actualizar los campos visibles en función del checkbox
+        ActionListener chkMultiplesHorariosListener = e -> {
+            // Limpiar el panel de campos antes de volver a agregar los correctos
+            camposPanel.removeAll();
 
-            if (chkMultiplesHorarios.isSelected()) {
-                camposPanel.add(new JLabel(dias[i] + " (Segundo horario)"));
-                txtHorarios[i + 7] = new JTextField();
-                camposPanel.add(txtHorarios[i + 7]);
+            camposPanel.add(lblId);
+            camposPanel.add(txtId);
+            camposPanel.add(chkMultiplesHorarios);
+            camposPanel.add(new JLabel()); // Espacio en blanco
+
+            for (int i = 0; i < 7; i++) {
+                camposPanel.add(new JLabel(dias[i]));
+                camposPanel.add(txtHorarios[i]);
+
+                if (chkMultiplesHorarios.isSelected()) {
+                    camposPanel.add(new JLabel(dias[i] + " (Segundo horario)"));
+                    camposPanel.add(txtHorarios[i + 7]);
+                }
             }
-        }
+
+            // Redibujar el panel
+            panel.revalidate();
+            panel.repaint();
+        };
+
+        // Agregar el listener para el checkbox
+        chkMultiplesHorarios.addActionListener(chkMultiplesHorariosListener);
+
+        // Iniciar el panel con la configuración inicial
+        chkMultiplesHorariosListener.actionPerformed(null);
 
         // Panel para los botones
         JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Botones centrados
@@ -672,13 +728,21 @@ public class Vista extends JFrame {
                 List<EmpleadoDatosExtra> horarios = dbManager.obtenerHorariosPorId(id);
 
                 if (!horarios.isEmpty()) {
+                    // Limpiar los campos antes de llenarlos
+                    for (JTextField txtHorario : txtHorarios) {
+                        txtHorario.setText("");
+                    }
+
+                    // Llenar los campos con los horarios encontrados
                     for (EmpleadoDatosExtra horario : horarios) {
                         int diaIndex = obtenerIndiceDia(horario.getDiaN());
-                        if (diaIndex != -1) {
+                        if (diaIndex >= 0 && diaIndex < 7) { // Solo para los primeros 7 días
                             txtHorarios[diaIndex].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
                             if (chkMultiplesHorarios.isSelected() && diaIndex + 7 < txtHorarios.length) {
                                 txtHorarios[diaIndex + 7].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
                             }
+                        } else {
+                            System.err.println("Índice inválido: " + diaIndex);
                         }
                     }
                 } else {
@@ -693,47 +757,31 @@ public class Vista extends JFrame {
             String id = txtId.getText().trim();
             if (!id.isEmpty()) {
                 BaseDeDatosManager dbManager = new BaseDeDatosManager();
-                List<EmpleadoDatosExtra> horarios = new ArrayList<>();
-
                 for (int i = 0; i < 7; i++) {
                     String horario = txtHorarios[i].getText().trim();
                     if (!horario.isEmpty()) {
                         String[] partes = horario.split(" - ");
                         if (partes.length == 2) {
-                            EmpleadoDatosExtra horarioEntrada = new EmpleadoDatosExtra();
-                            horarioEntrada.setId(id);
-                            horarioEntrada.setDiaN(dias[i]);
-                            horarioEntrada.setHoraEntradaReal(partes[0]);
-                            horarioEntrada.setHoraSalidaReal(partes[1]);
-                            horarios.add(horarioEntrada);
-                        }
-                    }
-
-                    if (chkMultiplesHorarios.isSelected() && i + 7 < txtHorarios.length) {
-                        String horario2 = txtHorarios[i + 7].getText().trim();
-                        if (!horario2.isEmpty()) {
-                            String[] partes = horario2.split(" - ");
-                            if (partes.length == 2) {
-                                EmpleadoDatosExtra horarioSalida = new EmpleadoDatosExtra();
-                                horarioSalida.setId(id);
-                                horarioSalida.setDiaN(dias[i]);
-                                horarioSalida.setHoraEntradaReal(partes[0]);
-                                horarioSalida.setHoraSalidaReal(partes[1]);
-                                horarios.add(horarioSalida);
-                            }
+                            String dia = dias[i];
+                            dbManager.actualizarHorarioPorDia(id, dia, partes[0], partes[1]);
                         }
                     }
                 }
+                JOptionPane.showMessageDialog(panel, "Horario actualizado correctamente.");
 
-                dbManager.insertarOActualizarHorarios(horarios);
-                JOptionPane.showMessageDialog(this, "Horarios guardados con éxito.");
+                // Cierra el JDialog que contiene este panel
+                Window ventana = SwingUtilities.getWindowAncestor(panel);
+                if (ventana instanceof JDialog) {
+                    ventana.dispose(); 
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+                JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
             }
         });
 
         return panel;
     }
+
     private int obtenerIndiceDia(String dia) {
         String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
         for (int i = 0; i < dias.length; i++) {
@@ -745,7 +793,7 @@ public class Vista extends JFrame {
     }
 
     private String obtenerNombreDia(int indice) {
-        String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+    	String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
         if (indice >= 0 && indice < dias.length) {
             return dias[indice]; // Devuelve el nombre del día según el índice
         }
@@ -925,11 +973,9 @@ public class Vista extends JFrame {
             boolean dataLoaded = false;
             String hojaProcesada = "";
 
-            // Iterar sobre todas las hojas del archivo Excel
             for (Sheet sheet : workbook) {
                 if (sheet == null) continue;
 
-                // Mapear columnas dinámicamente según los nombres en la primera fila
                 Row headerRow = sheet.getRow(0);
                 if (headerRow == null) continue;
 
@@ -941,7 +987,6 @@ public class Vista extends JFrame {
                     }
                 }
 
-                // Verificar si todas las columnas requeridas están presentes
                 String[] requiredColumns = {
                     "numero_empleado", "cct", "cct_no", "dia", "hora_entrada", "hora_salida", 
                     "hora_salida_dia_siguiente", "horario_mixto", "anio", "periodo_inicio", "periodo_termino"
@@ -955,10 +1000,9 @@ public class Vista extends JFrame {
                 }
 
                 if (!allColumnsFound) {
-                    continue; // Pasar a la siguiente hoja si faltan columnas
+                    continue;
                 }
 
-                // Procesar las filas de la hoja
                 for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
                     if (row == null) continue;
@@ -968,7 +1012,6 @@ public class Vista extends JFrame {
                     String cctNo = getCellValue(row, columnMap.get("cct_no"));
                     String dia = getDayName(getCellNumericValue(row, columnMap.get("dia")));
                     String horaEntradaReal = getTimeValue(row, columnMap.get("hora_entrada"));
-                    System.out.println("Hora: "+horaEntradaReal);
                     String horaSalidaReal = getTimeValue(row, columnMap.get("hora_salida"));
                     String horaSalidaDiaSiguiente = getCellValue(row, columnMap.get("hora_salida_dia_siguiente"));
                     String horarioMixto = getCellValue(row, columnMap.get("horario_mixto"));
@@ -980,12 +1023,13 @@ public class Vista extends JFrame {
                         EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, cct, cctNo, dia, horaEntradaReal, horaSalidaReal,
                                 horaSalidaDiaSiguiente, horarioMixto, anio, periodoInicio, periodoTermino);
                         empleadosDatos.add(empleado);
+                        System.out.println("Empleado cargado: " + empleado.toString()); // Depuración
                     }
                 }
 
-                hojaProcesada = sheet.getSheetName(); // Guardar el nombre de la hoja procesada
+                hojaProcesada = sheet.getSheetName();
                 dataLoaded = true;
-                break; // Detener la búsqueda después de encontrar una hoja válida
+                break;
             }
 
             if (dataLoaded) {
