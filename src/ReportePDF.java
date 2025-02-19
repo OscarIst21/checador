@@ -55,8 +55,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class ReportePDF {
@@ -66,11 +66,14 @@ public class ReportePDF {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
     LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
+
+	private EmpleadoDatosExtra empleado;
+
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
-    	String periodoReporte=periodo;
+        String periodoReporte = periodo;
         String[] planteles = {
             "Seleccione un plantel", "Dirección General", "Contraloria y Juridico", "Caseta de vigilancia", 
-            "Emsad01", "Emsad03", "Emsad06", "Emsad07","Emsad08", "Emsad09", "Emsad10", "Emsad11", "Emsad12", 
+            "Emsad01", "Emsad03", "Emsad06", "Emsad07", "Emsad08", "Emsad09", "Emsad10", "Emsad11", "Emsad12", 
             "Emsad13", "Emsad14", "Emsad16", "Cecyt01", "Cecyt02", "Cecyt03", "Cecyt04", "Cecyt05", 
             "Cecyt06", "Cecyt07", "Cecyt08", "Cecyt09", "Cecyt10", "Cecyt11"
         };
@@ -117,7 +120,7 @@ public class ReportePDF {
         agregarPanel.add(agregarButton, BorderLayout.EAST);
 
         panel.add(agregarPanel, BorderLayout.SOUTH);
-       
+
         int option = JOptionPane.showConfirmDialog(
             null, panel, "Seleccione el plantel", JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE, customIcon
@@ -139,7 +142,8 @@ public class ReportePDF {
             );
             return;
         }
-     // Crear un panel para ingresar las fechas
+
+        // Crear un panel para ingresar las fechas
         JPanel fechaPanel = new JPanel(new GridLayout(2, 2, 5, 5)); // 2 filas, 2 columnas, con separación
 
         // Etiquetas y campos de texto
@@ -171,22 +175,19 @@ public class ReportePDF {
 
             try {
                 // Parsear las fechas de inicio y fin
-                 fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
-                 fechaFin = LocalDate.parse(fechaFinStr, formatter);
+                fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
+                fechaFin = LocalDate.parse(fechaFinStr, formatter);
 
                 // Validar que la fecha de inicio no sea posterior a la de fin
                 if (fechaInicio.isAfter(fechaFin)) {
                     JOptionPane.showMessageDialog(null, "Error: La fecha de inicio no puede ser posterior a la fecha de fin.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
-                    
                 }
 
                 // Generar mensaje y obtener los días entre fechas
                 JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
                 periodoReporte = fechaInicio + " - " + fechaFin;
                 dias = obtenerDiasEntreFechas(fechaInicio, fechaFin);
-
-                // Aquí puedes continuar con el resto del código...
 
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -201,7 +202,7 @@ public class ReportePDF {
         fileChooser.setDialogTitle("Guardar Reporte PDF");
         fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
         fileChooser.setSelectedFile(new File(periodoReporte + "_" + plantelSeleccionado + ".pdf"));
-        
+
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
@@ -217,7 +218,7 @@ public class ReportePDF {
                 PdfDocument pdfDoc = new PdfDocument(writer);
                 pdfDoc.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.LETTER);
                 Document document = new Document(pdfDoc);
-                
+
                 final String periodoFinal = periodoReporte;
                 if (incluirEncabezado || incluirNumeroPagina) {
                     pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new IEventHandler() {
@@ -230,9 +231,9 @@ public class ReportePDF {
                                 agregarNumeroPagina(pdfDoc);
                             }
                             try {
-                            	if(incluirEncabezado) {
-                                dibujarEncabezado(canvas, pageSize, periodoFinal);
-                            	}
+                                if (incluirEncabezado) {
+                                    dibujarEncabezado(canvas, pageSize, periodoFinal);
+                                }
                             } catch (java.io.IOException e) {
                                 e.printStackTrace();
                             }
@@ -240,6 +241,7 @@ public class ReportePDF {
                         }
                     });
                 }
+
                 Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
                 for (EmpleadoDatosExtra empleado : empleadosDatos) {
                     String diaEmpleado = empleado.getDiaN().toLowerCase();
@@ -248,219 +250,235 @@ public class ReportePDF {
                         .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
                         .add(empleado);
                 }
-             // Filtrar las checadas dentro del rango de fechas
+
+                // Filtrar las checadas dentro del rango de fechas
                 Map<String, List<Checadas>> checadasPorId = checadasList.stream()
-                	    .filter(checada -> {
-                	        // Convertir el String a LocalDate usando el formato
-                	        LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
-                	        return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) && 
-                	               (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
-                	    })
-                	    .collect(Collectors.groupingBy(Checadas::getId));
+                    .filter(checada -> {
+                        LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
+                        return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) && 
+                               (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
+                    })
+                    .collect(Collectors.groupingBy(Checadas::getId));
 
-                	// Ordenar las checadas por nombre del empleado (A-Z)
-                	List<String> idsOrdenados = checadasPorId.keySet().stream()
-                	    .sorted((id1, id2) -> {
-                	        String nombre1 = checadasPorId.get(id1).get(0).getNombre();
-                	        String nombre2 = checadasPorId.get(id2).get(0).getNombre();
-                	        return nombre1.compareToIgnoreCase(nombre2); // Orden alfabético (A-Z)
-                	    })
-                	    .collect(Collectors.toList());
+                // Ordenar las checadas por nombre del empleado (A-Z)
+                List<String> idsOrdenados = checadasPorId.keySet().stream()
+                    .sorted((id1, id2) -> {
+                        String nombre1 = checadasPorId.get(id1).get(0).getNombre();
+                        String nombre2 = checadasPorId.get(id2).get(0).getNombre();
+                        return nombre1.compareToIgnoreCase(nombre2); // Orden alfabético (A-Z)
+                    })
+                    .collect(Collectors.toList());
 
-                	boolean primeraVezEnPagina = true;
+                boolean primeraVezEnPagina = true;
 
-                	// Iterar sobre los IDs ordenados
-                	for (String id : idsOrdenados) {
-                	    String nombre = checadasPorId.get(id).get(0).getNombre();
-                	    String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
-                	    Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
-                	            .setFontSize(9)
-                	            .setTextAlignment(TextAlignment.LEFT)
-                	            .setMultipliedLeading(0.6f)
-                	            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE)); // Negrita y cursiva
+                // Iterar sobre los IDs ordenados
+             // Iterar sobre los IDs ordenados
+                for (String id : idsOrdenados) {
+                    String nombre = checadasPorId.get(id).get(0).getNombre();
+                    String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
+                    Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
+                            .setFontSize(9)
+                            .setTextAlignment(TextAlignment.LEFT)
+                            .setMultipliedLeading(0.6f)
+                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE)); // Negrita y cursiva
 
-                	    PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-                	    Table table = crearTabla();
+                    PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+                    Table table = crearTabla();
 
-                	    Duration totalHorasACubrir = Duration.ZERO;
-                	    Duration totalHorasTrabajadas = Duration.ZERO;
-                	    int retardos = 0;
-                	    int mediosRetardos = 0;
-                	    int faltas = 0;
-                	    int entradaFaltante = 0;
-                	    int salidaFaltante = 0;
-                	    tamañoTabla = 0;
+                    Duration totalHorasACubrir = Duration.ZERO;
+                    Duration totalHorasTrabajadas = Duration.ZERO;
+                    int retardos = 0;
+                    int mediosRetardos = 0;
+                    int faltas = 0;
+                    int entradaFaltante = 0;
+                    int salidaFaltante = 0;
+                    tamañoTabla = 0;
 
-                	    Map<String, Map<String, List<EmpleadoDatosExtra>>> horariosDescartados = new HashMap<>();
+                    Map<String, Map<String, List<EmpleadoDatosExtra>>> horariosDescartados = new HashMap<>();
 
-                	    Map<String, Checadas> checadasPorFecha = checadasPorId.get(id).stream()
-                	            .collect(Collectors.toMap(
-                	                Checadas::getFecha,
-                	                checada -> checada,
-                	                (c1, c2) -> c1 // Conserva la primera checada
-                	            ));
+                    // Agrupar checadas por fecha
+                    Map<String, List<Checadas>> checadasPorFecha = checadasPorId.get(id).stream()
+                        .collect(Collectors.groupingBy(Checadas::getFecha));
 
-                	    // Iterar sobre todas las fechas en el rango
-                	 // Iterar sobre todas las fechas en el rango
-                	    for (String fecha : dias) {
-                	        Checadas checada = checadasPorFecha.get(fecha);
-                	        if (checada == null) {
-                	            // Si no hay checada para esta fecha, crear una checada vacía
-                	            checada = new Checadas();
-                	            checada.setFecha(fecha);
-                	            checada.setHoraEntrada("00:00");
-                	            checada.setHoraSalida("00:00");
-                	        }
+                    // Iterar sobre todas las fechas en el rango
+                    for (String fecha : dias) {
+                        List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
+                        String diaSemana = calcularDiaSemana(fecha).toLowerCase();
 
-                	        String diaSemana = calcularDiaSemana(checada.getFecha()).toLowerCase();
+                        // Verificar si el empleado tenía un horario para este día
+                        boolean tieneHorario = empleadoIndex.containsKey(id) && 
+                                               empleadoIndex.get(id) != null && 
+                                               empleadoIndex.get(id).containsKey(diaSemana);
 
-                	        // Verificar si el empleado tenía un horario para este día
-                	        boolean tieneHorario = empleadoIndex.containsKey(id) && 
-                	                               empleadoIndex.get(id) != null && 
-                	                               empleadoIndex.get(id).containsKey(diaSemana);
+                        // Si no hay checadas ni horarios, continuar con la siguiente fecha
+                        if (!tieneHorario && checadasDelDia.isEmpty()) {
+                            continue;
+                        }
 
-                	        // Verificar si el empleado tiene una checada registrada para este día
-                	        boolean tieneChecada = !checada.getHoraEntrada().equals("00:00") || 
-                	                               !checada.getHoraSalida().equals("00:00");
+                        // Obtener todos los horarios disponibles para este día
+                        List<EmpleadoDatosExtra> horariosDisponibles = tieneHorario ? 
+                            new ArrayList<>(empleadoIndex.get(id).get(diaSemana)) : new ArrayList<>();
 
-                	        // Si no tiene horario ni checada, continuar con la siguiente fecha
-                	        if (!tieneHorario && !tieneChecada) {
-                	            continue;
-                	        }
+                        // Si no hay checadas, mostrar todos los horarios
+                        if (checadasDelDia.isEmpty()) {
+                            for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                                String horaEntradaReal = horario.getHoraEntradaReal();
+                                String horaSalidaReal = horario.getHoraSalidaReal();
+                                Duration duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+                                totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
 
-                	        String horaEntradaReal = "00:00";
-                	        String horaSalidaReal = "00:00";
-                	        Duration duracionACubrir = Duration.ZERO;
+                                // Mostrar el horario en la tabla
+                                table.addCell(new Cell().add(new Paragraph(fecha))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        if (tieneHorario) {
-                	            // Obtener la lista de horarios disponibles para este día
-                	            List<EmpleadoDatosExtra> horariosDisponibles = empleadoIndex.get(id).get(diaSemana);
-                	            List<EmpleadoDatosExtra> descartados = horariosDescartados
-                	                .computeIfAbsent(id, k -> new HashMap<>())
-                	                .computeIfAbsent(diaSemana, k -> new ArrayList<>());
+                                table.addCell(new Cell().add(new Paragraph(diaSemana))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	            if (!horariosDisponibles.isEmpty()) {
-                	                EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
-                	                horaEntradaReal = empleadoData.getHoraEntradaReal();
-                	                horaSalidaReal = empleadoData.getHoraSalidaReal();
-                	                duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
-                	                totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
-                	                descartados.add(empleadoData);
-                	            } else if (!descartados.isEmpty()) {
-                	                horariosDisponibles.addAll(descartados);
-                	                descartados.clear();
-                	                EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
-                	                horaEntradaReal = empleadoData.getHoraEntradaReal();
-                	                horaSalidaReal = empleadoData.getHoraSalidaReal();
-                	                duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
-                	                totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
-                	                descartados.add(empleadoData);
-                	            }
-                	        }
+                                table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - 00:00"))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
-                	        String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
+                                table.addCell(new Cell().add(new Paragraph("Falta"))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        // Asignar el estatus de entrada y salida
-                	        String estatusEntrada = tieneHorario ? estatusChequeo(horaEntrada, horaEntradaReal) : "---";
-                	        String estatusSalida = tieneHorario ? estatusSalida(horaSalida, horaSalidaReal) : "---";
+                                table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - 00:00"))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
-                	        Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
+                                table.addCell(new Cell().add(new Paragraph("Falta"))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
-                	            totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
-                	        }
+                                table.addCell(new Cell().add(new Paragraph("00:00"))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        // Contar retardos y faltas solo si el empleado tenía un horario para ese día
-                	        if (tieneHorario) {
-                	            if ("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-                	                retardos++;
-                	            }
-                	            if ("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-                	                retardos++;
-                	            }
+                                tamañoTabla++;
+                            }
+                        } else {
+                            // Si hay checadas, procesarlas junto con los horarios
+                            for (Checadas checada : checadasDelDia) {
+                                String horaEntradaReal = "00:00";
+                                String horaSalidaReal = "00:00";
+                                Duration duracionACubrir = Duration.ZERO;
 
-                	            if ("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-                	                retardos++;
-                	            }
-                	            if ("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-                	                retardos++;
-                	            }
-                	            if (mediosRetardos >= 10) {
-                	                faltas++;
-                	            }
+                                if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                                    EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
+                                    horaEntradaReal = empleadoData.getHoraEntradaReal();
+                                    horaSalidaReal = empleadoData.getHoraSalidaReal();
+                                    duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+                                    totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+                                }
 
-                	            // Contar falta solo si el empleado tenía un horario para ese día
-                	            if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos >= 5) || ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
-                	                faltas++;
-                	            } else {
-                	                if (horaEntrada.equals("00:00")) {
-                	                    entradaFaltante++;
-                	                }
-                	                if (horaSalida.equals("00:00")) {
-                	                    salidaFaltante++;
-                	                }
-                	            }
-                	        }
+                                String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? 
+                                    checada.getHoraEntrada() : "00:00";
+                                String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? 
+                                    checada.getHoraSalida() : "00:00";
 
-                	        // Agregar la fila a la tabla
-                	        table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                // Asignar el estatus de entrada y salida
+                                String estatusEntrada = tieneHorario ? estatusChequeo(horaEntrada, horaEntradaReal) : "---";
+                                String estatusSalida = tieneHorario ? estatusSalida(horaSalida, horaSalidaReal) : "---";
 
-                	        table.addCell(new Cell().add(new Paragraph(diaSemana))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
+                                Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
 
-                	        table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
+                                    totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
+                                }
 
-                	        table.addCell(new Cell().add(new Paragraph(estatusEntrada))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                // Contar retardos y faltas solo si el empleado tenía un horario para ese día
+                                if (tieneHorario) {
+                                    if ("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+                                        retardos++;
+                                    }
+                                    if ("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+                                        retardos++;
+                                    }
 
-                	        table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                    if ("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+                                        retardos++;
+                                    }
+                                    if ("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+                                        retardos++;
+                                    }
+                                    if (mediosRetardos >= 10) {
+                                        faltas++;
+                                    }
 
-                	        table.addCell(new Cell().add(new Paragraph(estatusSalida))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                    // Contar falta solo si el empleado tenía un horario para ese día
+                                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos >= 5) || 
+                                        ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
+                                        faltas++;
+                                    } else {
+                                        if (horaEntrada.equals("00:00")) {
+                                            entradaFaltante++;
+                                        }
+                                        if (horaSalida.equals("00:00")) {
+                                            salidaFaltante++;
+                                        }
+                                    }
+                                }
 
-                	        table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
-                	                .setTextAlignment(TextAlignment.LEFT)
-                	                .setFontSize(7).setBorder(Border.NO_BORDER)
-                	                .setPadding(2) // Reduce el espacio interno de la celda
-                	                .setMargin(0)); // Elimina el espacio externo
+                                // Agregar la fila a la tabla
+                                table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                	        tamañoTabla++;
-                	    }
+                                table.addCell(new Cell().add(new Paragraph(diaSemana))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                table.addCell(new Cell().add(new Paragraph(estatusEntrada))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                table.addCell(new Cell().add(new Paragraph(estatusSalida))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
+
+                                tamañoTabla++;
+                            }
+                        }
+                    }
 
                     long totalHoras = totalHorasACubrir.toHours();
                     long totalMinutos = totalHorasACubrir.toMinutes() % 60;
                     long horasTrabajadas = totalHorasTrabajadas.toHours();
                     long minutosTrabajados = totalHorasTrabajadas.toMinutes() % 60;
 
-                 // Crear la tabla con 5 columnas
+                    // Crear la tabla con 5 columnas
                     Table info = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1}))
                             .useAllAvailableWidth()
                             .setBorder(Border.NO_BORDER);
-
-                   
 
                     // Agregar cada dato en su celda sin bordes y en negrita
                     info.addCell(new Cell().add(new Paragraph("Total horas: " + totalHoras + ":" + 
@@ -485,59 +503,54 @@ public class ReportePDF {
                             .setBackgroundColor(new DeviceRgb(0, 0, 0)) // Fondo negro
                             .setBorderBottom(new SolidBorder(0.05f)));
 
-
                     if (primeraVezEnPagina && incluirEncabezado) {
                         document.add(new Paragraph(" ").setMarginTop(35));
                         primeraVezEnPagina = false;
                     }
 
                     // Calcular espacio disponible en la página actual
-                    float remainingHeight = calcularEspacioDisponible(document)-20;
+                    float remainingHeight = calcularEspacioDisponible(document) - 20;
                     float estimatedContentHeight = 120 + (tamañoTabla * 11);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
-                    if(incluirEncabezado) {
-                    if(remainingHeight<35) {
-
-                        document.add(new AreaBreak());
-                        document.add(new Paragraph(" ").setMarginTop(35));
-
-                        remainingHeight = calcularEspacioDisponible(document)-20;
-                	}
-                    if (remainingHeight < estimatedContentHeight) {
-                    	
-                        document.add(title);
-
-                        // Dividir la tabla usando maxFilas calculado
-                        List<Table> tablasDivididas = dividirTabla(table, maxFilas);
-                        
-                        int i = 0;
-                        for (Table tablaParcial : tablasDivididas) {
-                            if (i == 1) {
-                                document.add(new AreaBreak());
-                                document.add(new Paragraph(" ").setMarginTop(35));
-                            }
-                            if (tablaParcial.getNumberOfRows() > 0) {
-                                document.add(tablaParcial);
-                            }
-                            i++;
+                    if (incluirEncabezado) {
+                        if (remainingHeight < 35) {
+                            document.add(new AreaBreak());
+                            document.add(new Paragraph(" ").setMarginTop(35));
+                            remainingHeight = calcularEspacioDisponible(document) - 20;
                         }
-                        document.add(info);
-                        document.add(new Paragraph(" ").setMarginTop(7));
+                        if (remainingHeight < estimatedContentHeight) {
+                            document.add(title);
+
+                            // Dividir la tabla usando maxFilas calculado
+                            List<Table> tablasDivididas = dividirTabla(table, maxFilas);
+
+                            int i = 0;
+                            for (Table tablaParcial : tablasDivididas) {
+                                if (i == 1) {
+                                    document.add(new AreaBreak());
+                                    document.add(new Paragraph(" ").setMarginTop(35));
+                                }
+                                if (tablaParcial.getNumberOfRows() > 0) {
+                                    document.add(tablaParcial);
+                                }
+                                i++;
+                            }
+                            document.add(info);
+                            document.add(new Paragraph(" ").setMarginTop(7));
+                        } else {
+                            document.add(title);
+                            document.add(table);
+                            document.add(info);
+                            document.add(new Paragraph(" ").setMarginTop(7));
+                        }
                     } else {
                         document.add(title);
                         document.add(table);
                         document.add(info);
                         document.add(new Paragraph(" ").setMarginTop(7));
                     }
-                    
-             	}else
-             	{
-             		document.add(title);
-                    document.add(table);
-                    document.add(info);
-                    document.add(new Paragraph(" ").setMarginTop(7));
-             	}}
+                }
                 document.close();
 
                 System.out.println("PDF generado en: " + filePath);
@@ -555,12 +568,13 @@ public class ReportePDF {
             }
         }
     }
+
     private int calcularMaxFilas(Document document) {
         float espacioDisponible = calcularEspacioDisponible(document); // Espacio disponible en la página
         float espacioFijo = 35; // Ajusta según lo que ocupan otros elementos (title, info, márgenes, etc.)
 
         float espacioRestante = espacioDisponible - espacioFijo;
-        float alturaFila = 8+4; // Tamaño de fuente 7 + margen de seguridad 4
+        float alturaFila = 8 + 4; // Tamaño de fuente 7 + margen de seguridad 4
 
         return (int) (espacioRestante / alturaFila); // Número máximo de filas que caben
     }
@@ -592,6 +606,7 @@ public class ReportePDF {
             }
         });
     }
+
     private void dibujarEncabezado(PdfCanvas canvas, Rectangle pageSize, String periodo) throws java.io.IOException {
         float marginTop = 20;
         float y = pageSize.getTop() - 30;
@@ -629,6 +644,7 @@ public class ReportePDF {
         canvas.showText(encabezado);
         canvas.endText();
     }
+
     private Table crearTabla() throws java.io.IOException {
         // Crear la tabla con 7 columnas y sin bordes
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
@@ -685,7 +701,7 @@ public class ReportePDF {
         for (IElement elemento : tablaOriginal.getChildren()) {
             if (elemento instanceof Cell) {
                 Cell celda = (Cell) elemento;
-                
+
                 // Agregar la celda a la primera tabla hasta alcanzar el límite de filas
                 if (!maxTablaLlena) {
                     tablaMax.addCell(celda);
@@ -708,7 +724,6 @@ public class ReportePDF {
 
         return tablasDivididas;
     }
-
 
     private float calcularEspacioDisponible(Document document) {
         // Obtener la altura disponible en la página actual
