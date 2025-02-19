@@ -652,75 +652,43 @@ public class Vista extends JFrame {
     }
 
     private JPanel crearPanelEditarHorario() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10)); // BorderLayout con márgenes
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Márgenes externos
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.setPreferredSize(new Dimension(500, 600));
 
-        // Establecer tamaño por defecto para el panel
-        panel.setPreferredSize(new Dimension(500, 600)); // Tamaño predeterminado (600px de ancho, 400px de alto)
-
-        // Panel para los campos de entrada
-        JPanel camposPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // GridLayout dinámico
+        JPanel camposPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         JLabel lblId = new JLabel("ID:");
         JTextField txtId = new JTextField();
-        JCheckBox chkMultiplesHorarios = new JCheckBox("¿Tiene más de un horario por día?");
-        JTextField[] txtHorarios = new JTextField[14]; // 7 días + 7 días adicionales si hay múltiples horarios
-
-        // Inicializar los JTextField
+        
+        JTextField[] txtHorarios = new JTextField[14]; // 7 días x 2 horarios
         for (int i = 0; i < txtHorarios.length; i++) {
             txtHorarios[i] = new JTextField();
         }
 
         camposPanel.add(lblId);
         camposPanel.add(txtId);
-        camposPanel.add(chkMultiplesHorarios);
-        camposPanel.add(new JLabel()); // Espacio en blanco
 
         String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
-        
-        // Función para actualizar los campos visibles en función del checkbox
-        ActionListener chkMultiplesHorariosListener = e -> {
-            // Limpiar el panel de campos antes de volver a agregar los correctos
-            camposPanel.removeAll();
 
-            camposPanel.add(lblId);
-            camposPanel.add(txtId);
-            camposPanel.add(chkMultiplesHorarios);
-            camposPanel.add(new JLabel()); // Espacio en blanco
+        for (int i = 0; i < 7; i++) {
+            camposPanel.add(new JLabel(dias[i] + " (Horario 1)"));
+            camposPanel.add(txtHorarios[i]);
 
-            for (int i = 0; i < 7; i++) {
-                camposPanel.add(new JLabel(dias[i]));
-                camposPanel.add(txtHorarios[i]);
+            camposPanel.add(new JLabel(dias[i] + " (Horario 2)"));
+            camposPanel.add(txtHorarios[i + 7]);
+        }
 
-                if (chkMultiplesHorarios.isSelected()) {
-                    camposPanel.add(new JLabel(dias[i] + " (Segundo horario)"));
-                    camposPanel.add(txtHorarios[i + 7]);
-                }
-            }
-
-            // Redibujar el panel
-            panel.revalidate();
-            panel.repaint();
-        };
-
-        // Agregar el listener para el checkbox
-        chkMultiplesHorarios.addActionListener(chkMultiplesHorariosListener);
-
-        // Iniciar el panel con la configuración inicial
-        chkMultiplesHorariosListener.actionPerformed(null);
-
-        // Panel para los botones
-        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Botones centrados
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton btnBuscar = new JButton("Buscar");
         JButton btnGuardar = new JButton("Guardar");
 
         botonesPanel.add(btnBuscar);
         botonesPanel.add(btnGuardar);
 
-        // Agregar los paneles al panel principal
         panel.add(camposPanel, BorderLayout.CENTER);
         panel.add(botonesPanel, BorderLayout.SOUTH);
 
-        // ActionListeners para los botones
+        // Acción para el botón de búsqueda
         btnBuscar.addActionListener(e -> {
             String id = txtId.getText().trim();
             if (!id.isEmpty()) {
@@ -728,51 +696,69 @@ public class Vista extends JFrame {
                 List<EmpleadoDatosExtra> horarios = dbManager.obtenerHorariosPorId(id);
 
                 if (!horarios.isEmpty()) {
-                    // Limpiar los campos antes de llenarlos
                     for (JTextField txtHorario : txtHorarios) {
-                        txtHorario.setText("");
+                        txtHorario.setText(""); // Limpiar antes de asignar nuevos valores
                     }
 
-                    // Llenar los campos con los horarios encontrados
+                    // Mapa para contar horarios por día
+                    Map<String, Integer> contadorHorarios = new HashMap<>();
+
                     for (EmpleadoDatosExtra horario : horarios) {
                         int diaIndex = obtenerIndiceDia(horario.getDiaN());
-                        if (diaIndex >= 0 && diaIndex < 7) { // Solo para los primeros 7 días
-                            txtHorarios[diaIndex].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
-                            if (chkMultiplesHorarios.isSelected() && diaIndex + 7 < txtHorarios.length) {
-                                txtHorarios[diaIndex + 7].setText(horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal());
+                        if (diaIndex >= 0 && diaIndex < 7) {
+                            String horarioTexto = horario.getHoraEntradaReal() + " - " + horario.getHoraSalidaReal();
+
+                            // Si ya hay un horario en ese día, asignar al segundo campo
+                            int count = contadorHorarios.getOrDefault(horario.getDiaN(), 0);
+                            if (count == 0) {
+                                txtHorarios[diaIndex].setText(horarioTexto);
+                            } else {
+                                txtHorarios[diaIndex + 7].setText(horarioTexto);
                             }
-                        } else {
-                            System.err.println("Índice inválido: " + diaIndex);
+
+                            // Aumentar contador de horarios para ese día
+                            contadorHorarios.put(horario.getDiaN(), count + 1);
                         }
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se encontraron horarios para el empleado con ID: " + id);
+                    JOptionPane.showMessageDialog(panel, "No se encontraron horarios para el empleado con ID: " + id);
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Por favor, ingrese una ID.");
+                JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
             }
         });
 
+
+        // Acción para el botón de guardar
         btnGuardar.addActionListener(e -> {
             String id = txtId.getText().trim();
             if (!id.isEmpty()) {
                 BaseDeDatosManager dbManager = new BaseDeDatosManager();
                 for (int i = 0; i < 7; i++) {
-                    String horario = txtHorarios[i].getText().trim();
-                    if (!horario.isEmpty()) {
-                        String[] partes = horario.split(" - ");
-                        if (partes.length == 2) {
-                            String dia = dias[i];
-                            dbManager.actualizarHorarioPorDia(id, dia, partes[0], partes[1]);
+                    String horario1 = txtHorarios[i].getText().trim();
+                    String horario2 = txtHorarios[i + 7].getText().trim();
+                    String dia = dias[i];
+
+                    if (!horario1.isEmpty()) {
+                        String[] partes1 = horario1.split(" - ");
+                        if (partes1.length == 2) {
+                            dbManager.actualizarHorarioPorDia(id, dia, partes1[0], partes1[1]);
+                        }
+                    }
+
+                    if (!horario2.isEmpty()) {
+                        String[] partes2 = horario2.split(" - ");
+                        if (partes2.length == 2) {
+                            dbManager.actualizarHorarioPorDia(id, dia, partes2[0], partes2[1]);
+                            btnBuscar.doClick(); // Recargar los datos actualizados
+
                         }
                     }
                 }
                 JOptionPane.showMessageDialog(panel, "Horario actualizado correctamente.");
-
-                // Cierra el JDialog que contiene este panel
                 Window ventana = SwingUtilities.getWindowAncestor(panel);
                 if (ventana instanceof JDialog) {
-                    ventana.dispose(); 
+                    ventana.dispose();
                 }
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
@@ -781,6 +767,7 @@ public class Vista extends JFrame {
 
         return panel;
     }
+
 
     private int obtenerIndiceDia(String dia) {
         String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
@@ -1079,7 +1066,7 @@ public class Vista extends JFrame {
     private String getTimeValue(Row row, Integer columnIndex) { 
         if (columnIndex == null) return "Columna no válida"; 
         Cell cell = row.getCell(columnIndex);
-        if (cell == null) return "Celda vacía"; 
+        if (cell == null) return "00:00"; 
 
         //System.out.println("Tipo de celda: " + cell.getCellType());
         //System.out.println("Valor crudo de la celda: " + cell.toString());
@@ -1232,10 +1219,6 @@ public class Vista extends JFrame {
             e.printStackTrace();
         }
     }
-
-  
-
-
     // Método auxiliar para obtener el valor de una celda como String
     private String convertirDecimalAHora(double valorDecimal) {
         int horas = (int) (valorDecimal * 24);
@@ -1268,7 +1251,7 @@ public class Vista extends JFrame {
                         if (!horas.isEmpty()) {
                             LocalTime ultimaHora = horas.get(horas.size() - 1);
                             long diferencia = ChronoUnit.MINUTES.between(ultimaHora, hora);
-                            if (diferencia < 40) {
+                            if (diferencia < 2) {
                                 continue; // Omitir checada si está dentro del intervalo
                             }
                         }

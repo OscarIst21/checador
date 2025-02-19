@@ -67,8 +67,6 @@ public class ReportePDF {
     LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
     LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
 
-	private EmpleadoDatosExtra empleado;
-
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
         String periodoReporte = periodo;
         String[] planteles = {
@@ -201,7 +199,8 @@ public class ReportePDF {
         JFileChooser fileChooser = new JFileChooser(ultimaRuta);
         fileChooser.setDialogTitle("Guardar Reporte PDF");
         fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
-        fileChooser.setSelectedFile(new File(periodoReporte + "_" + plantelSeleccionado + ".pdf"));
+        fileChooser.setSelectedFile(new File(periodoReporte.replace(" ", "") + "_" + plantelSeleccionado.replace(" ", "") + ".pdf"));
+
 
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
@@ -272,7 +271,6 @@ public class ReportePDF {
                 boolean primeraVezEnPagina = true;
 
                 // Iterar sobre los IDs ordenados
-             // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
@@ -300,7 +298,7 @@ public class ReportePDF {
                     Map<String, List<Checadas>> checadasPorFecha = checadasPorId.get(id).stream()
                         .collect(Collectors.groupingBy(Checadas::getFecha));
 
-                    // Iterar sobre todas las fechas en el rango
+                 // Iterar sobre todas las fechas en el rango
                     for (String fecha : dias) {
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();

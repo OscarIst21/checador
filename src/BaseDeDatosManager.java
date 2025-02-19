@@ -197,11 +197,13 @@ public class BaseDeDatosManager {
         return horarios;
     }
     public void actualizarHorarioPorDia(String id, String dia, String horaEntrada, String horaSalida) {
-        String actualizarSQL = """
-            UPDATE horarios
-            SET horaEntradaReal = ?, horaSalidaReal = ?
-            WHERE id = ? AND diaN = ?;
-        """;
+    	String actualizarSQL = """
+    		    UPDATE horarios
+    		    SET horaEntradaReal = ?, horaSalidaReal = ?
+    		    WHERE id = ? AND diaN = ? AND (horaEntradaReal = ? OR horaEntradaReal IS NULL);
+    		""";
+
+
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(actualizarSQL)) {
@@ -210,7 +212,8 @@ public class BaseDeDatosManager {
             pstmt.setString(3, id);
             pstmt.setString(4, dia);
             int filasAfectadas = pstmt.executeUpdate();
-            
+            System.out.println("Filas afectadas por UPDATE: " + filasAfectadas);
+
             if (filasAfectadas == 0) {
                 // Si no existe el horario, insertarlo
                 String insertarSQL = """
