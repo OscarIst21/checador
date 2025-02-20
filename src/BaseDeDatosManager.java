@@ -197,42 +197,64 @@ public class BaseDeDatosManager {
         return horarios;
     }
     public void actualizarHorarioPorDia(String id, String dia, String horaEntrada, String horaSalida) {
-    	String actualizarSQL = """
-    		    UPDATE horarios
-    		    SET horaEntradaReal = ?, horaSalidaReal = ?
-    		    WHERE id = ? AND diaN = ? AND (horaEntradaReal = ? OR horaEntradaReal IS NULL);
-    		""";
+        String actualizarSQL = """
+            UPDATE horarios
+            SET horaSalidaReal = ?
+            WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
+        """;
 
-
+        String insertarSQL = """
+            INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE 
+            SET horaSalidaReal = excluded.horaSalidaReal;
+        """;
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(actualizarSQL)) {
-            pstmt.setString(1, horaEntrada);
-            pstmt.setString(2, horaSalida);
-            pstmt.setString(3, id);
-            pstmt.setString(4, dia);
-            int filasAfectadas = pstmt.executeUpdate();
+             PreparedStatement pstmtUpdate = conn.prepareStatement(actualizarSQL);
+             PreparedStatement pstmtInsert = conn.prepareStatement(insertarSQL)) {
+
+            // Intentar actualizar el registro existente
+            pstmtUpdate.setString(1, horaSalida);
+            pstmtUpdate.setString(2, id);
+            pstmtUpdate.setString(3, dia);
+            pstmtUpdate.setString(4, horaEntrada);
+
+            int filasAfectadas = pstmtUpdate.executeUpdate();
             System.out.println("Filas afectadas por UPDATE: " + filasAfectadas);
 
+            // Si no se actualizó ningún registro, insertar uno nuevo
             if (filasAfectadas == 0) {
-                // Si no existe el horario, insertarlo
-                String insertarSQL = """
-                    INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
-                    VALUES (?, ?, ?, ?);
-                """;
-                try (PreparedStatement pstmtInsert = conn.prepareStatement(insertarSQL)) {
-                    pstmtInsert.setString(1, id);
-                    pstmtInsert.setString(2, dia);
-                    pstmtInsert.setString(3, horaEntrada);
-                    pstmtInsert.setString(4, horaSalida);
-                    pstmtInsert.executeUpdate();
-                }
+                pstmtInsert.setString(1, id);
+                pstmtInsert.setString(2, dia);
+                pstmtInsert.setString(3, horaEntrada);
+                pstmtInsert.setString(4, horaSalida);
+                pstmtInsert.executeUpdate();
+                System.out.println("Insertando nuevo horario para " + dia);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+    public void eliminarHorarioPorDia(String id, String dia, String horaEntrada) {
+        String eliminarSQL = """
+            DELETE FROM horarios
+            WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
+        """;
 
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(eliminarSQL)) {
+            
+            pstmt.setString(1, id);
+            pstmt.setString(2, dia);
+            pstmt.setString(3, horaEntrada);
+            
+            int filasAfectadas = pstmt.executeUpdate();
+            System.out.println("Filas afectadas por DELETE: " + filasAfectadas);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
     public void insertarOActualizarHorarios(List<EmpleadoDatosExtra> horarios) {
         String insertarOActualizarSQL = """
             INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)

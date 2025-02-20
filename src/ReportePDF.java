@@ -227,7 +227,7 @@ public class ReportePDF {
                             PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
                             Rectangle pageSize = docEvent.getPage().getPageSize();
                             if (incluirNumeroPagina) {
-                                agregarNumeroPagina(pdfDoc);
+                                agregarNumeroPagina(pdfDoc, plantelSeleccionado);
                             }
                             try {
                                 if (incluirEncabezado) {
@@ -577,7 +577,7 @@ public class ReportePDF {
         return (int) (espacioRestante / alturaFila); // Número máximo de filas que caben
     }
 
-    private void agregarNumeroPagina(PdfDocument pdfDoc) {
+    private void agregarNumeroPagina(PdfDocument pdfDoc, String plantel) {
         pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new IEventHandler() {
             @Override
             public void handleEvent(com.itextpdf.kernel.events.Event event) {
@@ -585,10 +585,10 @@ public class ReportePDF {
                 PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
                 Rectangle pageSize = docEvent.getPage().getPageSize();
 
-                float xPageNumber = pageSize.getRight() - 60; // Posición X del número de página
+                float xPageNumber = pageSize.getRight() - 105; // Posición X del número de página
                 float yPageNumber = pageSize.getBottom() + 30; // Posición Y del número de página
 
-                String pageNumber = "Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
+                String pageNumber = plantel+" - Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
                 try {
                     PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
                     canvas.beginText();

@@ -668,6 +668,7 @@ public class Vista extends JFrame {
         camposPanel.add(lblId);
         camposPanel.add(txtId);
 
+        // Declaración de los días (SE USA EN TODA LA FUNCIÓN)
         String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
 
         for (int i = 0; i < 7; i++) {
@@ -728,7 +729,6 @@ public class Vista extends JFrame {
             }
         });
 
-
         // Acción para el botón de guardar
         btnGuardar.addActionListener(e -> {
             String id = txtId.getText().trim();
@@ -739,27 +739,38 @@ public class Vista extends JFrame {
                     String horario2 = txtHorarios[i + 7].getText().trim();
                     String dia = dias[i];
 
+                    // Manejar el primer horario
                     if (!horario1.isEmpty()) {
                         String[] partes1 = horario1.split(" - ");
                         if (partes1.length == 2) {
+                            System.out.println("Actualizando horario 1 para " + dia + ": " + partes1[0] + " - " + partes1[1]);
                             dbManager.actualizarHorarioPorDia(id, dia, partes1[0], partes1[1]);
+                        } else {
+                            JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 1).");
                         }
+                    } else {
+                        // Si el campo está vacío, borrar el horario correspondiente
+                        System.out.println("Borrando horario 1 para " + dia);
+                        dbManager.eliminarHorarioPorDia(id, dia, "");
                     }
 
+                    // Manejar el segundo horario
                     if (!horario2.isEmpty()) {
                         String[] partes2 = horario2.split(" - ");
                         if (partes2.length == 2) {
+                            System.out.println("Actualizando horario 2 para " + dia + ": " + partes2[0] + " - " + partes2[1]);
                             dbManager.actualizarHorarioPorDia(id, dia, partes2[0], partes2[1]);
-                            btnBuscar.doClick(); // Recargar los datos actualizados
-
+                        } else {
+                            JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 2).");
                         }
+                    } else {
+                        // Si el campo está vacío, borrar el horario correspondiente
+                        System.out.println("Borrando horario 2 para " + dia);
+                        dbManager.eliminarHorarioPorDia(id, dia, "");
                     }
                 }
                 JOptionPane.showMessageDialog(panel, "Horario actualizado correctamente.");
-                Window ventana = SwingUtilities.getWindowAncestor(panel);
-                if (ventana instanceof JDialog) {
-                    ventana.dispose();
-                }
+                btnBuscar.doClick(); // Recargar los datos actualizados
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
             }
@@ -767,18 +778,30 @@ public class Vista extends JFrame {
 
         return panel;
     }
+    private String obtenerHoraEntradaDeHorario(String id, String dia, int indiceHorario, JTextField[] txtHorarios) {
+        BaseDeDatosManager dbManager = new BaseDeDatosManager();
+        List<EmpleadoDatosExtra> horarios = dbManager.obtenerHorariosPorId(id);
 
-
+        for (EmpleadoDatosExtra horario : horarios) {
+            if (horario.getDiaN().equalsIgnoreCase(dia)) {
+                if (indiceHorario == 1 && txtHorarios[obtenerIndiceDia(dia)].getText().trim().isEmpty()) {
+                    return horario.getHoraEntradaReal();
+                } else if (indiceHorario == 2 && txtHorarios[obtenerIndiceDia(dia) + 7].getText().trim().isEmpty()) {
+                    return horario.getHoraEntradaReal();
+                }
+            }
+        }
+        return null;
+    }
     private int obtenerIndiceDia(String dia) {
         String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
         for (int i = 0; i < dias.length; i++) {
             if (dias[i].equalsIgnoreCase(dia)) {
-                return i; // Devuelve el índice del día en el arreglo
+                return i;
             }
         }
         return -1; // Si no se encuentra el día
     }
-
     private String obtenerNombreDia(int indice) {
     	String[] dias = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
         if (indice >= 0 && indice < dias.length) {
