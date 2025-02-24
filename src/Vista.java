@@ -734,6 +734,8 @@ public class Vista extends JFrame {
             String id = txtId.getText().trim();
             if (!id.isEmpty()) {
                 BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                List<EmpleadoDatosExtra> horariosActualizados = new ArrayList<>();
+
                 for (int i = 0; i < 7; i++) {
                     String horario1 = txtHorarios[i].getText().trim();
                     String horario2 = txtHorarios[i + 7].getText().trim();
@@ -743,39 +745,47 @@ public class Vista extends JFrame {
                     if (!horario1.isEmpty()) {
                         String[] partes1 = horario1.split(" - ");
                         if (partes1.length == 2) {
-                            System.out.println("Actualizando horario 1 para " + dia + ": " + partes1[0] + " - " + partes1[1]);
-                            dbManager.actualizarHorarioPorDia(id, dia, partes1[0], partes1[1]);
+                            horariosActualizados.add(new EmpleadoDatosExtra(id, dia, partes1[0], partes1[1]));
                         } else {
                             JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 1).");
                         }
-                    } else {
-                        // Si el campo está vacío, borrar el horario correspondiente
-                        System.out.println("Borrando horario 1 para " + dia);
-                        dbManager.eliminarHorarioPorDia(id, dia, "");
                     }
 
                     // Manejar el segundo horario
                     if (!horario2.isEmpty()) {
                         String[] partes2 = horario2.split(" - ");
                         if (partes2.length == 2) {
-                            System.out.println("Actualizando horario 2 para " + dia + ": " + partes2[0] + " - " + partes2[1]);
-                            dbManager.actualizarHorarioPorDia(id, dia, partes2[0], partes2[1]);
+                            horariosActualizados.add(new EmpleadoDatosExtra(id, dia, partes2[0], partes2[1]));
                         } else {
                             JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 2).");
                         }
-                    } else {
-                        // Si el campo está vacío, borrar el horario correspondiente
-                        System.out.println("Borrando horario 2 para " + dia);
-                        dbManager.eliminarHorarioPorDia(id, dia, "");
                     }
                 }
+
+                // Obtener los horarios actuales de la base de datos
+                List<EmpleadoDatosExtra> horariosActuales = dbManager.obtenerHorariosPorId(id);
+
+                // Eliminar horarios que ya no están en la lista de horarios actualizados
+                for (EmpleadoDatosExtra horarioActual : horariosActuales) {
+                    boolean existeEnActualizados = horariosActualizados.stream()
+                        .anyMatch(ha -> ha.getId().equals(horarioActual.getId()) &&
+                                        ha.getDiaN().equals(horarioActual.getDiaN()) &&
+                                        ha.getHoraEntradaReal().equals(horarioActual.getHoraEntradaReal()));
+
+                    if (!existeEnActualizados) {
+                        dbManager.eliminarHorarioPorDia(horarioActual.getId(), horarioActual.getDiaN(), horarioActual.getHoraEntradaReal());
+                    }
+                }
+
+                // Actualizar o insertar los horarios actualizados
+                dbManager.actualizarDatos(horariosActualizados);
+
                 JOptionPane.showMessageDialog(panel, "Horario actualizado correctamente.");
                 btnBuscar.doClick(); // Recargar los datos actualizados
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
             }
         });
-
         return panel;
     }
     private String obtenerHoraEntradaDeHorario(String id, String dia, int indiceHorario, JTextField[] txtHorarios) {
@@ -998,8 +1008,7 @@ public class Vista extends JFrame {
                 }
 
                 String[] requiredColumns = {
-                    "numero_empleado", "cct", "cct_no", "dia", "hora_entrada", "hora_salida", 
-                    "hora_salida_dia_siguiente", "horario_mixto", "anio", "periodo_inicio", "periodo_termino"
+                    "numero_empleado", "dia", "hora_entrada", "hora_salida"
                 };
                 boolean allColumnsFound = true;
                 for (String column : requiredColumns) {
@@ -1018,20 +1027,12 @@ public class Vista extends JFrame {
                     if (row == null) continue;
 
                     String id = getCellValue(row, columnMap.get("numero_empleado"));
-                    String cct = getCellValue(row, columnMap.get("cct"));
-                    String cctNo = getCellValue(row, columnMap.get("cct_no"));
                     String dia = getDayName(getCellNumericValue(row, columnMap.get("dia")));
                     String horaEntradaReal = getTimeValue(row, columnMap.get("hora_entrada"));
                     String horaSalidaReal = getTimeValue(row, columnMap.get("hora_salida"));
-                    String horaSalidaDiaSiguiente = getCellValue(row, columnMap.get("hora_salida_dia_siguiente"));
-                    String horarioMixto = getCellValue(row, columnMap.get("horario_mixto"));
-                    String anio = getCellValue(row, columnMap.get("anio"));
-                    String periodoInicio = getCellValue(row, columnMap.get("periodo_inicio"));
-                    String periodoTermino = getCellValue(row, columnMap.get("periodo_termino"));
 
                     if (!id.isEmpty()) {
-                        EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, cct, cctNo, dia, horaEntradaReal, horaSalidaReal,
-                                horaSalidaDiaSiguiente, horarioMixto, anio, periodoInicio, periodoTermino);
+                        EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, dia, horaEntradaReal, horaSalidaReal);
                         empleadosDatos.add(empleado);
                         System.out.println("Empleado cargado: " + empleado.toString()); // Depuración
                     }
@@ -1086,32 +1087,32 @@ public class Vista extends JFrame {
         }
         return "";
     }
-    private String getTimeValue(Row row, Integer columnIndex) { 
-        if (columnIndex == null) return "Columna no válida"; 
+    private String getTimeValue(Row row, Integer columnIndex) {
+        if (columnIndex == null) return "Columna no válida";
         Cell cell = row.getCell(columnIndex);
-        if (cell == null) return "00:00"; 
-
-        //System.out.println("Tipo de celda: " + cell.getCellType());
-        //System.out.println("Valor crudo de la celda: " + cell.toString());
+        if (cell == null) return "00:00";
 
         if (cell.getCellType() == CellType.NUMERIC) {
             if (DateUtil.isCellDateFormatted(cell)) {
-                // Formatear para solo horas y minutos
+                // Formatear para solo horas y minutos (HH:mm)
                 SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                 return timeFormat.format(cell.getDateCellValue());
             } else {
-                //System.out.println("El valor numérico no es una fecha/hora reconocida.");
+                // Si es numérico pero no es una fecha, devolver "00:00"
+                return "00:00";
             }
         } else if (cell.getCellType() == CellType.STRING) {
             String timeValue = cell.getStringCellValue().trim();
-            //System.out.println("Contenido de la celda como texto: " + timeValue);
-            // Extraer horas y minutos del texto en formato hh:mm:ss
-            if (timeValue.matches("\\d{1,2}:\\d{2}:\\d{2}")) { 
-                return timeValue.substring(0, 5); // Tomar solo "hh:mm"
+
+            // Extraer "HH:mm" si el formato es "HH:mm:ss" o similar
+            if (timeValue.matches("\\d{1,2}:\\d{2}(:\\d{2})?")) {
+                // Tomar solo las primeras 5 posiciones (HH:mm)
+                return timeValue.substring(0, 5);
             }
         }
 
-        return "Valor no reconocido"; 
+        // Si no coincide con ningún formato válido, devolver "00:00"
+        return "00:00";
     }
 
 

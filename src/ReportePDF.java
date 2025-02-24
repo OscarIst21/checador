@@ -70,10 +70,10 @@ public class ReportePDF {
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
         String periodoReporte = periodo;
         String[] planteles = {
-            "Seleccione un plantel", "Dirección General", "Contraloria y Juridico", "Caseta de vigilancia", 
-            "Emsad01", "Emsad03", "Emsad06", "Emsad07", "Emsad08", "Emsad09", "Emsad10", "Emsad11", "Emsad12", 
-            "Emsad13", "Emsad14", "Emsad16", "Cecyt01", "Cecyt02", "Cecyt03", "Cecyt04", "Cecyt05", 
-            "Cecyt06", "Cecyt07", "Cecyt08", "Cecyt09", "Cecyt10", "Cecyt11"
+            "Seleccione un plantel", "DIRECCIÓN GENERAL", "CONTRALORÍA Y JURÍDICO", "CASETA DE VIGILANCIA",
+            "EMSAD01", "EMSAD03", "EMSAD06", "EMSAD07", "EMSAD08", "EMSAD09", "EMSAD10", "EMSAD11", "EMSAD12",
+            "EMSAD13", "EMSAD14", "EMSAD16", "CECYT01", "CECYT02", "CECYT03", "CECYT04", "CECYT05",
+            "CECYT06", "CECYT07", "CECYT08", "CECYT09", "CECYT10", "CECYT11"
         };
 
         JComboBox<String> plantelComboBox = new JComboBox<>(planteles);
@@ -194,7 +194,7 @@ public class ReportePDF {
         }
 
         BaseDeDatosManager dbManager = new BaseDeDatosManager();
-        List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerEmpleados();
+        List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerTodosLosHorarios();
 
         JFileChooser fileChooser = new JFileChooser(ultimaRuta);
         fileChooser.setDialogTitle("Guardar Reporte PDF");
@@ -732,7 +732,7 @@ public class ReportePDF {
         if (horaSalida.equals("00:00") || horaSalida.isEmpty()) {
             return "Falta";
         }
-        if (horaReal == null || horaReal.equals("00:00")) {
+        if (horaReal == null || horaReal.equals("00:00") || horaSalida==null) {
             return "";
         }
 

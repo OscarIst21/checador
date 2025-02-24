@@ -75,27 +75,21 @@ public class BaseDeDatosManager {
         String crearTablaHorariosSQL = """
             CREATE TABLE IF NOT EXISTS horarios (
                 id TEXT,
-                cct TEXT,
-                cctNo TEXT,
                 diaN TEXT,
                 horaEntradaReal TEXT,
                 horaSalidaReal TEXT,
-                horaSalidaDiaSiguiente TEXT,
-                horarioMixto TEXT,
-                anio TEXT,
-                periodo_inicio TEXT,
-                periodo_termino TEXT,
                 PRIMARY KEY (id, diaN, horaEntradaReal)
             );
         """;
 
         String crearTablaEmpleadosNombreSQL = """
-            CREATE TABLE IF NOT EXISTS empleadosNombre (
-                id TEXT PRIMARY KEY,
-                nombre TEXT,
-                puesto TEXT,
-                jornada TEXT
-            );
+            CREATE TABLE IF NOT EXISTS horarios (
+			    horario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+			    id TEXT,
+			    diaN TEXT,
+			    horaEntradaReal TEXT,
+			    horaSalidaReal TEXT
+			);
         """;
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + rutaBaseDatos);
@@ -107,35 +101,23 @@ public class BaseDeDatosManager {
             e.printStackTrace();
         }
     }
+
+    // Método para actualizar datos de empleados
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
         String insertarOActualizarSQL = """
-            INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
-                cct = excluded.cct,
-                cctNo = excluded.cctNo,
-                horaSalidaReal = excluded.horaSalidaReal,
-                horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
-                horarioMixto = excluded.horarioMixto,
-                anio = excluded.anio,
-                periodo_inicio = excluded.periodo_inicio,
-                periodo_termino = excluded.periodo_termino;
+                horaSalidaReal = excluded.horaSalidaReal;
         """;
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
             for (EmpleadoDatosExtra empleado : empleadosDatos) {
                 pstmt.setString(1, empleado.getId());
-                pstmt.setString(2, empleado.getCct());
-                pstmt.setString(3, empleado.getCctNo());
-                pstmt.setString(4, empleado.getDiaN());
-                pstmt.setString(5, empleado.getHoraEntradaReal());
-                pstmt.setString(6, empleado.getHoraSalidaReal());
-                pstmt.setString(7, empleado.getHoraSalidaDiaSiguiente());
-                pstmt.setString(8, empleado.getHorarioMixto());
-                pstmt.setString(9, empleado.getAnio());
-                pstmt.setString(10, empleado.getPeriodo_inicio());
-                pstmt.setString(11, empleado.getPeriodo_termino());
+                pstmt.setString(2, empleado.getDiaN());
+                pstmt.setString(3, empleado.getHoraEntradaReal());
+                pstmt.setString(4, empleado.getHoraSalidaReal());
                 pstmt.addBatch();
                 System.out.println("Insertando/Actualizando: " + empleado.toString()); // Depuración
             }
@@ -144,6 +126,8 @@ public class BaseDeDatosManager {
             e.printStackTrace();
         }
     }
+
+    // Método para obtener un empleado por su ID
     public Empleado obtenerEmpleadoPorId(String id) {
         String query = "SELECT id, nombre, puesto, jornada FROM empleadosNombre WHERE id = ?";
         Empleado empleado = null;
@@ -166,9 +150,11 @@ public class BaseDeDatosManager {
 
         return empleado;
     }
+
+    // Método para obtener horarios por ID
     public List<EmpleadoDatosExtra> obtenerHorariosPorId(String id) {
         List<EmpleadoDatosExtra> horarios = new ArrayList<>();
-        String query = "SELECT id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino FROM horarios WHERE id = ?";
+        String query = "SELECT id, diaN, horaEntradaReal, horaSalidaReal FROM horarios WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -176,18 +162,12 @@ public class BaseDeDatosManager {
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                EmpleadoDatosExtra horario = new EmpleadoDatosExtra();
-                horario.setId(rs.getString("id"));
-                horario.setCct(rs.getString("cct"));
-                horario.setCctNo(rs.getString("cctNo"));
-                horario.setDiaN(rs.getString("diaN"));
-                horario.setHoraEntradaReal(rs.getString("horaEntradaReal"));
-                horario.setHoraSalidaReal(rs.getString("horaSalidaReal"));
-                horario.setHoraSalidaDiaSiguiente(rs.getString("horaSalidaDiaSiguiente"));
-                horario.setHorarioMixto(rs.getString("horarioMixto"));
-                horario.setAnio(rs.getString("anio"));
-                horario.setPeriodo_inicio(rs.getString("periodo_inicio"));
-                horario.setPeriodo_termino(rs.getString("periodo_termino"));
+                EmpleadoDatosExtra horario = new EmpleadoDatosExtra(
+                    rs.getString("id"),
+                    rs.getString("diaN"),
+                    rs.getString("horaEntradaReal"),
+                    rs.getString("horaSalidaReal")
+                );
                 horarios.add(horario);
             }
         } catch (SQLException e) {
@@ -196,47 +176,29 @@ public class BaseDeDatosManager {
 
         return horarios;
     }
-    public void actualizarHorarioPorDia(String id, String dia, String horaEntrada, String horaSalida) {
+
+    // Método para actualizar el horario de un día específico
+    public void actualizarHorarioPorDia(String id, String diaN, String horaEntradaReal, String nuevaHoraSalidaReal) {
         String actualizarSQL = """
             UPDATE horarios
             SET horaSalidaReal = ?
             WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
         """;
 
-        String insertarSQL = """
-            INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE 
-            SET horaSalidaReal = excluded.horaSalidaReal;
-        """;
-
         try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmtUpdate = conn.prepareStatement(actualizarSQL);
-             PreparedStatement pstmtInsert = conn.prepareStatement(insertarSQL)) {
-
-            // Intentar actualizar el registro existente
-            pstmtUpdate.setString(1, horaSalida);
-            pstmtUpdate.setString(2, id);
-            pstmtUpdate.setString(3, dia);
-            pstmtUpdate.setString(4, horaEntrada);
-
-            int filasAfectadas = pstmtUpdate.executeUpdate();
-            System.out.println("Filas afectadas por UPDATE: " + filasAfectadas);
-
-            // Si no se actualizó ningún registro, insertar uno nuevo
-            if (filasAfectadas == 0) {
-                pstmtInsert.setString(1, id);
-                pstmtInsert.setString(2, dia);
-                pstmtInsert.setString(3, horaEntrada);
-                pstmtInsert.setString(4, horaSalida);
-                pstmtInsert.executeUpdate();
-                System.out.println("Insertando nuevo horario para " + dia);
-            }
+             PreparedStatement pstmt = conn.prepareStatement(actualizarSQL)) {
+            pstmt.setString(1, nuevaHoraSalidaReal);
+            pstmt.setString(2, id);
+            pstmt.setString(3, diaN);
+            pstmt.setString(4, horaEntradaReal);
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    public void eliminarHorarioPorDia(String id, String dia, String horaEntrada) {
+
+    // Método para eliminar un horario por día
+    public void eliminarHorarioPorDia(String id, String diaN, String horaEntradaReal) {
         String eliminarSQL = """
             DELETE FROM horarios
             WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
@@ -244,141 +206,16 @@ public class BaseDeDatosManager {
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(eliminarSQL)) {
-            
             pstmt.setString(1, id);
-            pstmt.setString(2, dia);
-            pstmt.setString(3, horaEntrada);
-            
-            int filasAfectadas = pstmt.executeUpdate();
-            System.out.println("Filas afectadas por DELETE: " + filasAfectadas);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    public void insertarOActualizarHorarios(List<EmpleadoDatosExtra> horarios) {
-        String insertarOActualizarSQL = """
-            INSERT INTO horarios (id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
-                cct = excluded.cct,
-                cctNo = excluded.cctNo,
-                horaSalidaReal = excluded.horaSalidaReal,
-                horaSalidaDiaSiguiente = excluded.horaSalidaDiaSiguiente,
-                horarioMixto = excluded.horarioMixto,
-                anio = excluded.anio,
-                periodo_inicio = excluded.periodo_inicio,
-                periodo_termino = excluded.periodo_termino;
-        """;
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
-            for (EmpleadoDatosExtra horario : horarios) {
-                pstmt.setString(1, horario.getId());
-                pstmt.setString(2, horario.getCct());
-                pstmt.setString(3, horario.getCctNo());
-                pstmt.setString(4, horario.getDiaN());
-                pstmt.setString(5, horario.getHoraEntradaReal());
-                pstmt.setString(6, horario.getHoraSalidaReal());
-                pstmt.setString(7, horario.getHoraSalidaDiaSiguiente());
-                pstmt.setString(8, horario.getHorarioMixto());
-                pstmt.setString(9, horario.getAnio());
-                pstmt.setString(10, horario.getPeriodo_inicio());
-                pstmt.setString(11, horario.getPeriodo_termino());
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    public void eliminarEmpleadoPorId(String id) {
-        String query = "DELETE FROM empleadosNombre WHERE id = ?";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, id);
+            pstmt.setString(2, diaN);
+            pstmt.setString(3, horaEntradaReal);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    public void eliminarHorariosPorId(String id) {
-        String query = "DELETE FROM horarios WHERE id = ?";
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, id);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    public boolean existeEmpleado(String id) {
-        String query = "SELECT COUNT(*) FROM empleadosNombre WHERE id = ?";
-        boolean existe = false;
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, id);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                existe = rs.getInt(1) > 0;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return existe;
-    }
-    public List<String> obtenerTodosLosIds() {
-        List<String> ids = new ArrayList<>();
-        String query = "SELECT id FROM empleadosNombre";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                ids.add(rs.getString("id"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return ids;
-    }
-    public List<EmpleadoDatosExtra> obtenerEmpleados() {
-        List<EmpleadoDatosExtra> empleados = new ArrayList<>();
-        String query = "SELECT id, cct, cctNo, diaN, horaEntradaReal, horaSalidaReal, horaSalidaDiaSiguiente, horarioMixto, anio, periodo_inicio, periodo_termino FROM horarios";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                EmpleadoDatosExtra empleado = new EmpleadoDatosExtra();
-                empleado.setId(rs.getString("id"));
-                empleado.setCct(rs.getString("cct"));
-                empleado.setCctNo(rs.getString("cctNo"));
-                empleado.setDiaN(rs.getString("diaN"));
-                empleado.setHoraEntradaReal(rs.getString("horaEntradaReal"));
-                empleado.setHoraSalidaReal(rs.getString("horaSalidaReal"));
-                empleado.setHoraSalidaDiaSiguiente(rs.getString("horaSalidaDiaSiguiente"));
-                empleado.setHorarioMixto(rs.getString("horarioMixto"));
-                empleado.setAnio(rs.getString("anio"));
-                empleado.setPeriodo_inicio(rs.getString("periodo_inicio"));
-                empleado.setPeriodo_termino(rs.getString("periodo_termino"));
-                empleados.add(empleado);
-               
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return empleados;
-    }
-
+    // Método para insertar o actualizar empleados
     public void insertarOActualizarEmpleado(Empleado empleado) {
         String insertarOActualizarSQL = """
             INSERT INTO empleadosNombre (id, nombre, puesto, jornada)
@@ -400,7 +237,30 @@ public class BaseDeDatosManager {
             e.printStackTrace();
         }
     }
+    public List<EmpleadoDatosExtra> obtenerTodosLosHorarios() {
+        List<EmpleadoDatosExtra> empleados = new ArrayList<>();
+        String query = "SELECT id, diaN, horaEntradaReal, horaSalidaReal FROM horarios";
 
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(
+                    rs.getString("id"),
+                    rs.getString("diaN"),
+                    rs.getString("horaEntradaReal"),
+                    rs.getString("horaSalidaReal")
+                );
+                empleados.add(empleado);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return empleados;
+    }
+    // Método para obtener todos los empleados
     public List<Empleado> obtenerEmpleadosNombre() {
         List<Empleado> empleados = new ArrayList<>();
         String query = "SELECT id, nombre, puesto, jornada FROM empleadosNombre";
