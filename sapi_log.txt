@@ -1,0 +1,1 @@
+[2025-02-25 15:03:12] Aplicación cerrada. Archivo de log reiniciado.

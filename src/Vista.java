@@ -102,7 +102,7 @@ public class Vista extends JFrame {
     private boolean incluirNumeroPagina = true; 
     private JTabbedPane tabbedPane = new JTabbedPane();
     private String filtroIdGuardado = ""; // Variable para almacenar las IDs ingresadas
-
+    private LoggerSAPI logger;
     public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		       EventQueue.invokeLater(new Runnable() {
@@ -110,6 +110,7 @@ public class Vista extends JFrame {
 		                try {
 		                    Vista frame = new Vista();
 		                    frame.setVisible(true);
+		                    
 		                  } catch (Exception e) {
 		                    e.printStackTrace();
 		                }
@@ -120,6 +121,7 @@ public class Vista extends JFrame {
 	}
 
     public Vista() {
+    	logger = LoggerSAPI.getInstance();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("SAPI");
         setResizable(false);
@@ -136,7 +138,10 @@ public class Vista extends JFrame {
         checadas = new ArrayList<>();
         empleadosDatos = new ArrayList<>();
         
-
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.clearLogFile(); // Borrar el contenido del archivo de log
+            logger.log("Aplicación cerrada. Archivo de log reiniciado."); // Opcional: registrar el cierre
+        }));
         
         JButton btnAyuda = new JButton("Ayuda");
         btnAyuda.setIcon(new ImageIcon(Vista.class.getResource("/img/iconAyuda.png")));
@@ -315,7 +320,8 @@ public class Vista extends JFrame {
         btnEditarEmpleado.setBackground(new Color(54, 165, 85));
         btnEditarEmpleado.setBounds(318, 324, 50, 50);
         contentPane.add(btnEditarEmpleado);
-
+        
+        logger.log("Aplicación SAPI iniciada."); 
         btnAyuda.addActionListener(e -> {
             // Mensaje explicativo del flujo de trabajo y la función de cada botón
             String mensaje = 
@@ -332,6 +338,9 @@ public class Vista extends JFrame {
 
             // Mostrar el mensaje en un JOptionPane
             JOptionPane.showMessageDialog(null, mensaje, "Ayuda - Flujo de trabajo y funciones", JOptionPane.INFORMATION_MESSAGE);
+
+            logger.log("Boton ayuda presionado"); 
+            
         });
         btnReiniciar.addActionListener(new ActionListener() {
             @Override
@@ -360,220 +369,364 @@ public class Vista extends JFrame {
             	reporteExcepcionesCorrecto=false;
                 // Mensaje de confirmación
                 JOptionPane.showMessageDialog(Vista.this, "Todos los datos y configuraciones han sido reseteados.");
+                logger.log("Valores restablecidos en la lista checadas y eliminación de tablas.");
             }
         });
         btnConfig.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Registrar en el log que el usuario abrió la ventana de configuración
+                logger.log("Botón configuración abierto");
+
                 // Crear un panel para las opciones de configuración
+                // Usamos un GridLayout con 4 filas y 1 columna para organizar los componentes
                 JPanel configPanel = new JPanel(new GridLayout(4, 1)); // 4 filas, 1 columna
 
-                // Crear botones de tipo "apagador" (JCheckBox)
+                // Crear botones de tipo "apagador" (JCheckBox) para las opciones de configuración
                 JCheckBox encabezadoCheckBox = new JCheckBox("Incluir encabezado", incluirEncabezado);
                 JCheckBox numeroPaginaCheckBox = new JCheckBox("Incluir número de página", incluirNumeroPagina);
 
-                // Crear un campo de texto para filtrar por ID
+                // Crear un campo de texto para que el usuario ingrese IDs para filtrar
                 JLabel filtroIdLabel = new JLabel("Filtrar por ID (separados por coma):");
-                JTextField filtroIdField = new JTextField(20);
-                filtroIdField.setText(filtroIdGuardado); // Restaurar el valor guardado
+                JTextField filtroIdField = new JTextField(20); // Campo de texto con 20 columnas de ancho
+                filtroIdField.setText(filtroIdGuardado); // Restaurar el valor guardado (si existe)
 
-                // Agregar los componentes al panel
-                configPanel.add(encabezadoCheckBox);
-                configPanel.add(numeroPaginaCheckBox);
-                configPanel.add(filtroIdLabel);
-                configPanel.add(filtroIdField);
+                // Agregar los componentes al panel de configuración
+                configPanel.add(encabezadoCheckBox);      // Agregar la opción de incluir encabezado
+                configPanel.add(numeroPaginaCheckBox);    // Agregar la opción de incluir número de página
+                configPanel.add(filtroIdLabel);           // Agregar la etiqueta del campo de filtro
+                configPanel.add(filtroIdField);           // Agregar el campo de texto para filtrar por ID
 
-                // Mostrar el JOptionPane con las opciones
+                // Mostrar el JOptionPane con las opciones de configuración
                 int result = JOptionPane.showConfirmDialog(
-                    Vista.this, // Ventana padre
-                    configPanel, // Panel con las opciones
+                    Vista.this,               // Ventana padre (la ventana principal de la aplicación)
+                    configPanel,              // Panel que contiene las opciones de configuración
                     "Configuración de Reporte", // Título del diálogo
                     JOptionPane.OK_CANCEL_OPTION, // Botones OK y Cancelar
-                    JOptionPane.PLAIN_MESSAGE // Sin ícono
+                    JOptionPane.PLAIN_MESSAGE    // Sin ícono (mensaje plano)
                 );
 
-                // Si el usuario hace clic en "OK", guardar las configuraciones
+                // Si el usuario hace clic en "OK", guardar las configuraciones seleccionadas
                 if (result == JOptionPane.OK_OPTION) {
+                    // Guardar el estado de las opciones de encabezado y número de página
                     incluirEncabezado = encabezadoCheckBox.isSelected();
                     incluirNumeroPagina = numeroPaginaCheckBox.isSelected();
 
-                    // Guardar el filtro ingresado
+                    // Guardar el filtro de IDs ingresado por el usuario
                     filtroIdGuardado = filtroIdField.getText().trim();
+
+                    // Registrar en el log las configuraciones seleccionadas por el usuario
+                    logger.log("Configuración guardada: " +
+                        "Incluir encabezado = " + incluirEncabezado + ", " +
+                        "Incluir número de página = " + incluirNumeroPagina + ", " +
+                        "Filtro de IDs = " + filtroIdGuardado);
+                } else {
+                    // Si el usuario cancela, registrar en el log que no se guardaron cambios
+                    logger.log("Configuración cancelada por el usuario.");
                 }
             }
         });
-
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Configurar el JFileChooser con la última ruta
+                // Registrar en el log que el usuario hizo clic en el botón para seleccionar un archivo
+                logger.log("Botón 'Seleccionar Archivo Checadas' presionado.");
+
+                // Configurar el JFileChooser con la última ruta utilizada por el usuario
                 JFileChooser fileChooser = new JFileChooser(lastPath);
+
+                // Establecer un filtro para mostrar solo archivos con extensiones .xls, .xlsx y .dat
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos permitidos (.xls, .xlsx, .dat)", "xls", "xlsx", "dat"));
+
+                // Mostrar un mensaje de "Cargando..." en la etiqueta correspondiente
                 lblNewLabel.setText("Cargando...");
-                
+
+                // Mostrar el diálogo para que el usuario seleccione un archivo
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
+                // Verificar si el usuario seleccionó un archivo y confirmó la selección
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
+                    // Obtener el archivo seleccionado por el usuario
                     File fileToOpen = fileChooser.getSelectedFile();
-                    lastPath = fileToOpen.getParent(); // Actualizar la última ruta
+
+                    // Actualizar la última ruta utilizada para futuras selecciones de archivos
+                    lastPath = fileToOpen.getParent();
 
                     if (!lblNewLabel.getText().equals("Cargando...")) {
                         eliminarTablaCargada(lblNewLabel.getText());
                     }
+
                     lblNewLabel.setText(fileToOpen.getName());
+
+                    // Registrar en el log que el usuario seleccionó un archivo
+                    logger.log("Archivo seleccionado: " + fileToOpen.getName());
 
                     // Obtener la extensión del archivo seleccionado
                     String extension = getFileExtension(fileToOpen);
 
                     try {
+                        // Procesar el archivo según su extensión
                         if (extension.equals("xls") || extension.equals("xlsx")) {
-                            String hoja = "Reporte de Excepciones";
-                            mostrarTablaDesdeExcel(fileToOpen, hoja);
-                            cargarChecador(fileToOpen);
+                            // Si es un archivo Excel (.xls o .xlsx)
+                            String hoja = "Reporte de Excepciones"; // Nombre de la hoja a cargar
+                            mostrarTablaDesdeExcel(fileToOpen, hoja); // Mostrar la tabla desde el archivo Excel
+                            cargarChecador(fileToOpen); // Cargar los datos del checador desde el archivo Excel
+
+                            // Registrar en el log que se cargó un archivo Excel
+                            logger.log("Archivo Excel cargado: " + fileToOpen.getName());
                         } else if (extension.equals("dat")) {
-                            mostrarTablaDesdeDat(fileToOpen);
-                            leerArchivoDAT(fileToOpen); 
+                            // Si es un archivo .dat
+                            mostrarTablaDesdeDat(fileToOpen); // Mostrar la tabla desde el archivo .dat
+                            leerArchivoDAT(fileToOpen); // Leer y procesar el archivo .dat
+
+                            // Registrar en el log que se cargó un archivo .dat
+                            logger.log("Archivo .dat cargado: " + fileToOpen.getName());
                         } else {
+                            // Si el formato del archivo no es compatible, mostrar un mensaje de error
                             JOptionPane.showMessageDialog(Vista.this, "Formato de archivo no soportado.");
-                            lblNewLabel.setText("");
+                            lblNewLabel.setText(""); // Limpiar la etiqueta del archivo
+
+                            // Registrar en el log que el archivo no es compatible
+                            logger.log("Formato de archivo no soportado: " + fileToOpen.getName());
                         }
 
-                        // Habilitar botones si el archivo fue procesado correctamente
+                        // Habilitar los botones correspondientes si el archivo se procesó correctamente
                         if (reporteExcepcionesCorrecto) {
-                            btnSelectFile2.setEnabled(true);
-                            btnSelectFile3.setEnabled(true);
-                            btnSave.setEnabled(true);
+                            btnSelectFile2.setEnabled(true); // Habilitar el botón para seleccionar archivo de empleados
+                            btnSelectFile3.setEnabled(true); // Habilitar el botón para seleccionar archivo de horarios
+                            btnSave.setEnabled(true); // Habilitar el botón para generar el reporte
+
+                            // Registrar en el log que los botones fueron habilitados
+                            logger.log("Botones habilitados después de cargar el archivo correctamente.");
                         }
 
                     } catch (Exception ex) {
+                        // Si ocurre un error al procesar el archivo, mostrar un mensaje de error
                         reporteExcepcionesCorrecto = false;
                         JOptionPane.showMessageDialog(Vista.this, "Error al procesar el archivo: " + ex.getMessage());
-                        lblNewLabel.setForeground(new Color(104, 4, 0));
+                        lblNewLabel.setForeground(new Color(104, 4, 0)); // Cambiar el color de la etiqueta a rojo
+
+                        // Registrar en el log el error ocurrido
+                        logger.logError("Error al procesar el archivo: " + fileToOpen.getName(), ex);
                         ex.printStackTrace();
                     }
 
                 } else {
+                    // Si el usuario no seleccionó ningún archivo, limpiar la etiqueta y mostrar un mensaje
                     lblNewLabel.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
+
+                    // Registrar en el log que el usuario canceló la selección de archivo
+                    logger.log("Selección de archivo cancelada por el usuario.");
                 }
             }
         });
         btnSelectFile2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Registrar en el log que el usuario hizo clic en el botón para seleccionar el archivo de empleados
+                logger.log("Botón 'Seleccionar Archivo Empleados' presionado.");
+
+                // Mostrar un mensaje de "Cargando..." en la etiqueta correspondiente
                 lblNewLabel_1.setText("Cargando...");
+
+                // Configurar el JFileChooser para seleccionar archivos
                 JFileChooser fileChooser = new JFileChooser();
+
+                // Establecer un filtro para mostrar solo archivos Excel (.xls y .xlsx)
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
 
-                // Usa la misma ruta del primer JFileChooser
+                // Usar la misma ruta que se utilizó en el último JFileChooser
                 fileChooser.setCurrentDirectory(new File(lastPath));
 
+                // Mostrar el diálogo para que el usuario seleccione un archivo
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
+                // Verificar si el usuario seleccionó un archivo y confirmó la selección
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
+                    // Obtener el archivo seleccionado por el usuario
                     File fileToOpen = fileChooser.getSelectedFile();
 
+                    // Si ya había una tabla cargada, eliminarla antes de cargar la nueva
                     if (!lblNewLabel_1.getText().equals("Cargando...")) {
                         eliminarTablaCargada(lblNewLabel_1.getText());
                     }
+
+                    // Mostrar el nombre del archivo seleccionado en la etiqueta correspondiente
                     lblNewLabel_1.setText(fileToOpen.getName());
 
-                    // Cargar empleados con el archivo seleccionado
+                    // Registrar en el log que el usuario seleccionó un archivo de empleados
+                    logger.log("Archivo de empleados seleccionado: " + fileToOpen.getName());
+
+                    // Cargar los empleados desde el archivo seleccionado
                     cargarEmpleados(fileToOpen);
                 } else {
+                    // Si el usuario no seleccionó ningún archivo, limpiar la etiqueta y mostrar un mensaje
                     lblNewLabel_1.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
+
+                    // Registrar en el log que el usuario canceló la selección de archivo
+                    logger.log("Selección de archivo de empleados cancelada por el usuario.");
                 }
             }
         });
         btnSelectFile3.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Registrar en el log que el usuario hizo clic en el botón para seleccionar el archivo de horarios
+                logger.log("Botón 'Seleccionar Archivo Horarios' presionado.");
+
+                // Mostrar un mensaje de "Cargando..." en la etiqueta correspondiente
                 lblNewLabel_2.setText("Cargando...");
+
+                // Configurar el JFileChooser para seleccionar archivos
                 JFileChooser fileChooser = new JFileChooser();
+
+                // Establecer un filtro para mostrar solo archivos Excel (.xls y .xlsx)
                 fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xls, .xlsx)", "xls", "xlsx"));
 
-                // Usa la misma ruta que en los otros JFileChooser
+                // Usar la misma ruta que se utilizó en el último JFileChooser
                 fileChooser.setCurrentDirectory(new File(lastPath));
 
+                // Mostrar el diálogo para que el usuario seleccione un archivo
                 int userSelection = fileChooser.showOpenDialog(Vista.this);
 
+                // Verificar si el usuario seleccionó un archivo y confirmó la selección
                 if (userSelection == JFileChooser.APPROVE_OPTION) {
+                    // Obtener el archivo seleccionado por el usuario
                     File fileToOpen = fileChooser.getSelectedFile();
 
+                    // Si ya había una tabla cargada, eliminarla antes de cargar la nueva
                     if (!lblNewLabel_2.getText().equals("Cargando...")) {
                         eliminarTablaCargada(lblNewLabel_2.getText());
                     }
+
+                    // Mostrar el nombre del archivo seleccionado en la etiqueta correspondiente
                     lblNewLabel_2.setText(fileToOpen.getName());
 
-                    // Procesa el archivo Excel
-                    String hoja = "Hoja1";
-                    mostrarTablaDesdeExcel(fileToOpen, hoja);
-                    cargarDatosExtra(fileToOpen);
+                    // Registrar en el log que el usuario seleccionó un archivo de horarios
+                    logger.log("Archivo de horarios seleccionado: " + fileToOpen.getName());
 
-                    // Actualiza la última ruta seleccionada
+                    // Procesar el archivo Excel
+                    String hoja = "Hoja1"; // Nombre de la hoja a cargar
+                    mostrarTablaDesdeExcel(fileToOpen, hoja); // Mostrar la tabla desde el archivo Excel
+                    cargarDatosExtra(fileToOpen); // Cargar los datos adicionales desde el archivo Excel
+
+                    // Actualizar la última ruta seleccionada para futuras operaciones
                     lastPath = fileToOpen.getParent();
                 } else {
+                    // Si el usuario no seleccionó ningún archivo, limpiar la etiqueta y mostrar un mensaje
                     lblNewLabel_2.setText("");
                     JOptionPane.showMessageDialog(Vista.this, "No se seleccionó ningún archivo.");
+
+                    // Registrar en el log que el usuario canceló la selección de archivo
+                    logger.log("Selección de archivo de horarios cancelada por el usuario.");
                 }
             }
         });
         btnSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Usar las IDs guardadas en la configuración
+                // Registrar en el log que el usuario hizo clic en el botón para generar el reporte
+                logger.log("Botón 'Generar Reporte' presionado.");
+
+                // Usar las IDs guardadas en la configuración para filtrar las checadas
                 String idsFiltro = filtroIdGuardado;
-                
-                // Filtrar las checadas si se ingresaron IDs
-                List<Checadas> checadasFiltradas = checadas;
+
+                // Filtrar las checadas si se ingresaron IDs en la configuración
+                List<Checadas> checadasFiltradas = checadas; // Inicialmente, usar todas las checadas
                 if (idsFiltro != null && !idsFiltro.trim().isEmpty()) {
+                    // Separar las IDs ingresadas por comas y eliminar espacios en blanco
                     String[] idsArray = idsFiltro.split(",");
                     for (int i = 0; i < idsArray.length; i++) {
                         idsArray[i] = idsArray[i].trim();
                     }
+
+                    // Filtrar las checadas para incluir solo aquellas con IDs que coincidan
                     checadasFiltradas = checadas.stream()
                         .filter(checada -> Arrays.asList(idsArray).contains(checada.getId()))
                         .collect(Collectors.toList());
+
+                    // Registrar en el log que se aplicó un filtro por IDs
+                    logger.log("Filtro aplicado por IDs: " + idsFiltro);
                 }
 
-                // Actualizar las checadas con los empleados y generar el reporte
+                // Actualizar las checadas con la información de los empleados
                 actualizarChecadasConEmpleados();
+
+                // Crear una instancia del generador de reportes en PDF
                 reporte = new ReportePDF();
+
+                // Generar el reporte con las checadas filtradas, el período y las opciones de configuración
                 reporte.generateReport(checadasFiltradas, periodo, incluirEncabezado, incluirNumeroPagina);
-                filtroIdGuardado=null;
+
+                // Registrar en el log que se generó el reporte
+                logger.log("Reporte generado con éxito.");
+
+                // Limpiar el filtro de IDs guardado después de generar el reporte
+                filtroIdGuardado = null;
             }
         });
         btnEditarEmpleado.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Registrar en el log que el usuario hizo clic en el botón para editar un empleado
+                logger.log("Botón 'Editar Empleado' presionado.");
+
+                // Crear un diálogo modal para editar la información del empleado
                 JDialog dialog = new JDialog(Vista.this, "Editar Empleado", true);
+                logger.log("Diálogo 'Editar Empleado' abierto.");
+                // Establecer el contenido del diálogo con el panel de edición de empleado
                 dialog.setContentPane(crearPanelEditarEmpleado());
+
+                // Ajustar el tamaño del diálogo al contenido
                 dialog.pack();
+
+                // Centrar el diálogo en la ventana principal
                 dialog.setLocationRelativeTo(Vista.this);
+
+                // Hacer visible el diálogo
                 dialog.setVisible(true);
+
+                // Registrar en el log que se abrió el diálogo de edición de empleado
+                
             }
         });
 
         btnEditarHorario.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Registrar en el log que el usuario hizo clic en el botón para editar un horario
+                logger.log("Botón 'Editar Horario' presionado.");
+
+                // Crear un diálogo modal para editar el horario del empleado
                 JDialog dialog = new JDialog(Vista.this, "Editar Horario", true);
+
+                // Establecer el contenido del diálogo con el panel de edición de horario
                 dialog.setContentPane(crearPanelEditarHorario());
+
+                // Ajustar el tamaño del diálogo al contenido
                 dialog.pack();
+
+                // Centrar el diálogo en la ventana principal
                 dialog.setLocationRelativeTo(Vista.this);
+
+                // Hacer visible el diálogo
                 dialog.setVisible(true);
+
+                // Registrar en el log que se abrió el diálogo de edición de horario
+                logger.log("Diálogo 'Editar Horario' abierto.");
             }
         });
     }
     private JPanel crearPanelEditarEmpleado() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout(10, 10)); // BorderLayout con espacios entre componentes
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20)); // Márgenes externos más grandes
-        panel.setPreferredSize(new Dimension(500, 250)); // Tamaño por defecto
+        panel.setLayout(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setPreferredSize(new Dimension(500, 250));
 
         // Panel para los campos de entrada
-        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10)); // Espacio entre filas y columnas
+        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10));
         JLabel lblId = new JLabel("ID:");
         JTextField txtId = new JTextField(15);
         JLabel lblNombre = new JLabel("Nombre:");
@@ -593,7 +746,7 @@ public class Vista extends JFrame {
         camposPanel.add(txtJornada);
 
         // Panel para los botones
-        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10)); // Espaciado mejorado
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         JButton btnBuscar = new JButton("Buscar");
         JButton btnGuardar = new JButton("Guardar");
 
@@ -614,14 +767,17 @@ public class Vista extends JFrame {
                     txtNombre.setText(empleado.getNombre());
                     txtPuesto.setText(empleado.getEmpleadoPuesto());
                     txtJornada.setText(empleado.getJornada());
+                    logger.log("Empleado encontrado con ID: " + id); // Registrar en el log
                 } else {
                     JOptionPane.showMessageDialog(panel, "No se encontró un empleado con esa ID.");
                     txtNombre.setText("");
                     txtPuesto.setText("");
                     txtJornada.setText("");
+                    logger.log("No se encontró un empleado con ID: " + id); // Registrar en el log
                 }
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
+                logger.log("Intento de búsqueda sin ID."); // Registrar en el log
             }
         });
 
@@ -636,21 +792,21 @@ public class Vista extends JFrame {
                 Empleado empleado = new Empleado(id, nombre, puesto, jornada);
                 dbManager.insertarOActualizarEmpleado(empleado);
                 JOptionPane.showMessageDialog(panel, "Empleado guardado con éxito.");
+                logger.log("Empleado guardado con ID: " + id); // Registrar en el log
 
                 // Cierra el JDialog que contiene este panel
                 Window ventana = SwingUtilities.getWindowAncestor(panel);
                 if (ventana instanceof JDialog) {
-                    ventana.dispose(); 
+                    ventana.dispose();
                 }
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, complete todos los campos.");
+                logger.log("Intento de guardar empleado con campos incompletos."); // Registrar en el log
             }
         });
 
-
         return panel;
     }
-
     private JPanel crearPanelEditarHorario() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -659,7 +815,7 @@ public class Vista extends JFrame {
         JPanel camposPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         JLabel lblId = new JLabel("ID:");
         JTextField txtId = new JTextField();
-        
+
         JTextField[] txtHorarios = new JTextField[14]; // 7 días x 2 horarios
         for (int i = 0; i < txtHorarios.length; i++) {
             txtHorarios[i] = new JTextField();
@@ -721,11 +877,14 @@ public class Vista extends JFrame {
                             contadorHorarios.put(horario.getDiaN(), count + 1);
                         }
                     }
+                    logger.log("Horarios cargados para el empleado con ID: " + id); // Registrar en el log
                 } else {
                     JOptionPane.showMessageDialog(panel, "No se encontraron horarios para el empleado con ID: " + id);
+                    logger.log("No se encontraron horarios para el empleado con ID: " + id); // Registrar en el log
                 }
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
+                logger.log("Intento de búsqueda sin ID."); // Registrar en el log
             }
         });
 
@@ -748,6 +907,7 @@ public class Vista extends JFrame {
                             horariosActualizados.add(new EmpleadoDatosExtra(id, dia, partes1[0], partes1[1]));
                         } else {
                             JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 1).");
+                            logger.log("Formato de horario incorrecto para " + dia + " (Horario 1)."); // Registrar en el log
                         }
                     }
 
@@ -758,6 +918,7 @@ public class Vista extends JFrame {
                             horariosActualizados.add(new EmpleadoDatosExtra(id, dia, partes2[0], partes2[1]));
                         } else {
                             JOptionPane.showMessageDialog(panel, "Formato de horario incorrecto para " + dia + " (Horario 2).");
+                            logger.log("Formato de horario incorrecto para " + dia + " (Horario 2)."); // Registrar en el log
                         }
                     }
                 }
@@ -781,9 +942,11 @@ public class Vista extends JFrame {
                 dbManager.actualizarDatos(horariosActualizados);
 
                 JOptionPane.showMessageDialog(panel, "Horario actualizado correctamente.");
+                logger.log("Horario actualizado para el empleado con ID: " + id); // Registrar en el log
                 btnBuscar.doClick(); // Recargar los datos actualizados
             } else {
                 JOptionPane.showMessageDialog(panel, "Por favor, ingrese una ID.");
+                logger.log("Intento de guardar horario sin ID."); // Registrar en el log
             }
         });
         return panel;
@@ -823,8 +986,10 @@ public class Vista extends JFrame {
         String name = file.getName();
         int lastIndex = name.lastIndexOf('.');
         if (lastIndex > 0 && lastIndex < name.length() - 1) {
+        	logger.log("obtener extensión del archivo: "+ name.substring(lastIndex + 1).toLowerCase()  );
             return name.substring(lastIndex + 1).toLowerCase(); // Devuelve la extensión en minúsculas
         }
+        logger.log("obtener extensión del archivo: null");
         return ""; 
     }
     private void eliminarTablaCargada(String nombreTab) {
@@ -839,31 +1004,38 @@ public class Vista extends JFrame {
         if (tabIndex != -1) {
             tabbedPane.remove(tabIndex);
         }
+        logger.log("Tabla eliminada de la vista");
     }
   
     private void mostrarTablaDesdeExcel(File file, String hoja) {
-
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
-            Sheet sheet = workbook.getSheet(hoja); 
+            // Obtener la hoja especificada del archivo Excel
+            Sheet sheet = workbook.getSheet(hoja);
             if (sheet == null) {
-               // JOptionPane.showMessageDialog(this, "La hoja seleccionada no se encontró.");
+                // Si la hoja no se encuentra, no hacer nada
+                logger.log("La hoja '" + hoja + "' no se encontró en el archivo: " + file.getName());
                 return;
             }
 
+            // Crear un modelo de tabla para almacenar los datos
             DefaultTableModel tableModel = new DefaultTableModel();
+
+            // Obtener la primera fila (encabezados) y agregar las columnas al modelo
             Row headerRow = sheet.getRow(0);
             for (Cell cell : headerRow) {
                 tableModel.addColumn(cell.toString());
             }
 
+            // Recorrer las filas de la hoja y agregar los datos al modelo
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null || row.getLastCellNum() <= 0) {
                     continue; // Ignorar filas vacías
                 }
 
+                // Crear un arreglo para almacenar los datos de la fila
                 Object[] rowData = new Object[row.getLastCellNum()];
                 for (int j = 0; j < row.getLastCellNum(); j++) {
                     Cell cell = row.getCell(j);
@@ -873,26 +1045,37 @@ public class Vista extends JFrame {
                         rowData[j] = ""; // Si la celda está vacía, asignar una cadena vacía
                     }
                 }
-                tableModel.addRow(rowData);
+                tableModel.addRow(rowData); // Agregar la fila al modelo
             }
 
+            // Crear una tabla con el modelo de datos
             JTable table = new JTable(tableModel);
             table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
+            // Agregar la tabla a un JScrollPane para permitir el desplazamiento
             JScrollPane scrollPane = new JScrollPane(table);
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 
+            // Crear una pestaña con el nombre del archivo y agregar la tabla
             String tabName = file.getName();
             tabbedPane.addTab(tabName, scrollPane);
 
+            // Actualizar el panel de tablas
             panelTablasExcel.removeAll();
             panelTablasExcel.add(tabbedPane);
             panelTablasExcel.revalidate();
             panelTablasExcel.repaint();
 
+            // Registrar en el log que la tabla se cargó correctamente
+            logger.log("Tabla cargada desde el archivo: " + file.getName() + ", hoja: " + hoja);
+
         } catch (IOException e) {
+            // Registrar en el log el error de lectura del archivo
+            logger.logError("Error al leer el archivo: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
         } catch (Exception e) {
+            // Registrar en el log el error de formato o datos inválidos
+            logger.logError("Formato de archivo incorrecto o datos inválidos: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             e.printStackTrace();
         }
@@ -940,9 +1123,16 @@ public class Vista extends JFrame {
             panelTablasExcel.revalidate();
             panelTablasExcel.repaint();
 
+            // Registrar en el log que la tabla se cargó correctamente
+            logger.log("Tabla cargada desde el archivo .dat: " + file.getName());
+
         } catch (IOException e) {
+            // Registrar en el log el error de lectura del archivo
+            logger.logError("Error al leer el archivo .dat: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error al leer el archivo .dat: " + e.getMessage());
         } catch (Exception e) {
+            // Registrar en el log el error de procesamiento del archivo
+            logger.logError("Error procesando el archivo .dat: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error procesando el archivo .dat: " + e.getMessage());
             e.printStackTrace();
         }
@@ -951,6 +1141,9 @@ public class Vista extends JFrame {
 
     private Object formatCell(Cell cell, int columnIndex) {
         String cellValue = "";
+
+        // Registrar el tipo de celda y el valor original
+        logger.log("Formateando celda - Tipo: " + cell.getCellType() + ", Valor original: " + cell.toString());
 
         switch (cell.getCellType()) {
             case STRING:
@@ -975,17 +1168,23 @@ public class Vista extends JFrame {
             default:
                 cellValue = "";
         }
-        
+
+        // Registrar el valor formateado
+        logger.log("Celda formateada - Valor final: " + cellValue);
+
         return cellValue;
     }
-
     private String convertirDecimalAHora1(double decimal) {
         java.util.Date date = DateUtil.getJavaDate(decimal);
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-        return timeFormat.format(date);
+        String horaFormateada = timeFormat.format(date);
+        logger.log("Convertido decimal a hora: " + decimal + " -> " + horaFormateada);
+        return horaFormateada;
     }
+
     private void cargarDatosExtra(File file) {
         empleadosDatos = new ArrayList<>();
+        logger.log("Cargando datos adicionales desde archivo: " + file.getName());
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -1034,7 +1233,7 @@ public class Vista extends JFrame {
                     if (!id.isEmpty()) {
                         EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, dia, horaEntradaReal, horaSalidaReal);
                         empleadosDatos.add(empleado);
-                        System.out.println("Empleado cargado: " + empleado.toString()); // Depuración
+                        logger.log("Empleado cargado: " + empleado.toString());
                     }
                 }
 
@@ -1049,16 +1248,20 @@ public class Vista extends JFrame {
 
                 lblNewLabel_2.setForeground(new Color(0, 104, 0));
                 btnSelectFile3.setEnabled(false);
+                logger.log("Datos adicionales cargados desde la hoja: " + hojaProcesada);
                 JOptionPane.showMessageDialog(this, "Datos adicionales cargados desde la hoja: " + hojaProcesada);
             } else {
+                logger.log("No se encontraron las columnas requeridas en ninguna hoja.");
                 JOptionPane.showMessageDialog(this, "No se encontraron las columnas requeridas en ninguna hoja.");
                 lblNewLabel_2.setForeground(new Color(104, 4, 0));
             }
 
         } catch (IOException e) {
+            logger.logError("Error al leer el archivo: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
             lblNewLabel_2.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
+            logger.logError("Formato de archivo incorrecto o datos inválidos: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             lblNewLabel_2.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
@@ -1070,14 +1273,13 @@ public class Vista extends JFrame {
         Cell cell = row.getCell(columnIndex);
         if (cell != null) {
             if (cell.getCellType() == CellType.STRING) {
-                return cell.getStringCellValue().trim(); // Si ya es texto, solo lo devolvemos.
+                return cell.getStringCellValue().trim();
             } else if (cell.getCellType() == CellType.NUMERIC) {
-                // Si el número es entero, lo devolvemos como String sin decimales
                 double value = cell.getNumericCellValue();
-                if (value == (long) value) {  // Verificamos si el valor es un número entero
+                if (value == (long) value) {
                     return String.valueOf((long) value);
                 } else {
-                    return String.valueOf(value); // Si es decimal, lo dejamos como está
+                    return String.valueOf(value);
                 }
             } else if (cell.getCellType() == CellType.BOOLEAN) {
                 return String.valueOf(cell.getBooleanCellValue());
@@ -1087,6 +1289,7 @@ public class Vista extends JFrame {
         }
         return "";
     }
+
     private String getTimeValue(Row row, Integer columnIndex) {
         if (columnIndex == null) return "Columna no válida";
         Cell cell = row.getCell(columnIndex);
@@ -1094,48 +1297,38 @@ public class Vista extends JFrame {
 
         if (cell.getCellType() == CellType.NUMERIC) {
             if (DateUtil.isCellDateFormatted(cell)) {
-                // Formatear para solo horas y minutos (HH:mm)
                 SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                 return timeFormat.format(cell.getDateCellValue());
             } else {
-                // Si es numérico pero no es una fecha, devolver "00:00"
                 return "00:00";
             }
         } else if (cell.getCellType() == CellType.STRING) {
             String timeValue = cell.getStringCellValue().trim();
-
-            // Extraer "HH:mm" si el formato es "HH:mm:ss" o similar
             if (timeValue.matches("\\d{1,2}:\\d{2}(:\\d{2})?")) {
-                // Tomar solo las primeras 5 posiciones (HH:mm)
                 return timeValue.substring(0, 5);
             }
         }
-
-        // Si no coincide con ningún formato válido, devolver "00:00"
         return "00:00";
     }
 
-
     private double getCellNumericValue(Row row, Integer columnIndex) {
-        if (columnIndex == null) return -1; // Columna no válida
+        if (columnIndex == null) return -1;
         Cell cell = row.getCell(columnIndex);
-        if (cell == null) return -1; // Celda vacía
-        
+        if (cell == null) return -1;
+
         switch (cell.getCellType()) {
             case NUMERIC:
-                return cell.getNumericCellValue(); // Retornar el valor numérico directamente
+                return cell.getNumericCellValue();
             case STRING:
                 try {
-                    // Intentar convertir texto numérico a un número
                     return Double.parseDouble(cell.getStringCellValue().trim());
                 } catch (NumberFormatException e) {
-                    return -1; // No se pudo convertir el texto a número
+                    return -1;
                 }
             default:
-                return -1; // Tipo de celda no compatible
+                return -1;
         }
     }
-
 
     private String getDayName(double dayNumber) {
         int day = (int) dayNumber;
@@ -1152,7 +1345,8 @@ public class Vista extends JFrame {
     }
 
     private void cargarEmpleados(File file) {
-    	BaseDeDatosManager dbManager = new BaseDeDatosManager(); 
+        BaseDeDatosManager dbManager = new BaseDeDatosManager();
+        logger.log("Cargando empleados desde archivo: " + file.getName());
 
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -1160,15 +1354,11 @@ public class Vista extends JFrame {
             boolean dataLoaded = false;
             String hojaProcesada = "";
 
-            // Iterar por todas las hojas del archivo
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
 
-                // Buscar las columnas necesarias en la primera fila
                 Row headerRow = sheet.getRow(0);
-                if (headerRow == null) {
-                    continue; // Saltar hojas vacías o sin encabezados
-                }
+                if (headerRow == null) continue;
 
                 Map<String, Integer> columnMap = new HashMap<>();
                 for (Cell cell : headerRow) {
@@ -1184,7 +1374,6 @@ public class Vista extends JFrame {
                     }
                 }
 
-                // Verificar si se encontraron todas las columnas necesarias
                 String[] requiredColumns = {"EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_PUESTO", "EMPLEADO_TIPO_JORNADA"};
                 boolean allColumnsFound = true;
                 for (String col : requiredColumns) {
@@ -1194,12 +1383,9 @@ public class Vista extends JFrame {
                     }
                 }
 
-                if (!allColumnsFound) {
-                    continue; // Pasar a la siguiente hoja si faltan columnas
-                }
+                if (!allColumnsFound) continue;
 
-                // Si se encuentran todas las columnas, procesar los datos
-                for (int j = 1; j <= sheet.getLastRowNum()+1; j++) {
+                for (int j = 1; j <= sheet.getLastRowNum() + 1; j++) {
                     Row row = sheet.getRow(j);
                     if (row != null) {
                         String id = getCellValue(row, columnMap.get("EMPLEADO_NO"));
@@ -1209,50 +1395,55 @@ public class Vista extends JFrame {
 
                         if (!id.isEmpty()) {
                             Empleado empleado = new Empleado(id, nombre, categoria, jornada);
-
                             dbManager.insertarOActualizarEmpleado(empleado);
+                            logger.log("Empleado cargado: " + empleado.toString());
                         }
                     }
                 }
 
-                hojaProcesada = sheet.getSheetName(); // Guardar el nombre de la hoja procesada
+                hojaProcesada = sheet.getSheetName();
                 dataLoaded = true;
-
-                // Llamar a mostrarTablaDesdeExcel con la hoja encontrada
                 mostrarTablaDesdeExcel(file, hojaProcesada);
-
-                break; // Detener la búsqueda después de encontrar una hoja válida
+                break;
             }
 
             if (dataLoaded) {
-
                 lblNewLabel_1.setForeground(new Color(0, 104, 0));
                 btnSelectFile2.setEnabled(false);
+                logger.log("Empleados cargados desde la hoja: " + hojaProcesada);
                 JOptionPane.showMessageDialog(this, "Empleados cargados desde la hoja: " + hojaProcesada + " y lista de checadas actualizada.");
             } else {
+                logger.log("No se encontraron las columnas requeridas en ninguna hoja.");
                 JOptionPane.showMessageDialog(this, "No se encontraron las columnas requeridas en ninguna hoja.");
                 lblNewLabel_1.setForeground(new Color(104, 4, 0));
             }
 
         } catch (IOException e) {
+            logger.logError("Error al leer el archivo: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
             lblNewLabel_1.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
+            logger.logError("Formato de archivo incorrecto o datos inválidos: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             lblNewLabel_1.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
         }
     }
-    // Método auxiliar para obtener el valor de una celda como String
+
     private String convertirDecimalAHora(double valorDecimal) {
         int horas = (int) (valorDecimal * 24);
-        int minutos = (int) ((valorDecimal * 24 - horas) * 60); 
-        return String.format("%02d:%02d", horas, minutos);
+        int minutos = (int) ((valorDecimal * 24 - horas) * 60);
+        String horaFormateada = String.format("%02d:%02d", horas, minutos);
+        logger.log("Convertido decimal a hora: " + valorDecimal + " -> " + horaFormateada);
+        return horaFormateada;
     }
+
     public void leerArchivoDAT(File file) {
+        logger.log("Leyendo archivo .dat: " + file.getName());
+
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String linea;
-            Map<String, Map<String, List<LocalTime>>> registrosPorEmpleado = new HashMap<>(); 
+            Map<String, Map<String, List<LocalTime>>> registrosPorEmpleado = new HashMap<>();
 
             while ((linea = br.readLine()) != null) {
                 linea = linea.trim();
@@ -1263,30 +1454,23 @@ public class Vista extends JFrame {
                         String fecha = partes[1];
                         String horaCompleta = partes[2];
 
-                        // Recortar la hora a "HH:mm" e ignorar los segundos
                         String horaStr = horaCompleta.length() >= 5 ? horaCompleta.substring(0, 5) : horaCompleta;
                         LocalTime hora = LocalTime.parse(horaStr, DateTimeFormatter.ofPattern("HH:mm"));
 
-                        // Validar intervalos para evitar registros en poco tiempo
                         Map<String, List<LocalTime>> registrosPorFecha = registrosPorEmpleado.computeIfAbsent(id, k -> new HashMap<>());
                         List<LocalTime> horas = registrosPorFecha.computeIfAbsent(fecha, k -> new ArrayList<>());
 
-                        // Validar si la diferencia con la última hora registrada es menor a 40 minutos
                         if (!horas.isEmpty()) {
                             LocalTime ultimaHora = horas.get(horas.size() - 1);
                             long diferencia = ChronoUnit.MINUTES.between(ultimaHora, hora);
-                            if (diferencia < 2) {
-                                continue; // Omitir checada si está dentro del intervalo
-                            }
+                            if (diferencia < 2) continue;
                         }
 
-                        // Agregar la hora si pasa la validación
                         horas.add(hora);
                     }
                 }
             }
 
-            // Procesar registros agrupados
             for (Map.Entry<String, Map<String, List<LocalTime>>> entradaEmpleado : registrosPorEmpleado.entrySet()) {
                 String id = entradaEmpleado.getKey();
                 Map<String, List<LocalTime>> registrosPorFecha = entradaEmpleado.getValue();
@@ -1295,63 +1479,59 @@ public class Vista extends JFrame {
                     String fecha = entradaFecha.getKey();
                     List<LocalTime> horas = entradaFecha.getValue();
 
-                    // Ordenar las horas
                     horas.sort(Comparator.naturalOrder());
 
-                    // Emparejar entradas y salidas
                     for (int i = 0; i < horas.size(); i += 2) {
                         String horaEntrada = horas.get(i).toString();
-                        String horaSalida = (i + 1 < horas.size()) ? horas.get(i + 1).toString() : ""; // Caso sin salida
+                        String horaSalida = (i + 1 < horas.size()) ? horas.get(i + 1).toString() : "";
 
-                        // Almacenar en la lista de checadas
                         checadas.add(new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", ""));
-                        Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, "", "", "");
-                        //System.out.println(checada.toString());
+                        logger.log("Checada agregada: ID=" + id + ", Fecha=" + fecha + ", HoraEntrada=" + horaEntrada + ", HoraSalida=" + horaSalida);
                     }
                 }
             }
 
-            // Ordenar la lista de checadas
             checadas.sort(Comparator.comparing(Checadas::getFecha).thenComparing(Checadas::getHoraEntrada));
 
-            // Obtener el periodo
             if (!checadas.isEmpty()) {
                 String primeraFecha = checadas.get(0).getFecha();
                 String ultimaFecha = checadas.get(checadas.size() - 1).getFecha();
                 periodo = primeraFecha + " - " + ultimaFecha;
             }
 
-            // Configuración visual
             lblNewLabel.setForeground(new Color(0, 104, 0));
             btnSelectFile.setEnabled(false);
             reporteExcepcionesCorrecto = true;
+            logger.log("Datos cargados con éxito desde archivo .dat.");
             JOptionPane.showMessageDialog(this, "¡Datos cargados con éxito desde archivo .dat!");
 
         } catch (IOException e) {
             reporteExcepcionesCorrecto = false;
+            logger.logError("Error leyendo el archivo .dat: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error leyendo el archivo .dat: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
             reporteExcepcionesCorrecto = false;
+            logger.logError("Error procesando los datos: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error procesando los datos: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
         }
     }
 
-
-
-
     private void cargarChecador(File file) {
+        logger.log("Cargando checador desde archivo: " + file.getName());
+
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
 
             Sheet sheet = workbook.getSheet("Reporte de Excepciones");
             if (sheet == null) {
+                logger.log("La hoja 'Reporte de Excepciones' no se encontró.");
                 JOptionPane.showMessageDialog(this, "La hoja 'Reporte de Excepciones' no se encontró.");
-
                 lblNewLabel.setForeground(new Color(104, 4, 0));
                 return;
             }
+
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row != null) {
@@ -1369,7 +1549,7 @@ public class Vista extends JFrame {
                                     break;
                                 case NUMERIC:
                                     double numericValue = cell.getNumericCellValue();
-                                    if (j >= 4 && j <= 7) { 
+                                    if (j >= 4 && j <= 7) {
                                         cellValue = convertirDecimalAHora(numericValue);
                                     } else if (numericValue == Math.floor(numericValue)) {
                                         cellValue = String.valueOf((int) numericValue);
@@ -1388,7 +1568,7 @@ public class Vista extends JFrame {
                             }
                         }
 
-                        if (((i == 1 && j == 1) || (i==1 && j==2))  && !cellValue.isEmpty()) {
+                        if (((i == 1 && j == 1) || (i == 1 && j == 2)) && !cellValue.isEmpty()) {
                             periodo = cellValue;
                         }
 
@@ -1400,28 +1580,33 @@ public class Vista extends JFrame {
                                 case 5: horaSalida = cellValue; break;
                                 case 6: horaEntrada2 = cellValue; break;
                                 case 7: horaSalida2 = cellValue; break;
-                                default:
-                                    break;
+                                default: break;
                             }
                         }
                     }
+
                     if (!id.isEmpty()) {
                         Checadas checada = new Checadas(id, "", "", fecha, horaEntrada, horaSalida, horaEntrada2, horaSalida2, "");
                         checadas.add(checada);
+                        logger.log("Checada agregada: " + checada.toString());
                     }
                 }
             }
+
             lblNewLabel.setForeground(new Color(0, 104, 0));
             btnSelectFile.setEnabled(false);
-            reporteExcepcionesCorrecto=true;
+            reporteExcepcionesCorrecto = true;
+            logger.log("Datos cargados con éxito desde archivo Excel.");
             JOptionPane.showMessageDialog(this, "¡Datos Cargados con éxito!");
 
         } catch (IOException e) {
-        	reporteExcepcionesCorrecto=false;
+            reporteExcepcionesCorrecto = false;
+            logger.logError("Error al leer el archivo: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
-        	reporteExcepcionesCorrecto=false;
+            reporteExcepcionesCorrecto = false;
+            logger.logError("Formato de archivo incorrecto o datos inválidos: " + file.getName(), e);
             JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
             lblNewLabel.setForeground(new Color(104, 4, 0));
             e.printStackTrace();
@@ -1429,15 +1614,17 @@ public class Vista extends JFrame {
     }
 
     private void actualizarChecadasConEmpleados() {
-    	BaseDeDatosManager dbManager = new BaseDeDatosManager();
+        BaseDeDatosManager dbManager = new BaseDeDatosManager();
+        logger.log("Actualizando checadas con información de empleados.");
 
-        listaEmpleados =dbManager.obtenerEmpleadosNombre();
+        listaEmpleados = dbManager.obtenerEmpleadosNombre();
         for (Checadas checada : checadas) {
             for (Empleado empleado : listaEmpleados) {
                 if (checada.getId().equals(empleado.getId())) {
                     checada.setNombre(empleado.getNombre());
                     checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
                     checada.setJornada(empleado.getJornada());
+                    logger.log("Checada actualizada con empleado: " + checada.toString());
                     break;
                 }
             }

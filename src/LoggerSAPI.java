@@ -40,4 +40,14 @@ public class LoggerSAPI {
         e.printStackTrace(writer);
         writer.flush();
     }
+
+    // Método para borrar el contenido del archivo de log
+    public void clearLogFile() {
+        try (PrintWriter clearWriter = new PrintWriter(new FileWriter(LOG_FILE, false))) {
+            // Abrir el archivo en modo "false" para sobrescribirlo y dejarlo vacío
+            clearWriter.print(""); // Escribir una cadena vacía para borrar el contenido
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
