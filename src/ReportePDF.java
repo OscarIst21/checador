@@ -551,6 +551,9 @@ public class ReportePDF {
                     logger.log("Espacio estimado para id:"+ id+ " espacio estimado: "+estimatedContentHeight);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
+                    if(maxFilas>39) {
+                    	maxFilas=40;
+                    }
                     if (incluirEncabezado) {
                     	logger.log("Incluir encabezado: "+incluirEncabezado);
                         if (remainingHeight < 35) {
@@ -559,7 +562,7 @@ public class ReportePDF {
                             document.add(new Paragraph(" ").setMarginTop(35));
                             remainingHeight = calcularEspacioDisponible(document) - 20;
                         }
-                        if (remainingHeight < estimatedContentHeight) {
+                        if (remainingHeight < estimatedContentHeight || tamañoTabla>40) {
                         	logger.log("Espacio disponible es menor a espacio estimado");
                             document.add(title);
 
@@ -626,7 +629,7 @@ public class ReportePDF {
         float espacioFijo = 35; // Ajusta según lo que ocupan otros elementos (title, info, márgenes, etc.)
 
         float espacioRestante = espacioDisponible - espacioFijo;
-        float alturaFila = 8 + 4; // Tamaño de fuente 7 + margen de seguridad 4
+        float alturaFila = 8 + 5; // Tamaño de fuente 7 + margen de seguridad 4
 
         return (int) (espacioRestante / alturaFila); // Número máximo de filas que caben
     }
@@ -741,7 +744,6 @@ public class ReportePDF {
 
     private List<Table> dividirTabla(Table tablaOriginal, int maxFilasPorTabla) throws Exception {
         int numColumnas = tablaOriginal.getNumberOfColumns();
-
         List<Table> tablasDivididas = new ArrayList<>();
         Table tablaMax = crearTabla();
         Table tablaResto = crearTabla();
@@ -770,12 +772,21 @@ public class ReportePDF {
             }
         }
 
-        // Agregar ambas tablas a la lista
+        // Agregar la primera tabla
         tablasDivididas.add(tablaMax);
-        tablasDivididas.add(tablaResto);
+
+        // Si la segunda tabla tiene más de 40 filas, dividirla en más tablas
+        if (tablaResto.getNumberOfRows() > 40) {
+            List<Table> tablasExtra = dividirTabla(tablaResto, 40);
+            tablasDivididas.addAll(tablasExtra);
+        } else if (!tablaResto.isEmpty()) {
+            // Si la segunda tabla no supera las 40 filas, se agrega tal cual
+            tablasDivididas.add(tablaResto);
+        }
 
         return tablasDivididas;
     }
+
 
     private float calcularEspacioDisponible(Document document) {
         // Obtener la altura disponible en la página actual
@@ -877,15 +888,31 @@ public class ReportePDF {
 
             LocalTime entrada = LocalTime.parse(horaEntrada, formatter);
             LocalTime salida = LocalTime.parse(horaSalida, formatter);
-            Duration duracion = Duration.between(entrada, salida);
 
-            if (duracion.isNegative()) {
-                return "Hora de salida antes de la entrada";
+            // Verificar si la salida es al día siguiente
+            if (salida.isBefore(entrada)) {
+                // Calcular horas trabajadas desde la entrada hasta la medianoche
+                Duration duracionPrimeraParte = Duration.between(entrada, LocalTime.MAX).plus(Duration.ofSeconds(1));
+                // Calcular horas trabajadas desde la medianoche hasta la salida
+                Duration duracionSegundaParte = Duration.between(LocalTime.MIN, salida);
+                // Sumar ambas duraciones
+                Duration duracionTotal = duracionPrimeraParte.plus(duracionSegundaParte);
+
+                long horas = duracionTotal.toHours();
+                long minutos = duracionTotal.toMinutes() % 60;
+                return horas + ":" + (minutos < 10 ? "0" + minutos : minutos);
+            } else {
+                // Calcular horas trabajadas normalmente
+                Duration duracion = Duration.between(entrada, salida);
+
+                if (duracion.isNegative()) {
+                    return "Hora de salida antes de la entrada";
+                }
+
+                long horas = duracion.toHours();
+                long minutos = duracion.toMinutes() % 60;
+                return horas + ":" + (minutos < 10 ? "0" + minutos : minutos);
             }
-
-            long horas = duracion.toHours();
-            long minutos = duracion.toMinutes() % 60;
-            return horas + ":" + (minutos < 10 ? "0" + minutos : minutos);
 
         } catch (DateTimeParseException e) {
             System.out.println("Error en el formato de hora: " + e.getMessage());
