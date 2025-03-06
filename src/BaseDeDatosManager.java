@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
@@ -83,13 +85,12 @@ public class BaseDeDatosManager {
         """;
 
         String crearTablaEmpleadosNombreSQL = """
-            CREATE TABLE IF NOT EXISTS horarios (
-			    horario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-			    id TEXT,
-			    diaN TEXT,
-			    horaEntradaReal TEXT,
-			    horaSalidaReal TEXT
-			);
+            CREATE TABLE IF NOT EXISTS empleadosNombre (
+                id TEXT PRIMARY KEY,
+                nombre TEXT,
+                puesto TEXT,
+                jornada TEXT
+            );
         """;
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + rutaBaseDatos);
@@ -104,24 +105,42 @@ public class BaseDeDatosManager {
 
     // Método para actualizar datos de empleados
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
-        String insertarOActualizarSQL = """
+        // Primero, eliminar todos los horarios existentes para los empleados que están siendo actualizados
+        String eliminarHorariosSQL = "DELETE FROM horarios WHERE id = ?";
+
+        // Luego, insertar los nuevos horarios
+        String insertarHorariosSQL = """
             INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
-                horaSalidaReal = excluded.horaSalidaReal;
+            VALUES (?, ?, ?, ?);
         """;
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmt = conn.prepareStatement(insertarOActualizarSQL)) {
-            for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                pstmt.setString(1, empleado.getId());
-                pstmt.setString(2, empleado.getDiaN());
-                pstmt.setString(3, empleado.getHoraEntradaReal());
-                pstmt.setString(4, empleado.getHoraSalidaReal());
-                pstmt.addBatch();
-                System.out.println("Insertando/Actualizando: " + empleado.toString()); // Depuración
+             PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
+             PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
+
+            // Obtener una lista de IDs únicos de los empleados que están siendo actualizados
+            Set<String> idsEmpleados = empleadosDatos.stream()
+                .map(EmpleadoDatosExtra::getId)
+                .collect(Collectors.toSet());
+
+            // Eliminar todos los horarios existentes para estos empleados
+            for (String id : idsEmpleados) {
+                pstmtEliminar.setString(1, id);
+                pstmtEliminar.addBatch();
             }
-            pstmt.executeBatch();
+            pstmtEliminar.executeBatch();
+
+            // Insertar los nuevos horarios
+            for (EmpleadoDatosExtra empleado : empleadosDatos) {
+                pstmtInsertar.setString(1, empleado.getId());
+                pstmtInsertar.setString(2, empleado.getDiaN());
+                pstmtInsertar.setString(3, empleado.getHoraEntradaReal());
+                pstmtInsertar.setString(4, empleado.getHoraSalidaReal());
+                pstmtInsertar.addBatch();
+            }
+            pstmtInsertar.executeBatch();
+
+            System.out.println("Horarios actualizados correctamente.");
         } catch (SQLException e) {
             e.printStackTrace();
         }

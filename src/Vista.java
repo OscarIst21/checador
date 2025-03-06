@@ -1373,7 +1373,7 @@ public class Vista extends JFrame {
                         columnMap.put("EMPLEADO_TIPO_JORNADA", cell.getColumnIndex());
                     }
                 }
-
+ 
                 String[] requiredColumns = {"EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_PUESTO", "EMPLEADO_TIPO_JORNADA"};
                 boolean allColumnsFound = true;
                 for (String col : requiredColumns) {

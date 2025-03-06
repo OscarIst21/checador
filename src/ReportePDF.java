@@ -72,7 +72,7 @@ public class ReportePDF {
     	logger.log("Iniciando generacion de reporte"); 
         String periodoReporte = periodo;
         String[] planteles = {
-            "Seleccione un plantel", "DIRECCIÓN GENERAL", "CONTRALORÍA Y JURÍDICO", "CASETA DE VIGILANCIA",
+            "Seleccione un plantel", "DIRECCION GENERAL", "CONTRALORÍA Y JURÍDICO", "CASETA_VIG",
             "EMSAD01", "EMSAD03", "EMSAD06", "EMSAD07", "EMSAD08", "EMSAD09", "EMSAD10", "EMSAD11", "EMSAD12",
             "EMSAD13", "EMSAD14", "EMSAD16", "CECYT01", "CECYT02", "CECYT03", "CECYT04", "CECYT05",
             "CECYT06", "CECYT07", "CECYT08", "CECYT09", "CECYT10", "CECYT11"
@@ -642,20 +642,33 @@ public class ReportePDF {
                 PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
                 Rectangle pageSize = docEvent.getPage().getPageSize();
 
-                float xPageNumber = pageSize.getRight() - 105; // Posición X del número de página
-                float yPageNumber = pageSize.getBottom() + 30; // Posición Y del número de página
+                // Calcular el ancho del texto del plantel
+                PdfFont font = null;
+				try {
+					font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+				} catch (java.io.IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                float fontSize = 8;
+                float plantelWidth = font.getWidth(plantel, fontSize);
 
-                String pageNumber = plantel+" - Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
-                try {
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    canvas.beginText();
-                    canvas.setFontAndSize(font, 8); // Tamaño de la fuente
-                    canvas.moveText(xPageNumber, yPageNumber);
-                    canvas.showText(pageNumber);
-                    canvas.endText();
-                } catch (java.io.IOException e) {
-                    e.printStackTrace();
-                }
+                // Definir el margen izquierdo basado en el tamaño del plantel
+                float marginLeft = plantelWidth ; // Añadir un margen adicional de 10 unidades
+
+                // Posición X del número de página
+                float xPageNumber = pageSize.getRight() - 75 - marginLeft;
+
+                // Posición Y del número de página
+                float yPageNumber = pageSize.getBottom() + 30;
+
+                String pageNumber = plantel + " - Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
+
+                canvas.beginText();
+				canvas.setFontAndSize(font, fontSize); // Tamaño de la fuente
+				canvas.moveText(xPageNumber, yPageNumber);
+				canvas.showText(pageNumber);
+				canvas.endText();
 
                 canvas.release();
             }
