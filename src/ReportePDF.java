@@ -64,8 +64,8 @@ public class ReportePDF {
     private LoggerSAPI logger;
     int tamañoTabla = 0;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    LocalDate fechaInicio = LocalDate.parse("2025-01-15", formatter);
-    LocalDate fechaFin = LocalDate.parse("2025-01-31", formatter);
+    private static LocalDate fechaInicio = null;
+    private static LocalDate fechaFin = null;
 
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
     	logger = LoggerSAPI.getInstance();
@@ -160,6 +160,15 @@ public class ReportePDF {
         JLabel fechaFinLabel = new JLabel("Fecha de fin (yyyy-MM-dd):");
         JTextField fechaFinField = new JTextField(10);
 
+        // Establecer valores predeterminados si las fechas son null
+        if (fechaInicio != null) {
+            fechaInicioField.setText(fechaInicio.format(formatter)); // Usar la fecha ya almacenada
+        }
+
+        if (fechaFin != null) {
+            fechaFinField.setText(fechaFin.format(formatter)); // Usar la fecha ya almacenada
+        }
+
         fechaPanel.add(fechaInicioLabel);
         fechaPanel.add(fechaInicioField);
         fechaPanel.add(fechaFinLabel);
@@ -174,9 +183,12 @@ public class ReportePDF {
             JOptionPane.OK_CANCEL_OPTION, 
             JOptionPane.PLAIN_MESSAGE
         );
+        if (result == JOptionPane.CANCEL_OPTION) {
+            logger.log("Usuario canceló la selección de fechas");
+            return; // Salir del método sin generar el reporte
+        }
 
         logger.log("Diálogo de fechas cerrado con opción: " + result);
-
 
         List<String> dias = null;
         if (result == JOptionPane.OK_OPTION) {
