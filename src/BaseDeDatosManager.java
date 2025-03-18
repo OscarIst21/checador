@@ -105,32 +105,17 @@ public class BaseDeDatosManager {
 
     // Método para actualizar datos de empleados
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
-        // Primero, eliminar todos los horarios existentes para los empleados que están siendo actualizados
-        String eliminarHorariosSQL = "DELETE FROM horarios WHERE id = ?";
-
-        // Luego, insertar los nuevos horarios
         String insertarHorariosSQL = """
             INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
-            VALUES (?, ?, ?, ?);
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
+                horaSalidaReal = excluded.horaSalidaReal;
         """;
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
              PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
 
-            // Obtener una lista de IDs únicos de los empleados que están siendo actualizados
-            Set<String> idsEmpleados = empleadosDatos.stream()
-                .map(EmpleadoDatosExtra::getId)
-                .collect(Collectors.toSet());
-
-            // Eliminar todos los horarios existentes para estos empleados
-            for (String id : idsEmpleados) {
-                pstmtEliminar.setString(1, id);
-                pstmtEliminar.addBatch();
-            }
-            pstmtEliminar.executeBatch();
-
-            // Insertar los nuevos horarios
+            // Insertar o actualizar los nuevos horarios
             for (EmpleadoDatosExtra empleado : empleadosDatos) {
                 pstmtInsertar.setString(1, empleado.getId());
                 pstmtInsertar.setString(2, empleado.getDiaN());
