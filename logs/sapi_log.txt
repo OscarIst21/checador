@@ -1,1 +1,3 @@
-[2025-03-18 13:38:18] Aplicación cerrada. Archivo de log reiniciado.
+[2025-03-19 14:12:07] Aplicación cerrada. Archivo de log reiniciado.
+[2025-03-19 14:15:07] Aplicación SAPI iniciada.
+[2025-03-19 14:15:08] Botón 'Seleccionar Archivo Checadas' presionado.

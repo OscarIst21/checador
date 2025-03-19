@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -105,28 +106,62 @@ public class BaseDeDatosManager {
 
     // Método para actualizar datos de empleados
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
+        if (empleadosDatos.isEmpty()) {
+            System.out.println("La lista de empleados está vacía. No se realizaron cambios.");
+            return;
+        }
+
+        // Consulta SQL para eliminar registros existentes de una ID específica
+        String eliminarHorariosSQL = "DELETE FROM horarios WHERE id = ?";
+
+        // Consulta SQL para insertar nuevos registros
         String insertarHorariosSQL = """
             INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(id, diaN, horaEntradaReal) DO UPDATE SET
-                horaSalidaReal = excluded.horaSalidaReal;
+            VALUES (?, ?, ?, ?);
         """;
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-             PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
+        // Usar una transacción para garantizar atomicidad
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            conn.setAutoCommit(false); // Desactivar el modo autocommit
 
-            // Insertar o actualizar los nuevos horarios
-            for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                pstmtInsertar.setString(1, empleado.getId());
-                pstmtInsertar.setString(2, empleado.getDiaN());
-                pstmtInsertar.setString(3, empleado.getHoraEntradaReal());
-                pstmtInsertar.setString(4, empleado.getHoraSalidaReal());
-                pstmtInsertar.addBatch();
+            try (PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
+                 PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
+
+                // Agrupar los registros por ID
+                Map<String, List<EmpleadoDatosExtra>> empleadosPorId = empleadosDatos.stream()
+                    .collect(Collectors.groupingBy(EmpleadoDatosExtra::getId));
+
+                // Procesar cada grupo de empleados por ID
+                for (Map.Entry<String, List<EmpleadoDatosExtra>> entry : empleadosPorId.entrySet()) {
+                    String idEmpleado = entry.getKey();
+                    List<EmpleadoDatosExtra> registros = entry.getValue();
+
+                    // Paso 1: Eliminar todos los registros existentes para la ID actual
+                    pstmtEliminar.setString(1, idEmpleado);
+                    int filasEliminadas = pstmtEliminar.executeUpdate();
+                    System.out.println("Registros eliminados para la ID " + idEmpleado + ": " + filasEliminadas);
+
+                    // Paso 2: Insertar los nuevos registros para la ID actual
+                    for (EmpleadoDatosExtra empleado : registros) {
+                        pstmtInsertar.setString(1, empleado.getId());
+                        pstmtInsertar.setString(2, empleado.getDiaN());
+                        pstmtInsertar.setString(3, empleado.getHoraEntradaReal());
+                        pstmtInsertar.setString(4, empleado.getHoraSalidaReal());
+                        pstmtInsertar.addBatch();
+                    }
+                    pstmtInsertar.executeBatch();
+                    System.out.println("Nuevos horarios insertados correctamente para la ID " + idEmpleado + ".");
+                }
+
+                conn.commit(); // Confirmar la transacción
+                System.out.println("Todos los horarios actualizados correctamente.");
+            } catch (SQLException e) {
+                conn.rollback(); // Revertir la transacción en caso de error
+                System.err.println("Error al actualizar los datos: " + e.getMessage());
+                e.printStackTrace();
             }
-            pstmtInsertar.executeBatch();
-
-            System.out.println("Horarios actualizados correctamente.");
         } catch (SQLException e) {
+            System.err.println("Error al conectar con la base de datos: " + e.getMessage());
             e.printStackTrace();
         }
     }
