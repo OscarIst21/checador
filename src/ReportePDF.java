@@ -28,6 +28,7 @@ import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.renderer.IRenderer;
 
 import modelos.Checadas;
+import modelos.Empleado;
 import modelos.EmpleadoDatosExtra;
 
 import javax.swing.*;
@@ -66,16 +67,20 @@ public class ReportePDF {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static LocalDate fechaInicio = null;
     private static LocalDate fechaFin = null;
+    private Map<String, List<Checadas>> checadasPorId;
 
-    public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado, boolean incluirNumeroPagina) {
-    	logger = LoggerSAPI.getInstance();
-    	logger.log("Iniciando generacion de reporte"); 
+    public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado,
+            boolean incluirNumeroPagina, String idString) {
+
+        logger = LoggerSAPI.getInstance();
+        logger.log("Iniciando generacion de reporte");
+
         String periodoReporte = periodo;
         String[] planteles = {
-            "Seleccione un plantel", "DIRECCION GENERAL", "CONTRALORÍA Y JURÍDICO", "CASETA_VIG",
-            "EMSAD01", "EMSAD03", "EMSAD06", "EMSAD07", "EMSAD08", "EMSAD09", "EMSAD10", "EMSAD11", "EMSAD12",
-            "EMSAD13", "EMSAD14", "EMSAD16", "CECYT01", "CECYT02", "CECYT03", "CECYT04", "CECYT05",
-            "CECYT06", "CECYT07", "CECYT08", "CECYT09", "CECYT10", "CECYT11"
+                "Seleccione un plantel", "DIRECCION GENERAL", "CONTRALORÍA Y JURÍDICO", "CASETA_VIG",
+                "EMSAD01", "EMSAD03", "EMSAD06", "EMSAD07", "EMSAD08", "EMSAD09", "EMSAD10", "EMSAD11", "EMSAD12",
+                "EMSAD13", "EMSAD14", "EMSAD16", "CECYT01", "CECYT02", "CECYT03", "CECYT04", "CECYT05",
+                "CECYT06", "CECYT07", "CECYT08", "CECYT09", "CECYT10", "CECYT11"
         };
 
         JComboBox<String> plantelComboBox = new JComboBox<>(planteles);
@@ -87,14 +92,15 @@ public class ReportePDF {
             public void actionPerformed(ActionEvent e) {
                 String nuevoPlantel = nuevoPlantelField.getText().trim();
                 logger.log("Nuevo plantel ingresado: " + nuevoPlantel);
-                
+
                 if (!nuevoPlantel.isEmpty()) {
                     plantelComboBox.addItem(nuevoPlantel);
                     plantelComboBox.setSelectedItem(nuevoPlantel);
                     nuevoPlantelField.setText("");
                     logger.log("Plantel agregado y seleccionado: " + nuevoPlantel);
                 } else {
-                    JOptionPane.showMessageDialog(null, "El campo no puede estar vacío.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "El campo no puede estar vacío.", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                     logger.log("Error: intento de agregar un plantel vacío");
                 }
             }
@@ -129,15 +135,13 @@ public class ReportePDF {
         logger.log("Mostrando diálogo de selección de plantel");
 
         int option = JOptionPane.showConfirmDialog(
-            null, panel, "Seleccione el plantel", JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE, customIcon
-        );
+                null, panel, "Seleccione el plantel", JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE, customIcon);
 
         if (option != JOptionPane.OK_OPTION) {
             JOptionPane.showMessageDialog(
-                null, "No se seleccionó ningún plantel. Operación cancelada.",
-                "Operación cancelada", JOptionPane.WARNING_MESSAGE
-            );
+                    null, "No se seleccionó ningún plantel. Operación cancelada.",
+                    "Operación cancelada", JOptionPane.WARNING_MESSAGE);
             logger.log("Operación cancelada por el usuario");
             return;
         }
@@ -147,9 +151,8 @@ public class ReportePDF {
 
         if ("Seleccione un plantel".equals(plantelSeleccionado)) {
             JOptionPane.showMessageDialog(
-                null, "Debe seleccionar un plantel antes de continuar.",
-                "Selección inválida", JOptionPane.ERROR_MESSAGE
-            );
+                    null, "Debe seleccionar un plantel antes de continuar.",
+                    "Selección inválida", JOptionPane.ERROR_MESSAGE);
             logger.log("Error: no se seleccionó un plantel válido");
             return;
         }
@@ -177,12 +180,11 @@ public class ReportePDF {
         logger.log("Mostrando diálogo de ingreso de rango de fechas");
 
         int result = JOptionPane.showConfirmDialog(
-            null, 
-            fechaPanel, 
-            "Ingrese el rango de fechas", 
-            JOptionPane.OK_CANCEL_OPTION, 
-            JOptionPane.PLAIN_MESSAGE
-        );
+                null,
+                fechaPanel,
+                "Ingrese el rango de fechas",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.CANCEL_OPTION) {
             logger.log("Usuario canceló la selección de fechas");
             return; // Salir del método sin generar el reporte
@@ -194,26 +196,30 @@ public class ReportePDF {
         if (result == JOptionPane.OK_OPTION) {
             String fechaInicioStr = fechaInicioField.getText().trim();
             String fechaFinStr = fechaFinField.getText().trim();
-            
+
             logger.log("Fechas ingresadas: Inicio - " + fechaInicioStr + ", Fin - " + fechaFinStr);
-            
+
             try {
                 fechaInicio = LocalDate.parse(fechaInicioStr, formatter);
                 fechaFin = LocalDate.parse(fechaFinStr, formatter);
-                
+
                 if (fechaInicio.isAfter(fechaFin)) {
-                    JOptionPane.showMessageDialog(null, "Error: La fecha de inicio no puede ser posterior a la fecha de fin.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null,
+                            "Error: La fecha de inicio no puede ser posterior a la fecha de fin.", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                     logger.log("Error: la fecha de inicio es posterior a la fecha de fin");
                     return;
                 }
-                
+
                 JOptionPane.showMessageDialog(null, "Fecha de inicio: " + fechaInicio + "\nFecha de fin: " + fechaFin);
                 periodoReporte = fechaInicio + " - " + fechaFin;
                 dias = obtenerDiasEntreFechas(fechaInicio, fechaFin);
                 logger.log("Fechas validadas y período generado: " + periodoReporte);
-                
+
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null,
+                        "Error: Las fechas ingresadas no son válidas. Asegúrese de usar el formato yyyy-MM-dd.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 logger.log("Error al parsear las fechas: " + e.getMessage());
                 return;
             }
@@ -226,20 +232,21 @@ public class ReportePDF {
         JFileChooser fileChooser = new JFileChooser(ultimaRuta);
         fileChooser.setDialogTitle("Guardar Reporte PDF");
         fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
-        fileChooser.setSelectedFile(new File(periodoReporte.replace(" ", "") + "_" + plantelSeleccionado.replace(" ", "") + ".pdf"));
+        fileChooser.setSelectedFile(
+                new File(periodoReporte.replace(" ", "") + "_" + plantelSeleccionado.replace(" ", "") + ".pdf"));
 
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             ultimaRuta = file.getParent();
             String filePath = file.getAbsolutePath();
-            
+
             if (!filePath.endsWith(".pdf")) {
                 filePath += ".pdf";
             }
-            
+
             logger.log("Archivo seleccionado para guardar: " + filePath);
-            
+
             try {
                 PdfWriter writer = new PdfWriter(filePath);
                 PdfDocument pdfDoc = new PdfDocument(writer);
@@ -277,46 +284,108 @@ public class ReportePDF {
                 for (EmpleadoDatosExtra empleado : empleadosDatos) {
                     String diaEmpleado = empleado.getDiaN().toLowerCase();
                     empleadoIndex
-                        .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
-                        .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
-                        .add(empleado);
+                            .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
+                            .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
+                            .add(empleado);
                 }
                 logger.log("Índice de empleados creado");
 
-                Map<String, List<Checadas>> checadasPorId = checadasList.stream()
-                    .filter(checada -> {
-                        LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
-                        return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) && 
-                               (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
-                    })
-                    .collect(Collectors.groupingBy(Checadas::getId));
-                
+                checadasPorId = checadasList.stream()
+                        .filter(checada -> {
+                            LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
+                            return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) &&
+                                    (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
+                        })
+                        .collect(Collectors.groupingBy(Checadas::getId));
+
                 logger.log("Checadas filtradas dentro del rango de fechas");
 
-                List<String> idsOrdenados = checadasPorId.keySet().stream()
-                    .sorted((id1, id2) -> {
-                        String nombre1 = checadasPorId.get(id1).get(0).getNombre();
-                        String nombre2 = checadasPorId.get(id2).get(0).getNombre();
-                        return nombre1.compareToIgnoreCase(nombre2);
-                    })
-                    .collect(Collectors.toList());
-                
-                logger.log("Checadas ordenadas alfabéticamente por nombre de empleado");
+                if (checadasPorId.isEmpty() && !idString.isEmpty()) {
+                    // Separar los IDs por coma
+                    String[] ids = idString.split(",");
+                    List<EmpleadoDatosExtra> horariosPersonal;
 
+                    // Crear una nueva lista de checadas vacía
+                    List<Checadas> checadasGeneradas = new ArrayList<>();
+
+                    // Obtener todos los empleados para buscar la información adicional
+                    List<Empleado> listaEmpleados = dbManager.obtenerEmpleadosNombre();
+
+                    // Crear un mapa rápido para búsqueda por ID
+                    Map<String, Empleado> empleadosMap = listaEmpleados.stream()
+                            .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
+
+                    for (String id : ids) {
+                        // Verificar si el ID existe en la lista de empleados
+                        if (!empleadosMap.containsKey(id)) {
+                            logger.log("Advertencia: El ID " + id + " no existe en la base de empleados");
+                            continue;
+                        }
+
+                        Empleado empleado = empleadosMap.get(id);
+                        horariosPersonal = dbManager.obtenerHorariosPorId(id);
+                        logger.log("Generando checadas vacías para ID: " + id + " - " + empleado.getNombre());
+
+                        // Para cada fecha en el rango, crear checadas vacías
+                        for (String fecha : dias) {
+                            Checadas checada = new Checadas();
+
+                            // Configurar los datos básicos del empleado
+                            checada.setId(id);
+                            checada.setNombre(empleado.getNombre());
+                            checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
+                            checada.setJornada(empleado.getJornada());
+                            checada.setFecha(fecha);
+
+                            // Establecer horas en 00:00 para marcar como faltante
+                            checada.setHoraEntrada("00:00");
+                            checada.setHoraSalida("00:00");
+
+                            // Si hay horarios para este día, agregar información adicional
+                            String diaSemana = calcularDiaSemana(fecha).toLowerCase();
+                            horariosPersonal.stream()
+                                    .filter(h -> h.getDiaN().equalsIgnoreCase(diaSemana))
+                                    .findFirst()
+                                    .ifPresent(horario -> {
+                                        // Opcional: agregar datos del horario si es necesario
+                                        checada.setHoraEntrada("00:00");
+                                        checada.setHoraSalida("00:00");
+                                    });
+
+                            checadasGeneradas.add(checada);
+                        }
+                    }
+
+                    checadasPorId = checadasGeneradas.stream()
+                            .collect(Collectors.groupingBy(Checadas::getId));
+
+                    logger.log("Se generaron " + checadasGeneradas.size() + " registros de checadas vacías");
+                }
+
+                List<String> idsOrdenados = checadasPorId.keySet().stream()
+                        .sorted((id1, id2) -> {
+                            String nombre1 = checadasPorId.get(id1).get(0).getNombre();
+                            String nombre2 = checadasPorId.get(id2).get(0).getNombre();
+                            return nombre1.compareToIgnoreCase(nombre2);
+                        })
+                        .collect(Collectors.toList());
+
+                logger.log("Checadas ordenadas alfabéticamente por nombre de empleado");
 
                 boolean primeraVezEnPagina = true;
 
                 // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
-                	logger.log("Entrando en ciclo para generar reporte de cada empleado");
+                    logger.log("Entrando en ciclo para generar reporte de cada empleado");
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
                             .setFontSize(9)
                             .setTextAlignment(TextAlignment.LEFT)
                             .setMultipliedLeading(0.6f)
-                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE)); // Negrita y cursiva
-                    logger.log("Empleado: "+ nombre+ " " + categoria);
+                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE)); // Negrita y
+                                                                                                      // cursiva
+                    logger.log("Empleado: " + nombre + " " + categoria);
                     PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
                     Table table = crearTabla();
                     Duration totalHorasACubrir = Duration.ZERO;
@@ -332,42 +401,44 @@ public class ReportePDF {
 
                     // Agrupar checadas por fecha
                     Map<String, List<Checadas>> checadasPorFecha = checadasPorId.get(id).stream()
-                        .collect(Collectors.groupingBy(Checadas::getFecha));
+                            .collect(Collectors.groupingBy(Checadas::getFecha));
                     logger.log("Lista de checadas agrupada por fecha");
-                 // Iterar sobre todas las fechas en el rango
+                    // Iterar sobre todas las fechas en el rango
                     for (String fecha : dias) {
-                    	logger.log("Procesando fecha: " + fecha + " para el empleado ID: " + id);
+                        logger.log("Procesando fecha: " + fecha + " para el empleado ID: " + id);
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();
 
                         // Verificar si el empleado tenía un horario para este día
-                        boolean tieneHorario = empleadoIndex.containsKey(id) && 
-                                               empleadoIndex.get(id) != null && 
-                                               empleadoIndex.get(id).containsKey(diaSemana);
+                        boolean tieneHorario = empleadoIndex.containsKey(id) &&
+                                empleadoIndex.get(id) != null &&
+                                empleadoIndex.get(id).containsKey(diaSemana);
 
                         // Si no hay checadas ni horarios, continuar con la siguiente fecha
                         if (!tieneHorario && checadasDelDia.isEmpty()) {
-                            logger.log("No hay checadas ni horarios para la fecha: " + fecha + " para el empleado ID: " + id);
+                            logger.log("No hay checadas ni horarios para la fecha: " + fecha + " para el empleado ID: "
+                                    + id);
                             continue;
                         }
 
                         // Obtener todos los horarios disponibles para este día
-                        List<EmpleadoDatosExtra> horariosDisponibles = tieneHorario ? 
-                            new ArrayList<>(empleadoIndex.get(id).get(diaSemana)) : new ArrayList<>();
-                        
+                        List<EmpleadoDatosExtra> horariosDisponibles = tieneHorario
+                                ? new ArrayList<>(empleadoIndex.get(id).get(diaSemana))
+                                : new ArrayList<>();
+
                         // Si no hay checadas, mostrar todos los horarios
                         if (checadasDelDia.isEmpty()) {
-                        	logger.log("No hay checadas registradas para la fecha: " + fecha + " para el empleado ID: " + id);
+                            logger.log("No hay checadas registradas para la fecha: " + fecha + " para el empleado ID: "
+                                    + id);
                             for (EmpleadoDatosExtra horario : horariosDisponibles) {
-                            	
+
                                 String horaEntradaReal = horario.getHoraEntradaReal();
                                 String horaSalidaReal = horario.getHoraSalidaReal();
 
-                               
                                 Duration duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
                                 totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
                                 logger.log("Falta registrada para el empleado ID: " + id + " en la fecha: " + fecha);
-                                
+
                                 // Mostrar el horario en la tabla
                                 table.addCell(new Cell().add(new Paragraph(fecha))
                                         .setTextAlignment(TextAlignment.LEFT)
@@ -407,145 +478,155 @@ public class ReportePDF {
                                 tamañoTabla++;
                             }
                         } else {
-                        	// Si hay checadas, procesarlas junto con los horarios
-                        	for (Checadas checada : checadasDelDia) {
-                        	    String horaEntradaReal = "00:00";
-                        	    String horaSalidaReal = "00:00";
-                        	    Duration duracionACubrir = Duration.ZERO;
-                        	    logger.log("Procesando checada para empleado: " + checada.toString());
+                            // Si hay checadas, procesarlas junto con los horarios
+                            for (Checadas checada : checadasDelDia) {
+                                String horaEntradaReal = "00:00";
+                                String horaSalidaReal = "00:00";
+                                Duration duracionACubrir = Duration.ZERO;
+                                logger.log("Procesando checada para empleado: " + checada.toString());
 
-                        	    if (tieneHorario && !horariosDisponibles.isEmpty()) {
-                        	        EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
-                        	        horaEntradaReal = empleadoData.getHoraEntradaReal();
-                        	        horaSalidaReal = empleadoData.getHoraSalidaReal();
-                        	        duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
-                        	        totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
-                        	        logger.log("Horario asignado. Hora entrada real: " + horaEntradaReal + ", Hora salida real: " + horaSalidaReal);
-                        	    } else {
-                        	        logger.log("No se encontró horario disponible para el empleado.");
-                        	    }
+                                if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                                    EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
+                                    horaEntradaReal = empleadoData.getHoraEntradaReal();
+                                    horaSalidaReal = empleadoData.getHoraSalidaReal();
+                                    duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+                                    totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+                                    logger.log("Horario asignado. Hora entrada real: " + horaEntradaReal
+                                            + ", Hora salida real: " + horaSalidaReal);
+                                } else {
+                                    logger.log("No se encontró horario disponible para el empleado.");
+                                }
 
-                        	    String horaEntrada = (checada.getHoraEntrada() != null && !checada.getHoraEntrada().isEmpty()) ? 
-                        	        checada.getHoraEntrada() : "00:00";
-                        	    String horaSalida = (checada.getHoraSalida() != null && !checada.getHoraSalida().isEmpty()) ? 
-                        	        checada.getHoraSalida() : "00:00";
+                                String horaEntrada = (checada.getHoraEntrada() != null
+                                        && !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
+                                String horaSalida = (checada.getHoraSalida() != null
+                                        && !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
 
-                        	    logger.log("Hora entrada registrada (antes de ajustes): " + horaEntrada);
-                        	    logger.log("Hora salida registrada (antes de ajustes): " + horaSalida);
+                                logger.log("Hora entrada registrada (antes de ajustes): " + horaEntrada);
+                                logger.log("Hora salida registrada (antes de ajustes): " + horaSalida);
 
-                        	 // Validación e intercambio de horas según el horario programado
-                        	    if (horaEntradaReal.equals("00:00") && !horaSalidaReal.equals("00:00") && !horaEntrada.equals("00:00")) {
-                        	        logger.log("Caso 1: Hora entrada programada es 00:00, pero hora salida no. Asignando checada a la salida.");
-                        	        // La checada se considera como salida
-                        	        horaSalida = horaEntrada; // Asignar la hora de la checada a la salida
-                        	        horaEntrada = "00:00"; // La entrada se mantiene en 00:00
-                        	    } else if (horaSalidaReal.equals("00:00") && !horaEntradaReal.equals("00:00") && !horaSalida.equals("00:00")) {
-                        	        logger.log("Caso 2: Hora salida programada es 00:00, pero hora entrada no. Asignando checada a la entrada.");
-                        	        // La checada se considera como entrada
-                        	        horaEntrada = horaSalida; // Asignar la hora de la checada a la entrada
-                        	        horaSalida = "00:00"; // La salida se mantiene en 00:00
-                        	    } else {
-                        	        logger.log("Caso 3: No se requiere intercambio. Horas programadas: Entrada = " + horaEntradaReal + ", Salida = " + horaSalidaReal);
-                        	    }
+                                // Validación e intercambio de horas según el horario programado
+                                if (horaEntradaReal.equals("00:00") && !horaSalidaReal.equals("00:00")
+                                        && !horaEntrada.equals("00:00")) {
+                                    logger.log(
+                                            "Caso 1: Hora entrada programada es 00:00, pero hora salida no. Asignando checada a la salida.");
+                                    // La checada se considera como salida
+                                    horaSalida = horaEntrada; // Asignar la hora de la checada a la salida
+                                    horaEntrada = "00:00"; // La entrada se mantiene en 00:00
+                                } else if (horaSalidaReal.equals("00:00") && !horaEntradaReal.equals("00:00")
+                                        && !horaSalida.equals("00:00")) {
+                                    logger.log(
+                                            "Caso 2: Hora salida programada es 00:00, pero hora entrada no. Asignando checada a la entrada.");
+                                    // La checada se considera como entrada
+                                    horaEntrada = horaSalida; // Asignar la hora de la checada a la entrada
+                                    horaSalida = "00:00"; // La salida se mantiene en 00:00
+                                } else {
+                                    logger.log("Caso 3: No se requiere intercambio. Horas programadas: Entrada = "
+                                            + horaEntradaReal + ", Salida = " + horaSalidaReal);
+                                }
 
-                        	    logger.log("Hora entrada registrada (después de ajustes): " + horaEntrada);
-                        	    logger.log("Hora salida registrada (después de ajustes): " + horaSalida);
+                                logger.log("Hora entrada registrada (después de ajustes): " + horaEntrada);
+                                logger.log("Hora salida registrada (después de ajustes): " + horaSalida);
 
-                        	    // Asignar el estatus de entrada y salida
-                        	    String estatusEntrada = tieneHorario ? estatusChequeo(horaEntrada, horaEntradaReal) : "---";
-                        	    String estatusSalida = tieneHorario ? estatusSalida(horaSalida, horaSalidaReal) : "---";
+                                // Asignar el estatus de entrada y salida
+                                String estatusEntrada = tieneHorario ? estatusChequeo(horaEntrada, horaEntradaReal)
+                                        : "---";
+                                String estatusSalida = tieneHorario ? estatusSalida(horaSalida, horaSalidaReal) : "---";
 
-                        	    logger.log("Estatus de entrada: " + estatusEntrada);
-                        	    logger.log("Estatus de salida: " + estatusSalida);
+                                logger.log("Estatus de entrada: " + estatusEntrada);
+                                logger.log("Estatus de salida: " + estatusSalida);
 
-                        	    String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
-                        	    Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
-                        	    logger.log("Tiempo trabajado: " + tiempoTrabajo);
+                                String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
+                                Duration duracionTrabajada = obtenerDuracion(horaEntrada, horaSalida);
+                                logger.log("Tiempo trabajado: " + tiempoTrabajo);
 
-                        	    if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
-                        	        totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
-                        	        logger.log("Horas trabajadas sumadas. Total horas trabajadas: " + totalHorasTrabajadas.toHours() + " horas.");
-                        	    }
+                                if (!horaEntrada.equals("00:00") && !horaSalida.equals("00:00")) {
+                                    totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada);
+                                    logger.log("Horas trabajadas sumadas. Total horas trabajadas: "
+                                            + totalHorasTrabajadas.toHours() + " horas.");
+                                }
 
-                        	    // Contar retardos y faltas solo si el empleado tenía un horario para ese día
-                        	    if (tieneHorario) {
-                        	        if ("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-                        	            retardos++;
-                        	            logger.log("Medio retardo registrado en la entrada.");
-                        	        }
-                        	        if ("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-                        	            retardos++;
-                        	            logger.log("Medio retardo registrado en la salida.");
-                        	        }
+                                // Contar retardos y faltas solo si el empleado tenía un horario para ese día
+                                if (tieneHorario) {
+                                    if ("Medio retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+                                        retardos++;
+                                        logger.log("Medio retardo registrado en la entrada.");
+                                    }
+                                    if ("Medio retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+                                        retardos++;
+                                        logger.log("Medio retardo registrado en la salida.");
+                                    }
 
-                        	        if ("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
-                        	            retardos++;
-                        	            logger.log("Retardo registrado en la entrada.");
-                        	        }
-                        	        if ("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
-                        	            retardos++;
-                        	            logger.log("Retardo registrado en la salida.");
-                        	        }
-                        	        if (mediosRetardos >= 10) {
-                        	            faltas++;
-                        	            logger.log("Falta registrada debido a 10 medios retardos.");
-                        	        }
+                                    if ("Retardo".equals(estatusChequeo(horaEntrada, horaEntradaReal))) {
+                                        retardos++;
+                                        logger.log("Retardo registrado en la entrada.");
+                                    }
+                                    if ("Retardo".equals(estatusChequeo(horaSalida, horaSalidaReal))) {
+                                        retardos++;
+                                        logger.log("Retardo registrado en la salida.");
+                                    }
+                                    if (mediosRetardos >= 10) {
+                                        faltas++;
+                                        logger.log("Falta registrada debido a 10 medios retardos.");
+                                    }
 
-                        	        // Contar falta solo si el empleado tenía un horario para ese día
-                        	        if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos >= 5) || 
-                        	            ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal)) && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
-                        	            faltas++;
-                        	            logger.log("Falta registrada debido a entradas o salidas faltantes.");
-                        	        } else {
-                        	            if (horaEntrada.equals("00:00")) {
-                        	                entradaFaltante++;
-                        	                logger.log("Entrada faltante registrada.");
-                        	            }
-                        	            if (horaSalida.equals("00:00")) {
-                        	                salidaFaltante++;
-                        	                logger.log("Salida faltante registrada.");
-                        	            }
-                        	        }
-                        	    }
+                                    // Contar falta solo si el empleado tenía un horario para ese día
+                                    if ((horaEntrada.equals("00:00") && horaSalida.equals("00:00")) || (retardos >= 5)
+                                            ||
+                                            ("Falta".equals(estatusChequeo(horaSalida, horaSalidaReal))
+                                                    && "Falta".equals(estatusChequeo(horaEntrada, horaEntradaReal)))) {
+                                        faltas++;
+                                        logger.log("Falta registrada debido a entradas o salidas faltantes.");
+                                    } else {
+                                        if (horaEntrada.equals("00:00")) {
+                                            entradaFaltante++;
+                                            logger.log("Entrada faltante registrada.");
+                                        }
+                                        if (horaSalida.equals("00:00")) {
+                                            salidaFaltante++;
+                                            logger.log("Salida faltante registrada.");
+                                        }
+                                    }
+                                }
 
-                        	    // Agregar la fila a la tabla
-                        	    table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                // Agregar la fila a la tabla
+                                table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(diaSemana))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(diaSemana))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(horaEntradaReal + " - " + horaEntrada))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(estatusEntrada))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(estatusEntrada))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(horaSalidaReal + " - " + horaSalida))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(estatusSalida))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(estatusSalida))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
-                        	            .setTextAlignment(TextAlignment.LEFT)
-                        	            .setFontSize(7).setBorder(Border.NO_BORDER)
-                        	            .setPadding(2).setMargin(0));
+                                table.addCell(new Cell().add(new Paragraph(tiempoTrabajo))
+                                        .setTextAlignment(TextAlignment.LEFT)
+                                        .setFontSize(7).setBorder(Border.NO_BORDER)
+                                        .setPadding(2).setMargin(0));
 
-                        	    tamañoTabla++;
-                        	}
+                                tamañoTabla++;
+                            }
                         }
                     }
 
@@ -555,16 +636,16 @@ public class ReportePDF {
                     long minutosTrabajados = totalHorasTrabajadas.toMinutes() % 60;
 
                     // Crear la tabla con 5 columnas
-                    Table info = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1}))
+                    Table info = new Table(UnitValue.createPercentArray(new float[] { 1, 1, 1, 1, 1 }))
                             .useAllAvailableWidth()
                             .setBorder(Border.NO_BORDER);
 
                     // Agregar cada dato en su celda sin bordes y en negrita
-                    info.addCell(new Cell().add(new Paragraph("Total horas: " + totalHoras + ":" + 
+                    info.addCell(new Cell().add(new Paragraph("Total horas: " + totalHoras + ":" +
                             (totalMinutos < 10 ? "0" + totalMinutos : totalMinutos)).setFont(boldFont))
                             .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
 
-                    info.addCell(new Cell().add(new Paragraph("Horas trabajadas: " + horasTrabajadas + ":" + 
+                    info.addCell(new Cell().add(new Paragraph("Horas trabajadas: " + horasTrabajadas + ":" +
                             (minutosTrabajados < 10 ? "0" + minutosTrabajados : minutosTrabajados)).setFont(boldFont))
                             .setFontSize(7).setTextAlignment(TextAlignment.LEFT).setBorder(Border.NO_BORDER));
 
@@ -589,38 +670,38 @@ public class ReportePDF {
 
                     // Calcular espacio disponible en la página actual
                     float remainingHeight = calcularEspacioDisponible(document) - 20;
-                    logger.log("Espacio disponible: "+ remainingHeight);
+                    logger.log("Espacio disponible: " + remainingHeight);
                     float estimatedContentHeight = 120 + (tamañoTabla * 11);
-                    logger.log("Espacio estimado para id:"+ id+ " espacio estimado: "+estimatedContentHeight);
+                    logger.log("Espacio estimado para id:" + id + " espacio estimado: " + estimatedContentHeight);
                     float alturaFila = 10; // Estimación de la altura de cada fila
                     int maxFilas = calcularMaxFilas(document);
-                    if(maxFilas>39) {
-                    	maxFilas=40;
+                    if (maxFilas > 39) {
+                        maxFilas = 40;
                     }
                     if (incluirEncabezado) {
-                    	logger.log("Incluir encabezado: "+incluirEncabezado);
+                        logger.log("Incluir encabezado: " + incluirEncabezado);
                         if (remainingHeight < 35) {
-                        	logger.log("Espacio menor a 35, nueva hoja y espacio para encabezado");
+                            logger.log("Espacio menor a 35, nueva hoja y espacio para encabezado");
                             document.add(new AreaBreak());
                             document.add(new Paragraph(" ").setMarginTop(35));
                             remainingHeight = calcularEspacioDisponible(document) - 20;
                         }
-                        if (remainingHeight < estimatedContentHeight || tamañoTabla>40) {
-                        	logger.log("Espacio disponible es menor a espacio estimado");
+                        if (remainingHeight < estimatedContentHeight || tamañoTabla > 40) {
+                            logger.log("Espacio disponible es menor a espacio estimado");
                             document.add(title);
 
                             // Dividir la tabla usando maxFilas calculado
                             List<Table> tablasDivididas = dividirTabla(table, maxFilas);
-                            logger.log("Tablas divididas del empleado: "+ id);
+                            logger.log("Tablas divididas del empleado: " + id);
                             int i = 0;
                             for (Table tablaParcial : tablasDivididas) {
                                 if (i == 1) {
-                                	logger.log("Nueva hoja para segunda tabla");
+                                    logger.log("Nueva hoja para segunda tabla");
                                     document.add(new AreaBreak());
                                     document.add(new Paragraph(" ").setMarginTop(35));
                                 }
                                 if (tablaParcial.getNumberOfRows() > 0) {
-                                	logger.log("Tabla parcial agregada");
+                                    logger.log("Tabla parcial agregada");
                                     document.add(tablaParcial);
                                 }
                                 i++;
@@ -629,14 +710,14 @@ public class ReportePDF {
                             document.add(info);
                             document.add(new Paragraph(" ").setMarginTop(7));
                         } else {
-                        	logger.log("contenido del empleado agregado title, table y info");
+                            logger.log("contenido del empleado agregado title, table y info");
                             document.add(title);
                             document.add(table);
                             document.add(info);
                             document.add(new Paragraph(" ").setMarginTop(7));
                         }
                     } else {
-                    	logger.log("contenido del empleado agregado title, table y info");
+                        logger.log("contenido del empleado agregado title, table y info");
                         document.add(title);
                         document.add(table);
                         document.add(info);
@@ -644,20 +725,21 @@ public class ReportePDF {
                     }
                 }
 
-            	logger.log("Documento cerrado");
+                logger.log("Documento cerrado");
                 document.close();
 
                 System.out.println("PDF generado en: " + filePath);
 
-            	logger.log("PDF generado en: " + filePath);
+                logger.log("PDF generado en: " + filePath);
                 if (Desktop.isDesktopSupported()) {
                     try {
                         Desktop.getDesktop().open(new File(filePath));
-                        
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(null, "No se pudo abrir el documento", "", JOptionPane.ERROR_MESSAGE);
 
-                    	logger.log("No se pudo abrir el documento");
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(null, "No se pudo abrir el documento", "",
+                                JOptionPane.ERROR_MESSAGE);
+
+                        logger.log("No se pudo abrir el documento");
                     }
                 }
 
@@ -687,17 +769,17 @@ public class ReportePDF {
 
                 // Calcular el ancho del texto del plantel
                 PdfFont font = null;
-				try {
-					font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-				} catch (java.io.IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+                try {
+                    font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                } catch (java.io.IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 float fontSize = 8;
                 float plantelWidth = font.getWidth(plantel, fontSize);
 
                 // Definir el margen izquierdo basado en el tamaño del plantel
-                float marginLeft = plantelWidth ; // Añadir un margen adicional de 10 unidades
+                float marginLeft = plantelWidth; // Añadir un margen adicional de 10 unidades
 
                 // Posición X del número de página
                 float xPageNumber = pageSize.getRight() - 75 - marginLeft;
@@ -708,10 +790,10 @@ public class ReportePDF {
                 String pageNumber = plantel + " - Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
 
                 canvas.beginText();
-				canvas.setFontAndSize(font, fontSize); // Tamaño de la fuente
-				canvas.moveText(xPageNumber, yPageNumber);
-				canvas.showText(pageNumber);
-				canvas.endText();
+                canvas.setFontAndSize(font, fontSize); // Tamaño de la fuente
+                canvas.moveText(xPageNumber, yPageNumber);
+                canvas.showText(pageNumber);
+                canvas.endText();
 
                 canvas.release();
             }
@@ -758,9 +840,9 @@ public class ReportePDF {
 
     private Table crearTabla() throws java.io.IOException {
         // Crear la tabla con 7 columnas y sin bordes
-        Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 1, 1, 1, 1, 1, 1.2f}))
+        Table tabla = new Table(UnitValue.createPercentArray(new float[] { 1, 1, 1, 1, 1, 1, 1.2f }))
                 .useAllAvailableWidth()
-                .setBorder(Border.NO_BORDER);  // Sin bordes
+                .setBorder(Border.NO_BORDER); // Sin bordes
 
         // Usamos la fuente Helvetica Negrita directamente
         PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
@@ -771,14 +853,14 @@ public class ReportePDF {
         DeviceRgb textColor = new DeviceRgb(255, 255, 255);
 
         // Encabezados con texto blanco y alineados a la izquierda
-        String[] headers = {"Fecha", "Día", "Hora Entrada", "Estatus", "Hora Salida", "Estatus", "Tiempo Trabajado"};
+        String[] headers = { "Fecha", "Día", "Hora Entrada", "Estatus", "Hora Salida", "Estatus", "Tiempo Trabajado" };
 
         for (String header : headers) {
             tabla.addHeaderCell(new Cell().add(new Paragraph(header).setFont(boldFont).setFontColor(textColor))
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(8)
                     .setBackgroundColor(backgroundColor)
-                    .setBorder(Border.NO_BORDER));  // Sin bordes en la celda
+                    .setBorder(Border.NO_BORDER)); // Sin bordes en la celda
         }
 
         return tabla;
@@ -817,7 +899,8 @@ public class ReportePDF {
                     tablaMax.addCell(celda);
                     filaActual++;
 
-                    // Si se alcanzó el máximo de filas para la primera tabla, empieza a llenar la segunda
+                    // Si se alcanzó el máximo de filas para la primera tabla, empieza a llenar la
+                    // segunda
                     if (filaActual >= maxFilasPorTabla * numColumnas) {
                         maxTablaLlena = true;
                     }
@@ -843,20 +926,19 @@ public class ReportePDF {
         return tablasDivididas;
     }
 
-
     private float calcularEspacioDisponible(Document document) {
         // Obtener la altura disponible en la página actual
         LayoutArea currentArea = document.getRenderer().getCurrentArea();
         return currentArea.getBBox().getHeight() - 50; // Ajusta el margen inferior
     }
+
     public String estatusSalida(String horaSalida, String horaReal) {
-    	if (horaReal == null || horaReal.equals("00:00") || horaSalida==null) {
+        if (horaReal == null || horaReal.equals("00:00") || horaSalida == null) {
             return "";
         }
-    	if (horaSalida.equals("00:00") || horaSalida.isEmpty()) {
+        if (horaSalida.equals("00:00") || horaSalida.isEmpty()) {
             return "Falta";
         }
-        
 
         String[] partesSalida = horaSalida.split(":");
         String[] partesReal = horaReal.split(":");
@@ -879,15 +961,15 @@ public class ReportePDF {
     }
 
     public String estatusChequeo(String horaChequeo, String horaReal) {
-        
-    	if (horaReal == null || horaReal.isEmpty() || horaReal.equals("00:00")) {
+
+        if (horaReal == null || horaReal.isEmpty() || horaReal.equals("00:00")) {
             return "";
         }
 
-    	if (horaChequeo == null || horaChequeo.isEmpty() || horaChequeo.equals("00:00")) {
+        if (horaChequeo == null || horaChequeo.isEmpty() || horaChequeo.equals("00:00")) {
             return "Falta";
         }
-        
+
         if (!horaChequeo.matches("\\d{2}:\\d{2}") || !horaReal.matches("\\d{2}:\\d{2}")) {
             return "Formato de hora incorrecto";
         }
