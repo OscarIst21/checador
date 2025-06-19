@@ -157,25 +157,33 @@ public class ReportePDF {
             return;
         }
 
-        JPanel fechaPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        JPanel fechaPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         JLabel fechaInicioLabel = new JLabel("Fecha de inicio (yyyy-MM-dd):");
         JTextField fechaInicioField = new JTextField(10);
         JLabel fechaFinLabel = new JLabel("Fecha de fin (yyyy-MM-dd):");
         JTextField fechaFinField = new JTextField(10);
+        JLabel cctLabel = new JLabel("CCT:");
+        String[] cctList = {
+                "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "D_G", "E01", "E03", "E06",
+                "E07", "E08", "E09", "E10", "E11", "E12", "E13", "E14", "E16",
+        };
 
+        JComboBox<String> cctComboBox = new JComboBox<>(cctList);
         // Establecer valores predeterminados si las fechas son null
         if (fechaInicio != null) {
-            fechaInicioField.setText(fechaInicio.format(formatter)); // Usar la fecha ya almacenada
+            fechaInicioField.setText(fechaInicio.format(formatter));
         }
 
         if (fechaFin != null) {
-            fechaFinField.setText(fechaFin.format(formatter)); // Usar la fecha ya almacenada
+            fechaFinField.setText(fechaFin.format(formatter));
         }
 
         fechaPanel.add(fechaInicioLabel);
         fechaPanel.add(fechaInicioField);
         fechaPanel.add(fechaFinLabel);
         fechaPanel.add(fechaFinField);
+        fechaPanel.add(cctLabel);
+        fechaPanel.add(cctComboBox);
 
         logger.log("Mostrando diálogo de ingreso de rango de fechas");
 
@@ -187,7 +195,7 @@ public class ReportePDF {
                 JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.CANCEL_OPTION) {
             logger.log("Usuario canceló la selección de fechas");
-            return; // Salir del método sin generar el reporte
+            return;
         }
 
         logger.log("Diálogo de fechas cerrado con opción: " + result);
@@ -225,15 +233,74 @@ public class ReportePDF {
             }
         }
 
+        // Obtener el CCT seleccionado
+        String cctSeleccionado = (String) cctComboBox.getSelectedItem();
+        logger.log("CCT seleccionado: " + cctSeleccionado);
+
         BaseDeDatosManager dbManager = new BaseDeDatosManager();
+
+        // Obtener todos los empleados del CCT seleccionado
+        List<Empleado> empleadosCCT = dbManager.obtenerEmpleadosPorCCT(cctSeleccionado);
+        logger.log("Número de empleados encontrados para CCT " + cctSeleccionado + ": " + empleadosCCT.size());
+
+        // Crear un mapa de empleados para fácil acceso
+        Map<String, Empleado> mapaEmpleados = empleadosCCT.stream()
+                .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
+
+        // Obtener horarios para estos empleados
         List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerTodosLosHorarios();
-        logger.log("Datos de empleados obtenidos de la base de datos");
+        logger.log("Datos de horarios obtenidos para CCT " + cctSeleccionado);
+
+        // Filtrar checadas para el rango de fechas y el CCT seleccionado
+        checadasPorId = checadasList.stream()
+                .filter(checada -> {
+                    LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
+                    return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) &&
+                            (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin)) &&
+                            mapaEmpleados.containsKey(checada.getId());
+                })
+                .collect(Collectors.groupingBy(Checadas::getId));
+        logger.log("Checadas filtradas para CCT " + cctSeleccionado + ": " + checadasPorId.size()
+                + " empleados con registros");
+
+        // Generar checadas vacías para empleados sin registros
+        for (Empleado empleado : empleadosCCT) {
+            String id = empleado.getId();
+            if (!checadasPorId.containsKey(id)) {
+                List<Checadas> checadasGeneradas = new ArrayList<>();
+                for (String fecha : dias) {
+                    Checadas checada = new Checadas();
+                    checada.setId(id);
+                    checada.setNombre(empleado.getNombre());
+                    checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
+                    checada.setJornada(empleado.getJornada());
+                    checada.setFecha(fecha);
+                    checada.setHoraEntrada("00:00");
+                    checada.setHoraSalida("00:00");
+                    checadasGeneradas.add(checada);
+                }
+                checadasPorId.put(id, checadasGeneradas);
+                logger.log("Generadas checadas vacías para empleado ID: " + id);
+            }
+        }
+        logger.log("Total de empleados procesados (con y sin checadas): " + checadasPorId.size());
+
+        // Crear índice de horarios por empleado y día
+        Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
+        for (EmpleadoDatosExtra empleado : empleadosDatos) {
+            String diaEmpleado = empleado.getDiaN().toLowerCase();
+            empleadoIndex
+                    .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
+                    .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
+                    .add(empleado);
+        }
+        logger.log("Índice de horarios creado");
 
         JFileChooser fileChooser = new JFileChooser(ultimaRuta);
         fileChooser.setDialogTitle("Guardar Reporte PDF");
         fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
         fileChooser.setSelectedFile(
-                new File(periodoReporte.replace(" ", "") + "_" + plantelSeleccionado.replace(" ", "") + ".pdf"));
+                new File(periodoReporte.replace(" ", "") + "_" + cctSeleccionado.replace(" ", "") + ".pdf"));
 
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
@@ -280,88 +347,6 @@ public class ReportePDF {
                     });
                 }
 
-                Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
-                for (EmpleadoDatosExtra empleado : empleadosDatos) {
-                    String diaEmpleado = empleado.getDiaN().toLowerCase();
-                    empleadoIndex
-                            .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
-                            .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
-                            .add(empleado);
-                }
-                logger.log("Índice de empleados creado");
-
-                checadasPorId = checadasList.stream()
-                        .filter(checada -> {
-                            LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
-                            return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) &&
-                                    (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
-                        })
-                        .collect(Collectors.groupingBy(Checadas::getId));
-
-                logger.log("Checadas filtradas dentro del rango de fechas");
-
-                if (checadasPorId.isEmpty() && !idString.isEmpty()) {
-                    // Separar los IDs por coma
-                    String[] ids = idString.split(",");
-                    List<EmpleadoDatosExtra> horariosPersonal;
-
-                    // Crear una nueva lista de checadas vacía
-                    List<Checadas> checadasGeneradas = new ArrayList<>();
-
-                    // Obtener todos los empleados para buscar la información adicional
-                    List<Empleado> listaEmpleados = dbManager.obtenerEmpleadosNombre();
-
-                    // Crear un mapa rápido para búsqueda por ID
-                    Map<String, Empleado> empleadosMap = listaEmpleados.stream()
-                            .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
-
-                    for (String id : ids) {
-                        // Verificar si el ID existe en la lista de empleados
-                        if (!empleadosMap.containsKey(id)) {
-                            logger.log("Advertencia: El ID " + id + " no existe en la base de empleados");
-                            continue;
-                        }
-
-                        Empleado empleado = empleadosMap.get(id);
-                        horariosPersonal = dbManager.obtenerHorariosPorId(id);
-                        logger.log("Generando checadas vacías para ID: " + id + " - " + empleado.getNombre());
-
-                        // Para cada fecha en el rango, crear checadas vacías
-                        for (String fecha : dias) {
-                            Checadas checada = new Checadas();
-
-                            // Configurar los datos básicos del empleado
-                            checada.setId(id);
-                            checada.setNombre(empleado.getNombre());
-                            checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
-                            checada.setJornada(empleado.getJornada());
-                            checada.setFecha(fecha);
-
-                            // Establecer horas en 00:00 para marcar como faltante
-                            checada.setHoraEntrada("00:00");
-                            checada.setHoraSalida("00:00");
-
-                            // Si hay horarios para este día, agregar información adicional
-                            String diaSemana = calcularDiaSemana(fecha).toLowerCase();
-                            horariosPersonal.stream()
-                                    .filter(h -> h.getDiaN().equalsIgnoreCase(diaSemana))
-                                    .findFirst()
-                                    .ifPresent(horario -> {
-                                        // Opcional: agregar datos del horario si es necesario
-                                        checada.setHoraEntrada("00:00");
-                                        checada.setHoraSalida("00:00");
-                                    });
-
-                            checadasGeneradas.add(checada);
-                        }
-                    }
-
-                    checadasPorId = checadasGeneradas.stream()
-                            .collect(Collectors.groupingBy(Checadas::getId));
-
-                    logger.log("Se generaron " + checadasGeneradas.size() + " registros de checadas vacías");
-                }
-
                 List<String> idsOrdenados = checadasPorId.keySet().stream()
                         .sorted((id1, id2) -> {
                             String nombre1 = checadasPorId.get(id1).get(0).getNombre();
@@ -376,15 +361,14 @@ public class ReportePDF {
 
                 // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
-                    logger.log("Entrando en ciclo para generar reporte de cada empleado");
+                    logger.log("Procesando empleado ID: " + id);
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
                             .setFontSize(9)
                             .setTextAlignment(TextAlignment.LEFT)
                             .setMultipliedLeading(0.6f)
-                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE)); // Negrita y
-                                                                                                      // cursiva
+                            .setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLDOBLIQUE));
                     logger.log("Empleado: " + nombre + " " + categoria);
                     PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
                     Table table = crearTabla();
@@ -750,13 +734,11 @@ public class ReportePDF {
     }
 
     private int calcularMaxFilas(Document document) {
-        float espacioDisponible = calcularEspacioDisponible(document); // Espacio disponible en la página
-        float espacioFijo = 35; // Ajusta según lo que ocupan otros elementos (title, info, márgenes, etc.)
-
+        float espacioDisponible = calcularEspacioDisponible(document);
+        float espacioFijo = 35;
         float espacioRestante = espacioDisponible - espacioFijo;
-        float alturaFila = 8 + 5; // Tamaño de fuente 7 + margen de seguridad 4
-
-        return (int) (espacioRestante / alturaFila); // Número máximo de filas que caben
+        float alturaFila = 8 + 5;
+        return (int) (espacioRestante / alturaFila);
     }
 
     private void agregarNumeroPagina(PdfDocument pdfDoc, String plantel) {
@@ -767,30 +749,23 @@ public class ReportePDF {
                 PdfCanvas canvas = new PdfCanvas(docEvent.getPage());
                 Rectangle pageSize = docEvent.getPage().getPageSize();
 
-                // Calcular el ancho del texto del plantel
                 PdfFont font = null;
                 try {
                     font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
                 } catch (java.io.IOException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 float fontSize = 8;
                 float plantelWidth = font.getWidth(plantel, fontSize);
 
-                // Definir el margen izquierdo basado en el tamaño del plantel
-                float marginLeft = plantelWidth; // Añadir un margen adicional de 10 unidades
-
-                // Posición X del número de página
+                float marginLeft = plantelWidth;
                 float xPageNumber = pageSize.getRight() - 75 - marginLeft;
-
-                // Posición Y del número de página
                 float yPageNumber = pageSize.getBottom() + 30;
 
                 String pageNumber = plantel + " - Página " + docEvent.getDocument().getPageNumber(docEvent.getPage());
 
                 canvas.beginText();
-                canvas.setFontAndSize(font, fontSize); // Tamaño de la fuente
+                canvas.setFontAndSize(font, fontSize);
                 canvas.moveText(xPageNumber, yPageNumber);
                 canvas.showText(pageNumber);
                 canvas.endText();
@@ -839,20 +814,14 @@ public class ReportePDF {
     }
 
     private Table crearTabla() throws java.io.IOException {
-        // Crear la tabla con 7 columnas y sin bordes
         Table tabla = new Table(UnitValue.createPercentArray(new float[] { 1, 1, 1, 1, 1, 1, 1.2f }))
                 .useAllAvailableWidth()
-                .setBorder(Border.NO_BORDER); // Sin bordes
+                .setBorder(Border.NO_BORDER);
 
-        // Usamos la fuente Helvetica Negrita directamente
         PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-
-        // Color de fondo para los encabezados
         DeviceRgb backgroundColor = new DeviceRgb(57, 166, 100);
-        // Color blanco para el texto
         DeviceRgb textColor = new DeviceRgb(255, 255, 255);
 
-        // Encabezados con texto blanco y alineados a la izquierda
         String[] headers = { "Fecha", "Día", "Hora Entrada", "Estatus", "Hora Salida", "Estatus", "Tiempo Trabajado" };
 
         for (String header : headers) {
@@ -860,7 +829,7 @@ public class ReportePDF {
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(8)
                     .setBackgroundColor(backgroundColor)
-                    .setBorder(Border.NO_BORDER)); // Sin bordes en la celda
+                    .setBorder(Border.NO_BORDER));
         }
 
         return tabla;
@@ -871,7 +840,6 @@ public class ReportePDF {
         LocalDate fechaActual = fechaInicio;
 
         while (!fechaActual.isAfter(fechaFin)) {
-            // Formato de la fecha (puedes modificar el formato a tu preferencia)
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             dias.add(fechaActual.format(formatter));
             fechaActual = fechaActual.plusDays(1);
@@ -889,37 +857,29 @@ public class ReportePDF {
         int filaActual = 0;
         boolean maxTablaLlena = false;
 
-        // Itera sobre todas las celdas de la tabla original
         for (IElement elemento : tablaOriginal.getChildren()) {
             if (elemento instanceof Cell) {
                 Cell celda = (Cell) elemento;
 
-                // Agregar la celda a la primera tabla hasta alcanzar el límite de filas
                 if (!maxTablaLlena) {
                     tablaMax.addCell(celda);
                     filaActual++;
 
-                    // Si se alcanzó el máximo de filas para la primera tabla, empieza a llenar la
-                    // segunda
                     if (filaActual >= maxFilasPorTabla * numColumnas) {
                         maxTablaLlena = true;
                     }
                 } else {
-                    // Rellenar la segunda tabla con las celdas restantes
                     tablaResto.addCell(celda);
                 }
             }
         }
 
-        // Agregar la primera tabla
         tablasDivididas.add(tablaMax);
 
-        // Si la segunda tabla tiene más de 40 filas, dividirla en más tablas
         if (tablaResto.getNumberOfRows() > 40) {
             List<Table> tablasExtra = dividirTabla(tablaResto, 40);
             tablasDivididas.addAll(tablasExtra);
         } else if (!tablaResto.isEmpty()) {
-            // Si la segunda tabla no supera las 40 filas, se agrega tal cual
             tablasDivididas.add(tablaResto);
         }
 
@@ -927,9 +887,8 @@ public class ReportePDF {
     }
 
     private float calcularEspacioDisponible(Document document) {
-        // Obtener la altura disponible en la página actual
         LayoutArea currentArea = document.getRenderer().getCurrentArea();
-        return currentArea.getBBox().getHeight() - 50; // Ajusta el margen inferior
+        return currentArea.getBBox().getHeight() - 50;
     }
 
     public String estatusSalida(String horaSalida, String horaReal) {
@@ -952,16 +911,15 @@ public class ReportePDF {
         int diferenciaEnMinutos = (horasSalida - horasReal) * 60 + (minutosSalida - minutosReal);
 
         if (diferenciaEnMinutos < 0) {
-            return "Salida anticipada"; // Si la salida es antes de la hora real
+            return "Salida anticipada";
         } else if (diferenciaEnMinutos <= 30) {
-            return "Tolerancia"; // Si la salida es menos de 30 minutos después de la hora real
+            return "Tolerancia";
         } else {
-            return "30 min después"; // Si la salida es más de 30 minutos después de la hora real
+            return "30 min después";
         }
     }
 
     public String estatusChequeo(String horaChequeo, String horaReal) {
-
         if (horaReal == null || horaReal.isEmpty() || horaReal.equals("00:00")) {
             return "";
         }
@@ -996,7 +954,6 @@ public class ReportePDF {
                 return "Falta Entrada";
             }
         } catch (NumberFormatException e) {
-            // Handle the case where parsing fails
             return "Formato de hora incorrecto";
         }
     }
@@ -1028,20 +985,15 @@ public class ReportePDF {
             LocalTime entrada = LocalTime.parse(horaEntrada, formatter);
             LocalTime salida = LocalTime.parse(horaSalida, formatter);
 
-            // Verificar si la salida es al día siguiente
             if (salida.isBefore(entrada)) {
-                // Calcular horas trabajadas desde la entrada hasta la medianoche
                 Duration duracionPrimeraParte = Duration.between(entrada, LocalTime.MAX).plus(Duration.ofSeconds(1));
-                // Calcular horas trabajadas desde la medianoche hasta la salida
                 Duration duracionSegundaParte = Duration.between(LocalTime.MIN, salida);
-                // Sumar ambas duraciones
                 Duration duracionTotal = duracionPrimeraParte.plus(duracionSegundaParte);
 
                 long horas = duracionTotal.toHours();
                 long minutos = duracionTotal.toMinutes() % 60;
                 return horas + ":" + (minutos < 10 ? "0" + minutos : minutos);
             } else {
-                // Calcular horas trabajadas normalmente
                 Duration duracion = Duration.between(entrada, salida);
 
                 if (duracion.isNegative()) {

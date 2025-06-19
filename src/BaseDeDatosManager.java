@@ -327,4 +327,54 @@ public class BaseDeDatosManager {
 
         return empleados;
     }
+
+    public List<Empleado> obtenerEmpleadosPorCCT(String cct) {
+        // Implementación para obtener empleados por CCT
+        String sql = "SELECT * FROM empleadosNombre WHERE cct = ?";
+        // Ejecutar consulta y mapear resultados
+        List<Empleado> empleados = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, cct);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Empleado empleado = new Empleado();
+                empleado.setId(rs.getString("id"));
+                empleado.setNombre(rs.getString("nombre"));
+                empleado.setEmpleadoPuesto(rs.getString("puesto"));
+                empleado.setJornada(rs.getString("jornada"));
+                empleado.setCct(rs.getString("cct"));
+                empleados.add(empleado);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return empleados;
+    }
+
+    public List<EmpleadoDatosExtra> obtenerHorariosPorCCT(String cct) {
+        // Implementación para obtener horarios por CCT
+        String sql = "SELECT e.* FROM empleados_datos_extra e " +
+                "JOIN empleados emp ON e.id = emp.id WHERE emp.cct = ?";
+        // Ejecutar consulta y mapear resultados
+        List<EmpleadoDatosExtra> horarios = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, cct);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                EmpleadoDatosExtra horario = new EmpleadoDatosExtra(
+                        rs.getString("id"),
+                        rs.getString("diaN"),
+                        rs.getString("horaEntradaReal"),
+                        rs.getString("horaSalidaReal"));
+                horarios.add(horario);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return horarios;
+    }
 }
