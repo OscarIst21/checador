@@ -263,24 +263,47 @@ public class ReportePDF {
         logger.log("Checadas filtradas para CCT " + cctSeleccionado + ": " + checadasPorId.size()
                 + " empleados con registros");
 
-        // Generar checadas vacías para empleados sin registros
+        // Modificación en la sección de generación de checadas para empleados sin
+        // registros
         for (Empleado empleado : empleadosCCT) {
             String id = empleado.getId();
             if (!checadasPorId.containsKey(id)) {
                 List<Checadas> checadasGeneradas = new ArrayList<>();
+
+                // Obtener los días con horario para este empleado
+                Map<String, List<EmpleadoDatosExtra>> horariosEmpleado = empleadosDatos.stream()
+                        .filter(e -> e.getId().equals(id))
+                        .collect(Collectors.groupingBy(EmpleadoDatosExtra::getDiaN));
+
                 for (String fecha : dias) {
-                    Checadas checada = new Checadas();
-                    checada.setId(id);
-                    checada.setNombre(empleado.getNombre());
-                    checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
-                    checada.setJornada(empleado.getJornada());
-                    checada.setFecha(fecha);
-                    checada.setHoraEntrada("00:00");
-                    checada.setHoraSalida("00:00");
-                    checadasGeneradas.add(checada);
+                    String diaSemana = calcularDiaSemana(fecha).toLowerCase();
+
+                    // Solo generar checada si el empleado tiene horario para este día
+                    if (horariosEmpleado.containsKey(diaSemana)) {
+                        Checadas checada = new Checadas();
+                        checada.setId(id);
+                        checada.setNombre(empleado.getNombre());
+                        checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
+                        checada.setJornada(empleado.getJornada());
+                        checada.setFecha(fecha);
+                        checada.setHoraEntrada("00:00");
+                        checada.setHoraSalida("00:00");
+
+                        // Obtener el primer horario para este día (asumiendo que puede haber múltiples)
+                        EmpleadoDatosExtra horario = horariosEmpleado.get(diaSemana).get(0);
+                        checada.setHoraEntrada("00:00");
+                        checada.setHoraSalida("00:00");
+
+                        checadasGeneradas.add(checada);
+                        logger.log("Checada vacía generada para empleado ID: " + id + " en fecha: " + fecha);
+                    }
                 }
-                checadasPorId.put(id, checadasGeneradas);
-                logger.log("Generadas checadas vacías para empleado ID: " + id);
+
+                if (!checadasGeneradas.isEmpty()) {
+                    checadasPorId.put(id, checadasGeneradas);
+                    logger.log("Checadas generadas para empleado sin registros: " + id + " - Total: "
+                            + checadasGeneradas.size());
+                }
             }
         }
         logger.log("Total de empleados procesados (con y sin checadas): " + checadasPorId.size());
