@@ -54,6 +54,7 @@ import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,6 +238,8 @@ public class ReportePDF {
         String cctSeleccionado = (String) cctComboBox.getSelectedItem();
         logger.log("CCT seleccionado: " + cctSeleccionado);
 
+        // Dentro del método generateReport, después de obtener las fechas y el CCT:
+
         BaseDeDatosManager dbManager = new BaseDeDatosManager();
 
         // Obtener todos los empleados del CCT seleccionado
@@ -247,11 +250,31 @@ public class ReportePDF {
         Map<String, Empleado> mapaEmpleados = empleadosCCT.stream()
                 .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
 
+        // Filtrar empleados si hay IDs específicos
+        if (!idString.isEmpty()) {
+            String[] idsFiltro = idString.split(",");
+            empleadosCCT = empleadosCCT.stream()
+                    .filter(empleado -> Arrays.asList(idsFiltro).contains(empleado.getId()))
+                    .collect(Collectors.toList());
+            logger.log("Filtrado por IDs específicos. Empleados a procesar: " + empleadosCCT.size());
+        }
+
         // Obtener horarios para estos empleados
         List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerTodosLosHorarios();
         logger.log("Datos de horarios obtenidos para CCT " + cctSeleccionado);
 
-        // Filtrar checadas para el rango de fechas y el CCT seleccionado
+        // Crear índice de horarios por empleado y día
+        Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
+        for (EmpleadoDatosExtra empleado : empleadosDatos) {
+            String diaEmpleado = empleado.getDiaN().toLowerCase();
+            empleadoIndex
+                    .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
+                    .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
+                    .add(empleado);
+        }
+        logger.log("Índice de horarios creado");
+
+        // Filtrar checadas para el rango de fechas y los empleados del CCT
         checadasPorId = checadasList.stream()
                 .filter(checada -> {
                     LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
@@ -263,17 +286,16 @@ public class ReportePDF {
         logger.log("Checadas filtradas para CCT " + cctSeleccionado + ": " + checadasPorId.size()
                 + " empleados con registros");
 
-        // Modificación en la sección de generación de checadas para empleados sin
-        // registros
+        // Generar checadas vacías solo para días con horario y solo para los empleados
+        // filtrados
         for (Empleado empleado : empleadosCCT) {
             String id = empleado.getId();
             if (!checadasPorId.containsKey(id)) {
                 List<Checadas> checadasGeneradas = new ArrayList<>();
 
                 // Obtener los días con horario para este empleado
-                Map<String, List<EmpleadoDatosExtra>> horariosEmpleado = empleadosDatos.stream()
-                        .filter(e -> e.getId().equals(id))
-                        .collect(Collectors.groupingBy(EmpleadoDatosExtra::getDiaN));
+                Map<String, List<EmpleadoDatosExtra>> horariosEmpleado = empleadoIndex.getOrDefault(id,
+                        new HashMap<>());
 
                 for (String fecha : dias) {
                     String diaSemana = calcularDiaSemana(fecha).toLowerCase();
@@ -289,7 +311,7 @@ public class ReportePDF {
                         checada.setHoraEntrada("00:00");
                         checada.setHoraSalida("00:00");
 
-                        // Obtener el primer horario para este día (asumiendo que puede haber múltiples)
+                        // Obtener el primer horario para este día
                         EmpleadoDatosExtra horario = horariosEmpleado.get(diaSemana).get(0);
                         checada.setHoraEntrada("00:00");
                         checada.setHoraSalida("00:00");
@@ -306,10 +328,8 @@ public class ReportePDF {
                 }
             }
         }
-        logger.log("Total de empleados procesados (con y sin checadas): " + checadasPorId.size());
-
         // Crear índice de horarios por empleado y día
-        Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex = new HashMap<>();
+        // Remove duplicate declaration since empleadoIndex was already declared above
         for (EmpleadoDatosExtra empleado : empleadosDatos) {
             String diaEmpleado = empleado.getDiaN().toLowerCase();
             empleadoIndex
