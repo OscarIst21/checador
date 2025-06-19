@@ -1,19 +1,22 @@
 package modelos;
+
 public class Empleado {
-    private String id;
-    private String nombre;
-    private String empleadoPuesto;
-    private String jornada;
+	private String id;
+	private String nombre;
+	private String empleadoPuesto;
+	private String jornada;
+	private String cct;
 
-    public Empleado() {
-    }
+	public Empleado() {
+	}
 
-    public Empleado(String id, String nombre, String empleadoPuesto,  String jornada) {
-        this.id = id;
-        this.nombre = nombre;
-        this.empleadoPuesto = empleadoPuesto;
-        this.jornada = jornada;
-    }
+	public Empleado(String id, String nombre, String empleadoPuesto, String jornada, String cct) {
+		this.id = id;
+		this.nombre = nombre;
+		this.empleadoPuesto = empleadoPuesto;
+		this.jornada = jornada;
+		this.cct = cct;
+	}
 
 	public String getId() {
 		return id;
@@ -43,6 +46,14 @@ public class Empleado {
 		return jornada;
 	}
 
+	public String getCct() {
+		return cct;
+	}
+
+	public void setCct(String cct) {
+		this.cct = cct;
+	}
+
 	public void setJornada(String jornada) {
 		this.jornada = jornada;
 	}
@@ -50,7 +61,7 @@ public class Empleado {
 	@Override
 	public String toString() {
 		return "Empleado [id=" + id + ", nombre=" + nombre + ", empleadoPuesto=" + empleadoPuesto + ", jornada="
-				+ jornada + "]";
+				+ jornada + "CCT: " + cct + "]";
 	}
-    
+
 }

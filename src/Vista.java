@@ -161,7 +161,7 @@ public class Vista extends JFrame {
         lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
 
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.6  11/03/25");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.7  18/06/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);
@@ -765,7 +765,8 @@ public class Vista extends JFrame {
         JTextField txtPuesto = new JTextField(15);
         JLabel lblJornada = new JLabel("Tipo de Jornada:");
         JTextField txtJornada = new JTextField(15);
-
+        JLabel lblCtt = new JLabel("CCT:");
+        JTextField txtCctt = new JTextField(15);
         camposPanel.add(lblId);
         camposPanel.add(txtId);
         camposPanel.add(lblNombre);
@@ -774,6 +775,8 @@ public class Vista extends JFrame {
         camposPanel.add(txtPuesto);
         camposPanel.add(lblJornada);
         camposPanel.add(txtJornada);
+        camposPanel.add(lblCtt);
+        camposPanel.add(txtCctt);
 
         // Panel para los botones
         JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
@@ -797,12 +800,14 @@ public class Vista extends JFrame {
                     txtNombre.setText(empleado.getNombre());
                     txtPuesto.setText(empleado.getEmpleadoPuesto());
                     txtJornada.setText(empleado.getJornada());
+                    txtCctt.setText(empleado.getCct());
                     logger.log("Empleado encontrado con ID: " + id); // Registrar en el log
                 } else {
                     JOptionPane.showMessageDialog(panel, "No se encontró un empleado con esa ID.");
                     txtNombre.setText("");
                     txtPuesto.setText("");
                     txtJornada.setText("");
+                    txtCctt.setText("");
                     logger.log("No se encontró un empleado con ID: " + id); // Registrar en el log
                 }
             } else {
@@ -816,10 +821,11 @@ public class Vista extends JFrame {
             String nombre = txtNombre.getText().trim();
             String puesto = txtPuesto.getText().trim();
             String jornada = txtJornada.getText().trim();
+            String cct = txtCctt.getText().trim();
 
             if (!id.isEmpty() && !nombre.isEmpty() && !puesto.isEmpty() && !jornada.isEmpty()) {
                 BaseDeDatosManager dbManager = new BaseDeDatosManager();
-                Empleado empleado = new Empleado(id, nombre, puesto, jornada);
+                Empleado empleado = new Empleado(id, nombre, puesto, jornada, cct);
                 dbManager.insertarOActualizarEmpleado(empleado);
                 JOptionPane.showMessageDialog(panel, "Empleado guardado con éxito.");
                 logger.log("Empleado guardado con ID: " + id); // Registrar en el log
@@ -1429,10 +1435,13 @@ public class Vista extends JFrame {
                         columnMap.put("EMPLEADO_PUESTO", cell.getColumnIndex());
                     } else if ("EMPLEADO_TIPO_JORNADA".equalsIgnoreCase(columnName)) {
                         columnMap.put("EMPLEADO_TIPO_JORNADA", cell.getColumnIndex());
+                    } else if ("EMPLEADO_CCT_NO".equalsIgnoreCase(columnName)) {
+                        columnMap.put("EMPLEADO_CCT_NO", cell.getColumnIndex());
                     }
                 }
 
-                String[] requiredColumns = { "EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_PUESTO",
+                String[] requiredColumns = { "EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_CCT_NO",
+                        "EMPLEADO_PUESTO",
                         "EMPLEADO_TIPO_JORNADA" };
                 boolean allColumnsFound = true;
                 for (String col : requiredColumns) {
@@ -1452,9 +1461,9 @@ public class Vista extends JFrame {
                         String nombre = getCellValue(row, columnMap.get("EMPLEADO_NOMBRE_COMPLETO"));
                         String categoria = getCellValue(row, columnMap.get("EMPLEADO_PUESTO"));
                         String jornada = getCellValue(row, columnMap.get("EMPLEADO_TIPO_JORNADA"));
-
+                        String cct = getCellValue(row, columnMap.get("EMPLEADO_CCT_NO"));
                         if (!id.isEmpty()) {
-                            Empleado empleado = new Empleado(id, nombre, categoria, jornada);
+                            Empleado empleado = new Empleado(id, nombre, categoria, jornada, cct);
                             dbManager.insertarOActualizarEmpleado(empleado);
                             logger.log("Empleado cargado: " + empleado.toString());
                         }
