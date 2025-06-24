@@ -250,15 +250,6 @@ public class ReportePDF {
         Map<String, Empleado> mapaEmpleados = empleadosCCT.stream()
                 .collect(Collectors.toMap(Empleado::getId, empleado -> empleado));
 
-        // Filtrar empleados si hay IDs específicos
-        if (!idString.isEmpty()) {
-            String[] idsFiltro = idString.split(",");
-            empleadosCCT = empleadosCCT.stream()
-                    .filter(empleado -> Arrays.asList(idsFiltro).contains(empleado.getId()))
-                    .collect(Collectors.toList());
-            logger.log("Filtrado por IDs específicos. Empleados a procesar: " + empleadosCCT.size());
-        }
-
         // Obtener horarios para estos empleados
         List<EmpleadoDatosExtra> empleadosDatos = dbManager.obtenerTodosLosHorarios();
         logger.log("Datos de horarios obtenidos para CCT " + cctSeleccionado);
@@ -286,59 +277,42 @@ public class ReportePDF {
         logger.log("Checadas filtradas para CCT " + cctSeleccionado + ": " + checadasPorId.size()
                 + " empleados con registros");
 
-        // Generar checadas vacías solo para días con horario y solo para los empleados
-        // filtrados
         for (Empleado empleado : empleadosCCT) {
             String id = empleado.getId();
             if (!checadasPorId.containsKey(id)) {
                 List<Checadas> checadasGeneradas = new ArrayList<>();
-
-                // Obtener los días con horario para este empleado
                 Map<String, List<EmpleadoDatosExtra>> horariosEmpleado = empleadoIndex.getOrDefault(id,
                         new HashMap<>());
 
                 for (String fecha : dias) {
                     String diaSemana = calcularDiaSemana(fecha).toLowerCase();
 
-                    // Solo generar checada si el empleado tiene horario para este día
-                    if (horariosEmpleado.containsKey(diaSemana)) {
-                        Checadas checada = new Checadas();
-                        checada.setId(id);
-                        checada.setNombre(empleado.getNombre());
-                        checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
-                        checada.setJornada(empleado.getJornada());
-                        checada.setFecha(fecha);
-                        checada.setHoraEntrada("00:00");
-                        checada.setHoraSalida("00:00");
+                    // Solo generar checada si el empleado tiene horario para este día y no es
+                    // domingo
+                    if (horariosEmpleado.containsKey(diaSemana) && !diaSemana.equals("domingo")) {
+                        // Verificar si ya existe una checada generada para este día
+                        boolean checadaExistente = checadasGeneradas.stream()
+                                .anyMatch(c -> c.getFecha().equals(fecha));
 
-                        // Obtener el primer horario para este día
-                        EmpleadoDatosExtra horario = horariosEmpleado.get(diaSemana).get(0);
-                        checada.setHoraEntrada("00:00");
-                        checada.setHoraSalida("00:00");
-
-                        checadasGeneradas.add(checada);
-                        logger.log("Checada vacía generada para empleado ID: " + id + " en fecha: " + fecha);
+                        if (!checadaExistente) {
+                            Checadas checada = new Checadas();
+                            checada.setId(id);
+                            checada.setNombre(empleado.getNombre());
+                            checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
+                            checada.setJornada(empleado.getJornada());
+                            checada.setFecha(fecha);
+                            checada.setHoraEntrada("00:00");
+                            checada.setHoraSalida("00:00");
+                            checadasGeneradas.add(checada);
+                        }
                     }
                 }
 
                 if (!checadasGeneradas.isEmpty()) {
                     checadasPorId.put(id, checadasGeneradas);
-                    logger.log("Checadas generadas para empleado sin registros: " + id + " - Total: "
-                            + checadasGeneradas.size());
                 }
             }
         }
-        // Crear índice de horarios por empleado y día
-        // Remove duplicate declaration since empleadoIndex was already declared above
-        for (EmpleadoDatosExtra empleado : empleadosDatos) {
-            String diaEmpleado = empleado.getDiaN().toLowerCase();
-            empleadoIndex
-                    .computeIfAbsent(empleado.getId(), k -> new HashMap<>())
-                    .computeIfAbsent(diaEmpleado, k -> new ArrayList<>())
-                    .add(empleado);
-        }
-        logger.log("Índice de horarios creado");
-
         JFileChooser fileChooser = new JFileChooser(ultimaRuta);
         fileChooser.setDialogTitle("Guardar Reporte PDF");
         fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
@@ -389,7 +363,35 @@ public class ReportePDF {
                         }
                     });
                 }
+                // Aplicar filtro/exclusión si hay IDs específicos
+                if (idString != null && !idString.isEmpty()) {
+                    if (idString.startsWith("filtrar:")) {
+                        String idsFiltroStr = idString.substring("filtrar:".length());
+                        java.util.Set<String> idsAFiltrar = Arrays.stream(idsFiltroStr.split(","))
+                                .collect(Collectors.toSet());
+                        checadasPorId.keySet().retainAll(idsAFiltrar);
+                        logger.log("Filtrado por IDs específicos (modo filtrar). Empleados a procesar: "
+                                + checadasPorId.size());
+                    } else if (idString.startsWith("excluir:")) {
+                        String idsExcluirStr = idString.substring("excluir:".length());
+                        java.util.Set<String> idsAExcluir = Arrays.stream(idsExcluirStr.split(","))
+                                .collect(Collectors.toSet());
 
+                        // Filtrar el mapa checadasPorId eliminando los IDs especificados
+                        checadasPorId.keySet().removeAll(idsAExcluir);
+                        logger.log("Filtrado por IDs específicos (modo excluir). Empleados a procesar: "
+                                + checadasPorId.size());
+                    } else {
+                        // Modo por defecto (compatibilidad): filtrar los IDs
+                        java.util.Set<String> idsFiltro = Arrays.stream(idString.split(","))
+                                .collect(Collectors.toSet());
+                        checadasPorId.keySet().retainAll(idsFiltro);
+                        logger.log("Filtrado por IDs específicos (modo por defecto). Empleados a procesar: "
+                                + checadasPorId.size());
+                    }
+                }
+
+                // Luego continuar con el ordenamiento de IDs para el reporte
                 List<String> idsOrdenados = checadasPorId.keySet().stream()
                         .sorted((id1, id2) -> {
                             String nombre1 = checadasPorId.get(id1).get(0).getNombre();
@@ -397,8 +399,6 @@ public class ReportePDF {
                             return nombre1.compareToIgnoreCase(nombre2);
                         })
                         .collect(Collectors.toList());
-
-                logger.log("Checadas ordenadas alfabéticamente por nombre de empleado");
 
                 boolean primeraVezEnPagina = true;
 
@@ -435,6 +435,11 @@ public class ReportePDF {
                         logger.log("Procesando fecha: " + fecha + " para el empleado ID: " + id);
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();
+
+                        // Excluir domingos
+                        if (diaSemana.equals("domingo")) {
+                            continue;
+                        }
 
                         // Verificar si el empleado tenía un horario para este día
                         boolean tieneHorario = empleadoIndex.containsKey(id) &&

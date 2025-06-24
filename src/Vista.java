@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -380,69 +381,86 @@ public class Vista extends JFrame {
                 // Registrar en el log que el usuario abrió la ventana de configuración
                 logger.log("Botón configuración abierto");
 
-                // Crear un panel para las opciones de configuración
-                // Usamos un GridLayout con 4 filas y 1 columna para organizar los componentes
-                JPanel configPanel = new JPanel(new GridLayout(4, 1)); // 4 filas, 1 columna
+                // Crear panel de configuración con 5 filas
+                JPanel configPanel = new JPanel(new GridLayout(5, 1));
 
-                // Crear botones de tipo "apagador" (JCheckBox) para las opciones de
-                // configuración
+                // Checkboxes para encabezado y número de página
                 JCheckBox encabezadoCheckBox = new JCheckBox("Incluir encabezado", incluirEncabezado);
                 JCheckBox numeroPaginaCheckBox = new JCheckBox("Incluir número de página", incluirNumeroPagina);
 
-                // Crear un campo de texto para que el usuario ingrese IDs para filtrar
-                JLabel filtroIdLabel = new JLabel("Filtrar por ID (separados por coma):");
-                JTextField filtroIdField = new JTextField(20); // Campo de texto con 20 columnas de ancho
-                filtroIdField.setText(filtroIdGuardado); // Restaurar el valor guardado (si existe)
+                // Campo de texto para IDs
+                JLabel filtroIdLabel = new JLabel("IDs (separados por coma):");
+                JTextField filtroIdField = new JTextField(20);
+                filtroIdField.setText(filtroIdGuardado);
 
-                // Agregar los componentes al panel de configuración
-                configPanel.add(encabezadoCheckBox); // Agregar la opción de incluir encabezado
-                configPanel.add(numeroPaginaCheckBox); // Agregar la opción de incluir número de página
-                configPanel.add(filtroIdLabel); // Agregar la etiqueta del campo de filtro
-                configPanel.add(filtroIdField); // Agregar el campo de texto para filtrar por ID
+                // ComboBox para elegir tipo de filtrado
+                JLabel tipoFiltroLabel = new JLabel("Tipo de filtro:");
+                String[] opcionesFiltro = { "Filtrar por ID", "Excluir ID" };
+                JComboBox<String> comboTipoFiltro = new JComboBox<>(opcionesFiltro);
+                comboTipoFiltro.setSelectedIndex(0); // por defecto: Filtrar
 
-                // Mostrar el JOptionPane con las opciones de configuración
+                // Añadir todo al panel
+                configPanel.add(encabezadoCheckBox);
+                configPanel.add(numeroPaginaCheckBox);
+                configPanel.add(filtroIdLabel);
+                configPanel.add(filtroIdField);
+                configPanel.add(tipoFiltroLabel);
+                configPanel.add(comboTipoFiltro);
+
+                // Mostrar diálogo
                 int result = JOptionPane.showConfirmDialog(
-                        Vista.this, // Ventana padre (la ventana principal de la aplicación)
-                        configPanel, // Panel que contiene las opciones de configuración
-                        "Configuración de Reporte", // Título del diálogo
-                        JOptionPane.OK_CANCEL_OPTION, // Botones OK y Cancelar
-                        JOptionPane.PLAIN_MESSAGE // Sin ícono (mensaje plano)
-                );
+                        Vista.this,
+                        configPanel,
+                        "Configuración de Reporte",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE);
 
-                // Si el usuario hace clic en "OK", guardar las configuraciones seleccionadas
                 if (result == JOptionPane.OK_OPTION) {
-                    // Guardar el estado de las opciones de encabezado y número de página
                     incluirEncabezado = encabezadoCheckBox.isSelected();
                     incluirNumeroPagina = numeroPaginaCheckBox.isSelected();
-
-                    // Guardar el filtro de IDs ingresado por el usuario
                     filtroIdGuardado = filtroIdField.getText().trim();
+                    String tipoFiltro = (String) comboTipoFiltro.getSelectedItem();
 
-                    // Filtrar la lista de checadas por el ID ingresado
-                    List<Checadas> filteredChecadas = checadas.stream()
-                            .filter(checadas -> checadas.getId().equals(filtroIdGuardado))
-                            .collect(Collectors.toList());
+                    // Parsear IDs ingresados
+                    Set<String> ids = Arrays.stream(filtroIdGuardado.split(","))
+                            .map(String::trim)
+                            .filter(id -> !id.isEmpty())
+                            .collect(Collectors.toSet());
 
-                    // Si no hay registros, agregar un mensaje o manejar el caso según sea necesario
+                    List<Checadas> filteredChecadas;
+
+                    if (ids.isEmpty()) {
+                        filteredChecadas = new ArrayList<>(checadas); // No se filtra nada
+                    } else if ("Filtrar por ID".equals(tipoFiltro)) {
+                        filteredChecadas = checadas.stream()
+                                .filter(checada -> ids.contains(checada.getId()))
+                                .collect(Collectors.toList());
+                        filtroIdGuardado = "filtrar:" + String.join(",", ids); // ← aquí se marca
+                    } else { // "Excluir ID"
+                        filteredChecadas = checadas.stream()
+                                .filter(checada -> !ids.contains(checada.getId()))
+                                .collect(Collectors.toList());
+                        filtroIdGuardado = "excluir:" + String.join(",", ids); // ← aquí se marca
+                    }
+
                     if (filteredChecadas.isEmpty()) {
-                        logger.log("No se encontraron registros para el ID: " + filtroIdGuardado);
-
+                        logger.log("No se encontraron registros con los IDs y opción seleccionada.");
                     } else {
-                        logger.log("Registros encontrados para el ID: " + filtroIdGuardado);
+                        logger.log("Registros filtrados (" + tipoFiltro + "): " + filtroIdGuardado);
                         logger.log(filteredChecadas.toString());
                     }
 
-                    // Registrar en el log las configuraciones seleccionadas por el usuario
                     logger.log("Configuración guardada: " +
                             "Incluir encabezado = " + incluirEncabezado + ", " +
                             "Incluir número de página = " + incluirNumeroPagina + ", " +
-                            "Filtro de IDs = " + filtroIdGuardado);
+                            "Filtro de IDs = " + filtroIdGuardado + ", " +
+                            "Modo de filtro = " + tipoFiltro);
                 } else {
-                    // Si el usuario cancela, registrar en el log que no se guardaron cambios
                     logger.log("Configuración cancelada por el usuario.");
                 }
             }
         });
+
         btnSelectFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -658,24 +676,9 @@ public class Vista extends JFrame {
 
                 // Usar las IDs guardadas en la configuración para filtrar las checadas
                 String idsFiltro = filtroIdGuardado;
-
+                System.out.println(idsFiltro);
                 // Filtrar las checadas si se ingresaron IDs en la configuración
                 List<Checadas> checadasFiltradas = checadas; // Inicialmente, usar todas las checadas
-                if (idsFiltro != null && !idsFiltro.trim().isEmpty()) {
-                    // Separar las IDs ingresadas por comas y eliminar espacios en blanco
-                    String[] idsArray = idsFiltro.split(",");
-                    for (int i = 0; i < idsArray.length; i++) {
-                        idsArray[i] = idsArray[i].trim();
-                    }
-
-                    // Filtrar las checadas para incluir solo aquellas con IDs que coincidan
-                    checadasFiltradas = checadas.stream()
-                            .filter(checada -> Arrays.asList(idsArray).contains(checada.getId()))
-                            .collect(Collectors.toList());
-
-                    // Registrar en el log que se aplicó un filtro por IDs
-                    logger.log("Filtro aplicado por IDs: " + idsFiltro);
-                }
 
                 // Actualizar las checadas con la información de los empleados
                 actualizarChecadasConEmpleados();
@@ -1417,13 +1420,16 @@ public class Vista extends JFrame {
             boolean dataLoaded = false;
             String hojaProcesada = "";
 
+            // Mapa para agrupar empleados por ID
+            Map<String, List<Empleado>> empleadosMap = new HashMap<>();
+
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
-
                 Row headerRow = sheet.getRow(0);
                 if (headerRow == null)
                     continue;
 
+                // Mapear columnas
                 Map<String, Integer> columnMap = new HashMap<>();
                 for (Cell cell : headerRow) {
                     String columnName = cell.toString().trim();
@@ -1433,6 +1439,8 @@ public class Vista extends JFrame {
                         columnMap.put("EMPLEADO_NOMBRE_COMPLETO", cell.getColumnIndex());
                     } else if ("EMPLEADO_PUESTO".equalsIgnoreCase(columnName)) {
                         columnMap.put("EMPLEADO_PUESTO", cell.getColumnIndex());
+                    } else if ("EMPLEADO_CATEGORIA".equalsIgnoreCase(columnName)) {
+                        columnMap.put("EMPLEADO_CATEGORIA", cell.getColumnIndex());
                     } else if ("EMPLEADO_TIPO_JORNADA".equalsIgnoreCase(columnName)) {
                         columnMap.put("EMPLEADO_TIPO_JORNADA", cell.getColumnIndex());
                     } else if ("EMPLEADO_CCT_NO".equalsIgnoreCase(columnName)) {
@@ -1440,51 +1448,110 @@ public class Vista extends JFrame {
                     }
                 }
 
-                String[] requiredColumns = { "EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_CCT_NO",
-                        "EMPLEADO_PUESTO",
-                        "EMPLEADO_TIPO_JORNADA" };
-                boolean allColumnsFound = true;
-                for (String col : requiredColumns) {
-                    if (!columnMap.containsKey(col)) {
-                        allColumnsFound = false;
-                        break;
-                    }
-                }
-
+                // Verificar columnas requeridas
+                String[] requiredColumns = {
+                        "EMPLEADO_NO", "EMPLEADO_NOMBRE_COMPLETO", "EMPLEADO_CCT_NO",
+                        "EMPLEADO_PUESTO", "EMPLEADO_CATEGORIA", "EMPLEADO_TIPO_JORNADA"
+                };
+                boolean allColumnsFound = Arrays.stream(requiredColumns)
+                        .allMatch(columnMap::containsKey);
                 if (!allColumnsFound)
                     continue;
 
-                for (int j = 1; j <= sheet.getLastRowNum() + 1; j++) {
+                // Procesar filas y agrupar por ID
+                for (int j = 1; j <= sheet.getLastRowNum(); j++) {
                     Row row = sheet.getRow(j);
-                    if (row != null) {
-                        String id = getCellValue(row, columnMap.get("EMPLEADO_NO"));
-                        String nombre = getCellValue(row, columnMap.get("EMPLEADO_NOMBRE_COMPLETO"));
-                        String categoria = getCellValue(row, columnMap.get("EMPLEADO_PUESTO"));
-                        String jornada = getCellValue(row, columnMap.get("EMPLEADO_TIPO_JORNADA"));
-                        String cct = getCellValue(row, columnMap.get("EMPLEADO_CCT_NO"));
-                        if (!id.isEmpty()) {
-                            Empleado empleado = new Empleado(id, nombre, categoria, jornada, cct);
-                            dbManager.insertarOActualizarEmpleado(empleado);
-                            logger.log("Empleado cargado: " + empleado.toString());
-                        }
-                    }
+                    if (row == null)
+                        continue;
+
+                    String id = getCellValue(row, columnMap.get("EMPLEADO_NO"));
+                    String nombre = getCellValue(row, columnMap.get("EMPLEADO_NOMBRE_COMPLETO"));
+                    String puesto = getCellValue(row, columnMap.get("EMPLEADO_PUESTO"));
+                    String categoria = getCellValue(row, columnMap.get("EMPLEADO_CATEGORIA"));
+                    String jornada = getCellValue(row, columnMap.get("EMPLEADO_TIPO_JORNADA"));
+                    String cct = getCellValue(row, columnMap.get("EMPLEADO_CCT_NO"));
+
+                    if (id.isEmpty())
+                        continue;
+
+                    Empleado empleado = new Empleado(id, nombre, puesto, jornada, cct);
+                    empleadosMap.computeIfAbsent(id, k -> new ArrayList<>()).add(empleado);
                 }
 
                 hojaProcesada = sheet.getSheetName();
                 dataLoaded = true;
-                mostrarTablaDesdeExcel(file, hojaProcesada);
-                break;
             }
 
+            // Procesar el mapa de empleados para aplicar las reglas
             if (dataLoaded) {
+                for (Map.Entry<String, List<Empleado>> entry : empleadosMap.entrySet()) {
+                    List<Empleado> registros = entry.getValue();
+
+                    // Caso 1: Empleado con un solo registro -> GUARDAR SIEMPRE
+                    if (registros.size() == 1) {
+                        dbManager.insertarOActualizarEmpleado(registros.get(0));
+                        logger.log("Empleado cargado (única plaza): " + registros.get(0).toString());
+                    }
+                    // Caso 2: Empleado con múltiples registros
+                    else {
+                        // Verificar si es CTT (D_G)
+                        boolean esCTT = registros.stream()
+                                .anyMatch(e -> e.getCct() != null
+                                        && e.getCct().equalsIgnoreCase("D_G"));
+
+                        // Para empleados CTT (D_G)
+                        if (esCTT) {
+                            // Priorizar ADMINISTRATIVO si existe
+                            java.util.Optional<Empleado> plazaAdministrativo = registros.stream()
+                                    .filter(e -> e.getEmpleadoPuesto() != null
+                                            && e.getEmpleadoPuesto().equalsIgnoreCase("ADMINISTRATIVO"))
+                                    .findFirst();
+
+                            if (plazaAdministrativo.isPresent()) {
+                                dbManager.insertarOActualizarEmpleado(plazaAdministrativo.get());
+                                logger.log("Empleado CTT cargado (priorizado ADMINISTRATIVO): "
+                                        + plazaAdministrativo.get().toString());
+                            } else {
+                                // Si no tiene administrativo, guardar el primero (o aplicar otra lógica
+                                // específica)
+                                dbManager.insertarOActualizarEmpleado(registros.get(0));
+                                logger.log("Empleado CTT cargado (sin ADMINISTRATIVO): "
+                                        + registros.get(0).toString());
+                            }
+                        }
+                        // Para empleados no CTT
+                        else {
+                            // Priorizar ADMINISTRATIVO si existe
+                            java.util.Optional<Empleado> plazaAdministrativo = registros.stream()
+                                    .filter(e -> e.getEmpleadoPuesto() != null
+                                            && e.getEmpleadoPuesto().equalsIgnoreCase("ADMINISTRATIVO"))
+                                    .findFirst();
+
+                            if (plazaAdministrativo.isPresent()) {
+                                dbManager.insertarOActualizarEmpleado(plazaAdministrativo.get());
+                                logger.log("Empleado cargado (múltiples plazas, priorizado ADMINISTRATIVO): "
+                                        + plazaAdministrativo.get().toString());
+                            } else {
+                                // Si no tiene plaza administrativa, guardar TODAS sus plazas
+                                for (Empleado emp : registros) {
+                                    dbManager.insertarOActualizarEmpleado(emp);
+                                    logger.log("Empleado cargado (múltiples plazas, sin ADMINISTRATIVO): "
+                                            + emp.toString());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                mostrarTablaDesdeExcel(file, hojaProcesada);
                 lblNewLabel_1.setForeground(new Color(0, 104, 0));
                 btnSelectFile2.setEnabled(false);
                 logger.log("Empleados cargados desde la hoja: " + hojaProcesada);
                 JOptionPane.showMessageDialog(this,
-                        "Empleados cargados desde la hoja: " + hojaProcesada + " y lista de checadas actualizada.");
+                        "Empleados cargados desde la hoja: " + hojaProcesada);
             } else {
-                logger.log("No se encontraron las columnas requeridas en ninguna hoja.");
-                JOptionPane.showMessageDialog(this, "No se encontraron las columnas requeridas en ninguna hoja.");
+                logger.log("No se encontraron las columnas requeridas.");
+                JOptionPane.showMessageDialog(this, "No se encontraron las columnas requeridas.");
                 lblNewLabel_1.setForeground(new Color(104, 4, 0));
             }
 
@@ -1493,10 +1560,9 @@ public class Vista extends JFrame {
             JOptionPane.showMessageDialog(this, "Error al leer el archivo: " + e.getMessage());
             lblNewLabel_1.setForeground(new Color(104, 4, 0));
         } catch (Exception e) {
-            logger.logError("Formato de archivo incorrecto o datos inválidos: " + file.getName(), e);
-            JOptionPane.showMessageDialog(this, "Formato de archivo incorrecto o datos inválidos: " + e.getMessage());
+            logger.logError("Error en el formato del archivo: " + file.getName(), e);
+            JOptionPane.showMessageDialog(this, "Error en el formato del archivo: " + e.getMessage());
             lblNewLabel_1.setForeground(new Color(104, 4, 0));
-            e.printStackTrace();
         }
     }
 
