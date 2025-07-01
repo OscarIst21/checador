@@ -759,7 +759,7 @@ public class Vista extends JFrame {
         panel.setPreferredSize(new Dimension(500, 250));
 
         // Panel para los campos de entrada
-        JPanel camposPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel camposPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         JLabel lblId = new JLabel("ID:");
         JTextField txtId = new JTextField(15);
         JLabel lblNombre = new JLabel("Nombre:");
