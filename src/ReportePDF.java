@@ -56,9 +56,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ReportePDF {
@@ -265,35 +267,43 @@ public class ReportePDF {
         }
         logger.log("Índice de horarios creado");
 
-        // Filtrar checadas para el rango de fechas y los empleados del CCT
+        // Filtrar checadas para el rango de fechas (sin filtrar por CCT)
         checadasPorId = checadasList.stream()
                 .filter(checada -> {
                     LocalDate fechaChecada = LocalDate.parse(checada.getFecha(), formatter);
                     return (fechaChecada.isEqual(fechaInicio) || fechaChecada.isAfter(fechaInicio)) &&
-                            (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin)) &&
-                            mapaEmpleados.containsKey(checada.getId());
+                            (fechaChecada.isEqual(fechaFin) || fechaChecada.isBefore(fechaFin));
                 })
                 .collect(Collectors.groupingBy(Checadas::getId));
         logger.log("Checadas filtradas para CCT " + cctSeleccionado + ": " + checadasPorId.size()
                 + " empleados con registros");
 
-        for (Empleado empleado : empleadosCCT) {
-            String id = empleado.getId();
-            if (!checadasPorId.containsKey(id)) {
+        // 1. IDs de empleados del CCT seleccionado
+        Set<String> idsEmpleadosCCT = empleadosCCT.stream()
+                .map(Empleado::getId)
+                .collect(Collectors.toSet());
+
+        // 2. IDs de checadas en el periodo
+        Set<String> idsConChecadas = checadasPorId.keySet();
+
+        // 3. Unión de ambos sets
+        Set<String> idsAReportar = new HashSet<>(idsEmpleadosCCT);
+        idsAReportar.addAll(idsConChecadas);
+
+        for (String id : idsAReportar) {
+            Empleado empleado = mapaEmpleados.get(id); // Puede ser null si no es del CCT seleccionado
+
+            if (!checadasPorId.containsKey(id) && empleado != null) {
+                // Solo generar checadas vacías para empleados del CCT seleccionado
                 List<Checadas> checadasGeneradas = new ArrayList<>();
                 Map<String, List<EmpleadoDatosExtra>> horariosEmpleado = empleadoIndex.getOrDefault(id,
                         new HashMap<>());
 
                 for (String fecha : dias) {
                     String diaSemana = calcularDiaSemana(fecha).toLowerCase();
-
-                    // Solo generar checada si el empleado tiene horario para este día y no es
-                    // domingo
                     if (horariosEmpleado.containsKey(diaSemana) && !diaSemana.equals("domingo")) {
-                        // Verificar si ya existe una checada generada para este día
                         boolean checadaExistente = checadasGeneradas.stream()
                                 .anyMatch(c -> c.getFecha().equals(fecha));
-
                         if (!checadaExistente) {
                             Checadas checada = new Checadas();
                             checada.setId(id);
@@ -307,7 +317,6 @@ public class ReportePDF {
                         }
                     }
                 }
-
                 if (!checadasGeneradas.isEmpty()) {
                     checadasPorId.put(id, checadasGeneradas);
                 }
