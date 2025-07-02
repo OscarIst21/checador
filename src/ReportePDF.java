@@ -436,11 +436,6 @@ public class ReportePDF {
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();
 
-                        // Excluir domingos
-                        if (diaSemana.equals("domingo")) {
-                            continue;
-                        }
-
                         // Verificar si el empleado tenía un horario para este día
                         boolean tieneHorario = empleadoIndex.containsKey(id) &&
                                 empleadoIndex.get(id) != null &&
