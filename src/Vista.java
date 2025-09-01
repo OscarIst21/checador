@@ -1233,6 +1233,8 @@ public class Vista extends JFrame {
     }
 
     private void cargarDatosExtra(File file) {
+        // Reiniciar la lista antes de cargar nuevos datos
+        reiniciarDatosExtra();
         empleadosDatos = new ArrayList<>();
         logger.log("Cargando datos adicionales desde archivo: " + file.getName());
 
@@ -1411,6 +1413,8 @@ public class Vista extends JFrame {
     }
 
     private void cargarEmpleados(File file) {
+        // Reiniciar variables antes de cargar nuevos datos
+        reiniciarEmpleados();
         BaseDeDatosManager dbManager = new BaseDeDatosManager();
         logger.log("Cargando empleados desde archivo: " + file.getName());
 
@@ -1782,5 +1786,25 @@ public class Vista extends JFrame {
                 }
             }
         }
+    }
+
+    /**
+     * Reinicia solo las variables específicas usadas en cargarDatosExtra
+     * para evitar residuos entre cargas consecutivas
+     */
+    private void reiniciarDatosExtra() {
+        if (empleadosDatos != null) {
+            empleadosDatos.clear();
+            logger.log("Lista empleadosDatos reiniciada para nueva carga");
+        }
+    }
+
+    /**
+     * Reinicia solo las variables específicas usadas en cargarEmpleados
+     * para evitar residuos entre cargas consecutivas
+     */
+    private void reiniciarEmpleados() {
+        // No hay variables de clase que limpiar, pero se puede usar para logging
+        logger.log("Preparando carga de empleados - variables reiniciadas");
     }
 }

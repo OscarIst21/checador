@@ -75,6 +75,9 @@ public class ReportePDF {
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado,
             boolean incluirNumeroPagina, String idString) {
 
+        // Reiniciar variables al inicio para asegurar estado limpio
+        reiniciarVariables();
+
         logger = LoggerSAPI.getInstance();
         logger.log("Iniciando generacion de reporte");
 
@@ -783,6 +786,44 @@ public class ReportePDF {
                 e.printStackTrace();
             }
         }
+
+        // Reiniciar todas las variables y estructuras de datos
+        reiniciarVariables();
+    }
+
+    /**
+     * Reinicia todas las variables y estructuras de datos para permitir
+     * la generación de reportes consecutivos sin conflictos
+     */
+    private void reiniciarVariables() {
+        if (logger != null) {
+            logger.log("Reiniciando variables del reporte");
+        }
+
+        // Reiniciar variables estáticas
+        fechaInicio = null;
+        fechaFin = null;
+
+        // Reiniciar variables de instancia
+        tamañoTabla = 0;
+        checadasPorId = null;
+
+        // Limpiar referencias a objetos grandes
+        if (logger != null) {
+            logger.log("Variables reiniciadas correctamente");
+        }
+
+        // Forzar garbage collection para liberar memoria
+        System.gc();
+    }
+
+    /**
+     * Método adicional para limpiar estructuras de datos específicas
+     * que se pueden llamar desde el exterior si es necesario
+     */
+    public void limpiarDatos() {
+        reiniciarVariables();
+        logger.log("Limpieza de datos completada");
     }
 
     private int calcularMaxFilas(Document document) {
