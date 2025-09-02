@@ -1243,20 +1243,28 @@ public class Vista extends JFrame {
 
             boolean dataLoaded = false;
             String hojaProcesada = "";
+            int totalHojas = workbook.getNumberOfSheets();
+            logger.log("Total de hojas en el archivo: " + totalHojas);
 
             for (Sheet sheet : workbook) {
                 if (sheet == null)
                     continue;
 
+                String nombreHoja = sheet.getSheetName();
+                logger.log("Procesando hoja: " + nombreHoja);
+
                 Row headerRow = sheet.getRow(0);
-                if (headerRow == null)
+                if (headerRow == null) {
+                    logger.log("Hoja " + nombreHoja + " no tiene encabezados");
                     continue;
+                }
 
                 Map<String, Integer> columnMap = new HashMap<>();
                 for (Cell cell : headerRow) {
                     if (cell.getCellType() == CellType.STRING) {
                         String header = cell.getStringCellValue().trim().toLowerCase();
                         columnMap.put(header, cell.getColumnIndex());
+                        logger.log("Columna encontrada: " + header + " en posición " + cell.getColumnIndex());
                     }
                 }
 
@@ -1266,14 +1274,19 @@ public class Vista extends JFrame {
                 boolean allColumnsFound = true;
                 for (String column : requiredColumns) {
                     if (!columnMap.containsKey(column)) {
+                        logger.log("Columna requerida no encontrada: " + column);
                         allColumnsFound = false;
                         break;
                     }
                 }
 
                 if (!allColumnsFound) {
+                    logger.log("Hoja " + nombreHoja + " no tiene todas las columnas requeridas");
                     continue;
                 }
+
+                logger.log("Todas las columnas requeridas encontradas en hoja: " + nombreHoja);
+                int filasProcesadas = 0;
 
                 for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                     Row row = sheet.getRow(i);
@@ -1281,25 +1294,40 @@ public class Vista extends JFrame {
                         continue;
 
                     String id = getCellValue(row, columnMap.get("numero_empleado"));
-                    String dia = getDayName(getCellNumericValue(row, columnMap.get("dia")));
+                    double diaNumero = getCellNumericValue(row, columnMap.get("dia"));
+                    String dia = getDayName(diaNumero);
                     String horaEntradaReal = getTimeValue(row, columnMap.get("hora_entrada"));
                     String horaSalidaReal = getTimeValue(row, columnMap.get("hora_salida"));
 
-                    if (!id.isEmpty()) {
+                    logger.log("Fila " + i + ": ID=" + id + ", Día=" + diaNumero + "->" + dia +
+                            ", Entrada=" + horaEntradaReal + ", Salida=" + horaSalidaReal);
+
+                    if (!id.isEmpty() && !dia.equals("Día no válido")) {
                         EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(id, dia, horaEntradaReal, horaSalidaReal);
                         empleadosDatos.add(empleado);
+                        filasProcesadas++;
                         logger.log("Empleado cargado: " + empleado.toString());
+                    } else {
+                        logger.log("Fila " + i + " omitida - ID vacío o día inválido");
                     }
                 }
 
-                hojaProcesada = sheet.getSheetName();
+                logger.log("Total de filas procesadas en hoja " + nombreHoja + ": " + filasProcesadas);
+                hojaProcesada = nombreHoja;
                 dataLoaded = true;
                 break;
             }
 
             if (dataLoaded) {
-                BaseDeDatosManager dbManager = new BaseDeDatosManager();
-                dbManager.actualizarDatos(empleadosDatos);
+                logger.log("Total de empleados a guardar en BD: " + empleadosDatos.size());
+
+                if (!empleadosDatos.isEmpty()) {
+                    BaseDeDatosManager dbManager = new BaseDeDatosManager();
+                    dbManager.actualizarDatos(empleadosDatos);
+                    logger.log("Datos enviados a BaseDeDatosManager.actualizarDatos()");
+                } else {
+                    logger.log("No hay datos para guardar en la base de datos");
+                }
 
                 lblNewLabel_2.setForeground(new Color(0, 104, 0));
                 btnSelectFile3.setEnabled(false);

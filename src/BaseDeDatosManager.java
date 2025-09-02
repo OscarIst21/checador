@@ -62,17 +62,23 @@ public class BaseDeDatosManager {
             }
         } else {
             System.out.println("La base de datos ya existe en: " + archivoBD.getAbsolutePath());
+            // Verificar que las tablas existan incluso si la base de datos ya existe
+            verificarYCrearTablas(rutaBaseDatos);
         }
     }
 
     private static void inicializarBaseDatos(String rutaBaseDatos) {
+        verificarYCrearTablas(rutaBaseDatos);
+    }
+
+    private static void verificarYCrearTablas(String rutaBaseDatos) {
         String crearTablaHorariosSQL = """
                 CREATE TABLE IF NOT EXISTS horarios (
                     id TEXT,
                     diaN TEXT,
                     horaEntradaReal TEXT,
                     horaSalidaReal TEXT,
-                    PRIMARY KEY (id, diaN, horaEntradaReal)
+                    PRIMARY KEY (id, diaN, horaEntradaReal, horaSalidaReal)
                 );
                 """;
 
@@ -88,11 +94,58 @@ public class BaseDeDatosManager {
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + rutaBaseDatos);
                 Statement stmt = conn.createStatement()) {
-            stmt.execute(crearTablaHorariosSQL);
+
+            // Recrear la tabla horarios para asegurar la estructura correcta
+            try {
+                stmt.execute("DROP TABLE IF EXISTS horarios");
+                stmt.execute(crearTablaHorariosSQL);
+                System.out.println("Tabla horarios recreada con nueva estructura.");
+            } catch (SQLException e) {
+                System.err.println("Error al recrear tabla horarios: " + e.getMessage());
+                // Si falla, intentar crear normalmente
+                stmt.execute(crearTablaHorariosSQL);
+            }
+
             stmt.execute(crearTablaEmpleadosNombreSQL);
-            System.out.println("Tablas 'horarios' y 'empleadosNombre' creadas (o ya existen).");
+            System.out.println("Tablas 'horarios' y 'empleadosNombre' verificadas/creadas correctamente.");
         } catch (SQLException e) {
+            System.err.println("Error al verificar/crear tablas: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void verificarYCrearTablasSiEsNecesario() {
+        // Obtener la ruta de la base de datos desde la URL
+        String rutaBaseDatos = DB_URL.replace("jdbc:sqlite:", "").replace("?journal_mode=WAL", "");
+        verificarYCrearTablas(rutaBaseDatos);
+
+        // Verificar el contenido de las tablas después de crearlas
+        verificarContenidoTablas();
+    }
+
+    private void verificarContenidoTablas() {
+        try (Connection conn = getConnection()) {
+            // Verificar tabla horarios
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM horarios")) {
+                if (rs.next()) {
+                    System.out.println("Tabla 'horarios' existe con " + rs.getInt("total") + " registros");
+                }
+            } catch (SQLException e) {
+                System.err.println("Error al verificar tabla 'horarios': " + e.getMessage());
+            }
+
+            // Verificar tabla empleadosNombre
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM empleadosNombre")) {
+                if (rs.next()) {
+                    System.out.println("Tabla 'empleadosNombre' existe con " + rs.getInt("total") + " registros");
+                }
+            } catch (SQLException e) {
+                System.err.println("Error al verificar tabla 'empleadosNombre': " + e.getMessage());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al verificar contenido de tablas: " + e.getMessage());
         }
     }
 
@@ -122,6 +175,9 @@ public class BaseDeDatosManager {
             return;
         }
 
+        // Verificar que las tablas existan antes de proceder
+        verificarYCrearTablasSiEsNecesario();
+
         synchronized (DB_LOCK) {
             String eliminarHorariosSQL = "DELETE FROM horarios WHERE id = ?";
             String insertarHorariosSQL = """
@@ -134,40 +190,59 @@ public class BaseDeDatosManager {
                 conn = getConnection();
                 conn.setAutoCommit(false);
 
+                System.out.println("Iniciando actualización de " + empleadosDatos.size() + " registros de horarios");
+
                 try (PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
                         PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
 
                     Map<String, List<EmpleadoDatosExtra>> empleadosPorId = empleadosDatos.stream()
                             .collect(Collectors.groupingBy(EmpleadoDatosExtra::getId));
 
+                    System.out.println("Empleados únicos a procesar: " + empleadosPorId.size());
+
                     for (Map.Entry<String, List<EmpleadoDatosExtra>> entry : empleadosPorId.entrySet()) {
                         String idEmpleado = entry.getKey();
                         List<EmpleadoDatosExtra> registros = entry.getValue();
 
-                        pstmtEliminar.setString(1, idEmpleado);
-                        pstmtEliminar.executeUpdate();
+                        System.out.println(
+                                "Procesando empleado ID: " + idEmpleado + " con " + registros.size() + " horarios");
 
+                        // Eliminar horarios existentes para este empleado
+                        pstmtEliminar.setString(1, idEmpleado);
+                        int filasEliminadas = pstmtEliminar.executeUpdate();
+                        System.out.println("Horarios eliminados para empleado " + idEmpleado + ": " + filasEliminadas);
+
+                        // Insertar nuevos horarios
                         for (EmpleadoDatosExtra empleado : registros) {
                             pstmtInsertar.setString(1, empleado.getId());
                             pstmtInsertar.setString(2, empleado.getDiaN());
                             pstmtInsertar.setString(3, empleado.getHoraEntradaReal());
                             pstmtInsertar.setString(4, empleado.getHoraSalidaReal());
                             pstmtInsertar.addBatch();
+
+                            System.out.println("Agregado a batch: " + empleado.toString());
                         }
                         pstmtInsertar.executeBatch();
+                        System.out.println("Batch ejecutado para empleado " + idEmpleado);
                     }
+
                     conn.commit();
+                    System.out.println("Transacción completada exitosamente");
                 } catch (SQLException e) {
                     if (conn != null) {
                         try {
                             conn.rollback();
+                            System.err.println("Rollback realizado debido a error: " + e.getMessage());
                         } catch (SQLException ex) {
+                            System.err.println("Error al hacer rollback: " + ex.getMessage());
                             ex.printStackTrace();
                         }
                     }
+                    System.err.println("Error en actualizarDatos: " + e.getMessage());
                     e.printStackTrace();
                 }
             } catch (SQLException e) {
+                System.err.println("Error de conexión en actualizarDatos: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 closeResources(conn);
@@ -287,6 +362,9 @@ public class BaseDeDatosManager {
 
     public void insertarOActualizarEmpleado(Empleado empleado) {
         synchronized (DB_LOCK) {
+            // Primero verificar que las tablas existan
+            verificarYCrearTablasSiEsNecesario();
+
             String insertarOActualizarSQL = """
                     INSERT INTO empleadosNombre (id, nombre, puesto, jornada, cct)
                     VALUES (?, ?, ?, ?, ?)
@@ -311,17 +389,21 @@ public class BaseDeDatosManager {
                     pstmt.executeUpdate();
 
                     conn.commit();
+                    System.out.println("Empleado insertado/actualizado correctamente: " + empleado.getId());
                 } catch (SQLException e) {
                     if (conn != null) {
                         try {
                             conn.rollback();
                         } catch (SQLException ex) {
+                            System.err.println("Error al hacer rollback: " + ex.getMessage());
                             ex.printStackTrace();
                         }
                     }
+                    System.err.println("Error al insertar/actualizar empleado: " + e.getMessage());
                     e.printStackTrace();
                 }
             } catch (SQLException e) {
+                System.err.println("Error de conexión: " + e.getMessage());
                 e.printStackTrace();
             } finally {
                 closeResources(conn);
