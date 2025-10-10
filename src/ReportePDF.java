@@ -1,46 +1,7 @@
-import com.itextpdf.io.exceptions.IOException;
-import com.itextpdf.io.font.constants.StandardFonts;
-import com.itextpdf.io.image.ImageData;
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.colors.DeviceGray;
-import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.events.IEventHandler;
-import com.itextpdf.kernel.events.PdfDocumentEvent;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.font.PdfFont;
-import com.itextpdf.kernel.font.PdfFontFactory;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.borders.Border;
-import com.itextpdf.layout.borders.SolidBorder;
-import com.itextpdf.layout.element.AreaBreak;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.IElement;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.layout.LayoutArea;
-import com.itextpdf.layout.layout.LayoutContext;
-import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.layout.properties.UnitValue;
-import com.itextpdf.layout.renderer.IRenderer;
-
-import modelos.Checadas;
-import modelos.Empleado;
-import modelos.EmpleadoDatosExtra;
-
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -52,16 +13,63 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import org.apache.poi.ss.usermodel.Workbook;
+
+import com.itextpdf.io.exceptions.IOException;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.events.PdfDocumentEvent;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.borders.SolidBorder;
+import com.itextpdf.layout.element.AreaBreak;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.IElement;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.layout.LayoutArea;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+// Agrega estos imports para Excel
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import java.io.FileOutputStream;
+
+import modelos.Checadas;
+import modelos.Empleado;
+import modelos.EmpleadoDatosExtra;
 
 public class ReportePDF {
     private static String ultimaRuta = System.getProperty("user.home");
@@ -73,7 +81,7 @@ public class ReportePDF {
     private Map<String, List<Checadas>> checadasPorId;
 
     public void generateReport(List<Checadas> checadasList, String periodo, boolean incluirEncabezado,
-            boolean incluirNumeroPagina, String idString) {
+            boolean incluirNumeroPagina, String idString, boolean generarExcel) {
 
         // Reiniciar variables al inicio para asegurar estado limpio
         reiniciarVariables();
@@ -413,7 +421,9 @@ public class ReportePDF {
                         .collect(Collectors.toList());
 
                 boolean primeraVezEnPagina = true;
-
+                if(generarExcel){
+                    generarReporteExcel(idsOrdenados, checadasPorId, empleadoIndex, dias, periodoReporte, plantelSeleccionado);
+                }else{
                 // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
                     logger.log("Procesando empleado ID: " + id);
@@ -780,7 +790,7 @@ public class ReportePDF {
 
                         logger.log("No se pudo abrir el documento");
                     }
-                }
+                }}
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1134,4 +1144,199 @@ public class ReportePDF {
         int minutos = (int) ((valorDecimal * 24 - horas) * 60);
         return String.format("%02d:%02d", horas, minutos);
     }
+
+    private void generarReporteExcel(List<String> idsOrdenados, 
+                                Map<String, List<Checadas>> checadasPorId,
+                                Map<String, Map<String, List<EmpleadoDatosExtra>>> empleadoIndex,
+                                List<String> dias, String periodo, String plantel) {
+    
+    logger.log("Iniciando generación de reporte Excel");
+    
+    try {
+        JFileChooser fileChooser = new JFileChooser(ultimaRuta);
+        fileChooser.setDialogTitle("Guardar Reporte Excel");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Files", "xlsx"));
+        String nombreArchivo = periodo.replace(" ", "").replace("-", "_") + "-" + plantel + ".xlsx";
+        fileChooser.setSelectedFile(new File(nombreArchivo));
+
+
+        int userSelection = fileChooser.showSaveDialog(null);
+        if (userSelection != JFileChooser.APPROVE_OPTION) {
+            logger.log("Usuario canceló la generación de Excel");
+            return;
+        }
+
+        File file = fileChooser.getSelectedFile();
+        String filePath = file.getAbsolutePath();
+        if (!filePath.endsWith(".xlsx")) {
+            filePath += ".xlsx";
+        }
+
+        // Crear workbook de Excel
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Reporte Asistencia ");
+
+        // Estilos
+        CellStyle headerStyle = workbook.createCellStyle();
+        org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short)12);
+        headerStyle.setFont(headerFont);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        CellStyle titleStyle = workbook.createCellStyle();
+        org.apache.poi.ss.usermodel.Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short)14);
+        titleStyle.setFont(titleFont);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        CellStyle boldStyle = workbook.createCellStyle();
+        org.apache.poi.ss.usermodel.Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+
+        CellStyle normalStyle = workbook.createCellStyle();
+        normalStyle.setAlignment(HorizontalAlignment.LEFT);
+
+        // Título del reporte - COMBINANDO LAS PRIMERAS 3 CELDAS
+        int currentRow = 0;
+        Row titleRow = sheet.createRow(currentRow++);
+        
+        // Crear celda combinada para el título (columnas 0, 1 y 2)
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+        org.apache.poi.ss.usermodel.Cell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue( plantel + " - PERIODO: " + periodo);
+        titleCell.setCellStyle(titleStyle);
+
+        // Encabezados principales
+        Row headerRow = sheet.createRow(currentRow++);
+        String[] headers = {"ID", "Nombre", "Categoría", "Fecha", "Día", "Hora Entrada (horario)", 
+                           "Hora Entrada (Checada)", "Estatus Entrada", "Hora Salida (horario)", 
+                           "Hora Salida (Checada)", "Estatus Salida", "Tiempo Trabajado"};
+        
+        for (int i = 0; i < headers.length; i++) {
+            org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Datos de los empleados
+        for (String id : idsOrdenados) {
+            String nombre = checadasPorId.get(id).get(0).getNombre();
+            String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
+            
+            // Agrupar checadas por fecha
+            Map<String, List<Checadas>> checadasPorFecha = checadasPorId.get(id).stream()
+                    .collect(Collectors.groupingBy(Checadas::getFecha));
+
+            // Procesar cada fecha
+            for (String fecha : dias) {
+                List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
+                String diaSemana = calcularDiaSemana(fecha);
+
+                // Verificar si el empleado tenía horario para este día
+                boolean tieneHorario = empleadoIndex.containsKey(id) &&
+                        empleadoIndex.get(id) != null &&
+                        empleadoIndex.get(id).containsKey(diaSemana.toLowerCase());
+
+                List<EmpleadoDatosExtra> horariosDisponibles = tieneHorario ?
+                        new ArrayList<>(empleadoIndex.get(id).get(diaSemana.toLowerCase())) : new ArrayList<>();
+
+                if (checadasDelDia.isEmpty() && !horariosDisponibles.isEmpty()) {
+                    // Mostrar faltas
+                    for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                        Row row = sheet.createRow(currentRow++);
+                        row.createCell(0).setCellValue(id);
+                        row.createCell(1).setCellValue(nombre);
+                        row.createCell(2).setCellValue(categoria);
+                        row.createCell(3).setCellValue(fecha);
+                        row.createCell(4).setCellValue(diaSemana);
+                        row.createCell(5).setCellValue(horario.getHoraEntradaReal());
+                        row.createCell(6).setCellValue("00:00");
+                        row.createCell(7).setCellValue("Falta");
+                        row.createCell(8).setCellValue(horario.getHoraSalidaReal());
+                        row.createCell(9).setCellValue("00:00");
+                        row.createCell(10).setCellValue("Falta");
+                        row.createCell(11).setCellValue("00:00");
+                    }
+                } else {
+                    // Procesar checadas existentes
+                    for (Checadas checada : checadasDelDia) {
+                        String horaEntradaReal = "00:00";
+                        String horaSalidaReal = "00:00";
+
+                        if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                            EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
+                            horaEntradaReal = empleadoData.getHoraEntradaReal();
+                            horaSalidaReal = empleadoData.getHoraSalidaReal();
+                        }
+
+                        String horaEntrada = (checada.getHoraEntrada() != null && 
+                                !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
+                        String horaSalida = (checada.getHoraSalida() != null && 
+                                !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
+
+                        // Ajustar horas según lógica existente
+                        if (horaEntradaReal.equals("00:00") && !horaSalidaReal.equals("00:00") && 
+                            !horaEntrada.equals("00:00")) {
+                            horaSalida = horaEntrada;
+                            horaEntrada = "00:00";
+                        } else if (horaSalidaReal.equals("00:00") && !horaEntradaReal.equals("00:00") && 
+                                 !horaSalida.equals("00:00")) {
+                            horaEntrada = horaSalida;
+                            horaSalida = "00:00";
+                        }
+
+                        String estatusEntrada = tieneHorario ? estatusChequeo(horaEntrada, horaEntradaReal) : "---";
+                        String estatusSalida = tieneHorario ? estatusSalida(horaSalida, horaSalidaReal) : "---";
+                        String tiempoTrabajo = calcularTiempoTrabajo(horaEntrada, horaSalida);
+
+                        Row row = sheet.createRow(currentRow++);
+                        row.createCell(0).setCellValue(id);
+                        row.createCell(1).setCellValue(nombre);
+                        row.createCell(2).setCellValue(categoria);
+                        row.createCell(3).setCellValue(fecha);
+                        row.createCell(4).setCellValue(diaSemana);
+                        row.createCell(5).setCellValue(horaEntradaReal);
+                        row.createCell(6).setCellValue(horaEntrada);
+                        row.createCell(7).setCellValue(estatusEntrada);
+                        row.createCell(8).setCellValue(horaSalidaReal);
+                        row.createCell(9).setCellValue(horaSalida);
+                        row.createCell(10).setCellValue(estatusSalida);
+                        row.createCell(11).setCellValue(tiempoTrabajo);
+                    }
+                }
+            }
+
+            // Agregar una fila vacía entre empleados
+            currentRow++;
+        }
+
+        // Autoajustar columnas
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // Guardar archivo
+        try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
+            workbook.write(outputStream);
+        }
+
+        workbook.close();
+
+        logger.log("Reporte Excel generado exitosamente en: " + filePath);
+        JOptionPane.showMessageDialog(null, "Reporte Excel generado exitosamente");
+
+        // Abrir el archivo
+        if (Desktop.isDesktopSupported()) {
+            Desktop.getDesktop().open(new File(filePath));
+        }
+
+    } catch (Exception ex) {
+        logger.log("Error al generar reporte Excel: " + ex.getMessage());
+        JOptionPane.showMessageDialog(null, "Error al generar reporte Excel: " + ex.getMessage());
+        ex.printStackTrace();
+    }
+}
 }

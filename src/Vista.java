@@ -666,37 +666,54 @@ public class Vista extends JFrame {
                     logger.log("Selección de archivo de horarios cancelada por el usuario.");
                 }
             }
-        });
-        btnSave.addActionListener(new ActionListener() {
+                    });
+            btnSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Registrar en el log que el usuario hizo clic en el botón para generar el
-                // reporte
+                // Registrar en el log que el usuario hizo clic en el botón para generar el reporte
                 logger.log("Botón 'Generar Reporte' presionado.");
+
+                // Preguntar al usuario si desea generar el reporte en Excel
+                int opcion = JOptionPane.showConfirmDialog(
+                    Vista.this,
+                    "¿Desea generar el reporte en formato Excel?",
+                    "Formato del Reporte",
+                    JOptionPane.YES_NO_OPTION
+                );
+                
+                boolean reporteExcel = (opcion == JOptionPane.YES_OPTION);
+
+                // Registrar la elección del usuario
+                if (reporteExcel) {
+                    logger.log("Usuario seleccionó generar reporte en Excel.");
+                } else {
+                    logger.log("Usuario seleccionó generar reporte en PDF.");
+                }
 
                 // Usar las IDs guardadas en la configuración para filtrar las checadas
                 String idsFiltro = filtroIdGuardado;
                 System.out.println(idsFiltro);
+                
                 // Filtrar las checadas si se ingresaron IDs en la configuración
                 List<Checadas> checadasFiltradas = checadas; // Inicialmente, usar todas las checadas
 
                 // Actualizar las checadas con la información de los empleados
                 actualizarChecadasConEmpleados();
 
-                // Crear una instancia del generador de reportes en PDF
+                // Crear una instancia del generador de reportes
                 reporte = new ReportePDF();
-
-                // Generar el reporte con las checadas filtradas, el período y las opciones de
-                // configuración
-                reporte.generateReport(checadasFiltradas, periodo, incluirEncabezado, incluirNumeroPagina, idsFiltro);
+                
+                // Generar el reporte con las checadas filtradas, el período, las opciones de configuración
+                // Y el último parámetro: reporteExcel (boolean)
+                reporte.generateReport(checadasFiltradas, periodo, incluirEncabezado, incluirNumeroPagina, idsFiltro, reporteExcel);
 
                 // Registrar en el log que se generó el reporte
-                logger.log("Reporte generado con éxito.");
+                logger.log("Reporte generado con éxito. Formato: " + (reporteExcel ? "Excel" : "PDF"));
 
                 // Limpiar el filtro de IDs guardado después de generar el reporte
                 filtroIdGuardado = null;
             }
-        });
+});
         btnEditarEmpleado.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

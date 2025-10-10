@@ -1,1 +1,1 @@
-[2025-09-02 15:07:21] Aplicación cerrada. Archivo de log reiniciado.
+[2025-10-09 20:24:26] AplicaciÃ³n cerrada. Archivo de log reiniciado.
