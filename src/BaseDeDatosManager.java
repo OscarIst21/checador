@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -195,6 +196,7 @@ public class BaseDeDatosManager {
                 try (PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
                         PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
 
+                    // Eliminar duplicados de la lista de empleados
                     Map<String, List<EmpleadoDatosExtra>> empleadosPorId = empleadosDatos.stream()
                             .collect(Collectors.groupingBy(EmpleadoDatosExtra::getId));
 
@@ -204,16 +206,25 @@ public class BaseDeDatosManager {
                         String idEmpleado = entry.getKey();
                         List<EmpleadoDatosExtra> registros = entry.getValue();
 
+                        // Eliminar duplicados basados en id, diaN y horaEntradaReal
+                        Map<String, EmpleadoDatosExtra> registrosUnicos = new HashMap<>();
+                        for (EmpleadoDatosExtra empleado : registros) {
+                            String clave = empleado.getId() + "|" + empleado.getDiaN() + "|" + empleado.getHoraEntradaReal();
+                            registrosUnicos.put(clave, empleado);
+                        }
+                        
+                        List<EmpleadoDatosExtra> registrosSinDuplicados = new ArrayList<>(registrosUnicos.values());
+                        
                         System.out.println(
-                                "Procesando empleado ID: " + idEmpleado + " con " + registros.size() + " horarios");
+                                "Procesando empleado ID: " + idEmpleado + " con " + registrosSinDuplicados.size() + " horarios únicos");
 
                         // Eliminar horarios existentes para este empleado
                         pstmtEliminar.setString(1, idEmpleado);
                         int filasEliminadas = pstmtEliminar.executeUpdate();
                         System.out.println("Horarios eliminados para empleado " + idEmpleado + ": " + filasEliminadas);
 
-                        // Insertar nuevos horarios
-                        for (EmpleadoDatosExtra empleado : registros) {
+                        // Insertar nuevos horarios sin duplicados
+                        for (EmpleadoDatosExtra empleado : registrosSinDuplicados) {
                             pstmtInsertar.setString(1, empleado.getId());
                             pstmtInsertar.setString(2, empleado.getDiaN());
                             pstmtInsertar.setString(3, empleado.getHoraEntradaReal());
