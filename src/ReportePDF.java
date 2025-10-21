@@ -1,6 +1,7 @@
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Font;
+import java.time.temporal.ChronoUnit;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -452,11 +453,19 @@ public class ReportePDF {
                     Map<String, List<Checadas>> checadasPorFecha = checadasPorId.get(id).stream()
                             .collect(Collectors.groupingBy(Checadas::getFecha));
                     logger.log("Lista de checadas agrupada por fecha");
+
                     // Iterar sobre todas las fechas en el rango
                     for (String fecha : dias) {
                         logger.log("Procesando fecha: " + fecha + " para el empleado ID: " + id);
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();
+
+                        // Ordenar las checadas por hora de entrada antes de procesarlas
+                        checadasDelDia.sort((c1, c2) -> {
+                            LocalTime t1 = LocalTime.parse(c1.getHoraEntrada().equals("00:00") ? "23:59" : c1.getHoraEntrada());
+                            LocalTime t2 = LocalTime.parse(c2.getHoraEntrada().equals("00:00") ? "23:59" : c2.getHoraEntrada());
+                            return t1.compareTo(t2);
+                        });
 
                         // Verificar si el empleado tenía un horario para este día
                         boolean tieneHorario = empleadoIndex.containsKey(id) &&
@@ -535,13 +544,30 @@ public class ReportePDF {
                                 logger.log("Procesando checada para empleado: " + checada.toString());
 
                                 if (tieneHorario && !horariosDisponibles.isEmpty()) {
-                                    EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
-                                    horaEntradaReal = empleadoData.getHoraEntradaReal();
-                                    horaSalidaReal = empleadoData.getHoraSalidaReal();
-                                    duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
-                                    totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
-                                    logger.log("Horario asignado. Hora entrada real: " + horaEntradaReal
-                                            + ", Hora salida real: " + horaSalidaReal);
+                                    // Asignar horario más cercano a la checada
+                                    EmpleadoDatosExtra horarioAsignado = null;
+                                    LocalTime horaChecada = LocalTime.parse(checada.getHoraEntrada().equals("00:00") ? "23:59" : checada.getHoraEntrada());
+                                    
+                                    // Buscar el horario más cercano a la hora de checada
+                                    int minDiff = Integer.MAX_VALUE;
+                                    for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                                        LocalTime horaEntradaHorario = LocalTime.parse(horario.getHoraEntradaReal());
+                                        int diff = Math.abs((int)horaEntradaHorario.until(horaChecada, ChronoUnit.MINUTES));
+                                        if (diff < minDiff) {
+                                            minDiff = diff;
+                                            horarioAsignado = horario;
+                                        }
+                                    }
+                                    
+                                    if (horarioAsignado != null) {
+                                        horaEntradaReal = horarioAsignado.getHoraEntradaReal();
+                                        horaSalidaReal = horarioAsignado.getHoraSalidaReal();
+                                        duracionACubrir = obtenerDuracion(horaEntradaReal, horaSalidaReal);
+                                        totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir);
+                                        horariosDisponibles.remove(horarioAsignado);
+                                        logger.log("Horario asignado. Hora entrada real: " + horaEntradaReal
+                                                + ", Hora salida real: " + horaSalidaReal);
+                                    }
                                 } else {
                                     logger.log("No se encontró horario disponible para el empleado.");
                                 }
@@ -1234,6 +1260,13 @@ public class ReportePDF {
             for (String fecha : dias) {
                 List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                 String diaSemana = calcularDiaSemana(fecha);
+
+                // Ordenar las checadas por hora de entrada antes de procesarlas
+                checadasDelDia.sort((c1, c2) -> {
+                    LocalTime t1 = LocalTime.parse(c1.getHoraEntrada().equals("00:00") ? "23:59" : c1.getHoraEntrada());
+                    LocalTime t2 = LocalTime.parse(c2.getHoraEntrada().equals("00:00") ? "23:59" : c2.getHoraEntrada());
+                    return t1.compareTo(t2);
+                });
 
                 // Verificar si el empleado tenía horario para este día
                 boolean tieneHorario = empleadoIndex.containsKey(id) &&
