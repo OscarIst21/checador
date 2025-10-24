@@ -334,14 +334,27 @@ public class ReportePDF {
                 }
             }
         }
-        JFileChooser fileChooser = new JFileChooser(ultimaRuta);
-        fileChooser.setDialogTitle("Guardar Reporte PDF");
-        fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
-        fileChooser.setSelectedFile(
-                new File(periodoReporte.replace(" ", "") + "_" + cctSeleccionado.replace(" ", "") + ".pdf"));
+        
+        // Luego continuar con el ordenamiento de IDs para el reporte
+        List<String> idsOrdenados = checadasPorId.keySet().stream()
+                .sorted((id1, id2) -> {
+                    String nombre1 = checadasPorId.get(id1).get(0).getNombre();
+                    String nombre2 = checadasPorId.get(id2).get(0).getNombre();
+                    return nombre1.compareToIgnoreCase(nombre2);
+                })
+                .collect(Collectors.toList());
+        
+        if(generarExcel){
+            generarReporteExcel(idsOrdenados, checadasPorId, empleadoIndex, dias, periodoReporte, plantelSeleccionado);
+        }else{
+            JFileChooser fileChooser = new JFileChooser(ultimaRuta);
+            fileChooser.setDialogTitle("Guardar Reporte PDF");
+            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
+            fileChooser.setSelectedFile(
+                    new File(periodoReporte.replace(" ", "") + "_" + cctSeleccionado.replace(" ", "") + ".pdf"));
 
-        int userSelection = fileChooser.showSaveDialog(null);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            int userSelection = fileChooser.showSaveDialog(null);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             ultimaRuta = file.getParent();
             String filePath = file.getAbsolutePath();
@@ -412,19 +425,7 @@ public class ReportePDF {
                     }
                 }
 
-                // Luego continuar con el ordenamiento de IDs para el reporte
-                List<String> idsOrdenados = checadasPorId.keySet().stream()
-                        .sorted((id1, id2) -> {
-                            String nombre1 = checadasPorId.get(id1).get(0).getNombre();
-                            String nombre2 = checadasPorId.get(id2).get(0).getNombre();
-                            return nombre1.compareToIgnoreCase(nombre2);
-                        })
-                        .collect(Collectors.toList());
-
                 boolean primeraVezEnPagina = true;
-                if(generarExcel){
-                    generarReporteExcel(idsOrdenados, checadasPorId, empleadoIndex, dias, periodoReporte, plantelSeleccionado);
-                }else{
                 // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
                     logger.log("Procesando empleado ID: " + id);
@@ -816,11 +817,12 @@ public class ReportePDF {
 
                         logger.log("No se pudo abrir el documento");
                     }
-                }}
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
         }
 
         // Reiniciar todas las variables y estructuras de datos

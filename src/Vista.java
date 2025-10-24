@@ -101,6 +101,7 @@ public class Vista extends JFrame {
     private String lastPath = System.getProperty("user.home");
     private boolean incluirEncabezado = true; // Por defecto, incluir encabezado
     private boolean incluirNumeroPagina = true;
+    private boolean reporteExcel = false; // Por defecto, generar en PDF
     private JTabbedPane tabbedPane = new JTabbedPane();
     private String filtroIdGuardado = ""; // Variable para almacenar las IDs ingresadas
     private LoggerSAPI logger;
@@ -381,8 +382,8 @@ public class Vista extends JFrame {
                 // Registrar en el log que el usuario abrió la ventana de configuración
                 logger.log("Botón configuración abierto");
 
-                // Crear panel de configuración con 5 filas
-                JPanel configPanel = new JPanel(new GridLayout(5, 1));
+                // Crear panel de configuración con 6 filas
+                JPanel configPanel = new JPanel(new GridLayout(6, 1));
 
                 // Checkboxes para encabezado y número de página
                 JCheckBox encabezadoCheckBox = new JCheckBox("Incluir encabezado", incluirEncabezado);
@@ -399,6 +400,9 @@ public class Vista extends JFrame {
                 JComboBox<String> comboTipoFiltro = new JComboBox<>(opcionesFiltro);
                 comboTipoFiltro.setSelectedIndex(0); // por defecto: Filtrar
 
+                // Checkbox para formato de reporte
+                JCheckBox formatoExcelCheckBox = new JCheckBox("Generar reporte en formato Excel", reporteExcel);
+
                 // Añadir todo al panel
                 configPanel.add(encabezadoCheckBox);
                 configPanel.add(numeroPaginaCheckBox);
@@ -406,6 +410,7 @@ public class Vista extends JFrame {
                 configPanel.add(filtroIdField);
                 configPanel.add(tipoFiltroLabel);
                 configPanel.add(comboTipoFiltro);
+                configPanel.add(formatoExcelCheckBox);
 
                 // Mostrar diálogo
                 int result = JOptionPane.showConfirmDialog(
@@ -420,6 +425,7 @@ public class Vista extends JFrame {
                     incluirNumeroPagina = numeroPaginaCheckBox.isSelected();
                     filtroIdGuardado = filtroIdField.getText().trim();
                     String tipoFiltro = (String) comboTipoFiltro.getSelectedItem();
+                    reporteExcel = formatoExcelCheckBox.isSelected();
 
                     // Parsear IDs ingresados
                     Set<String> ids = Arrays.stream(filtroIdGuardado.split(","))
@@ -450,11 +456,19 @@ public class Vista extends JFrame {
                         logger.log(filteredChecadas.toString());
                     }
 
+                    // Registrar la elección del usuario
+                    if (reporteExcel) {
+                        logger.log("Usuario seleccionó generar reporte en Excel.");
+                    } else {
+                        logger.log("Usuario seleccionó generar reporte en PDF.");
+                    }
+
                     logger.log("Configuración guardada: " +
                             "Incluir encabezado = " + incluirEncabezado + ", " +
                             "Incluir número de página = " + incluirNumeroPagina + ", " +
                             "Filtro de IDs = " + filtroIdGuardado + ", " +
-                            "Modo de filtro = " + tipoFiltro);
+                            "Modo de filtro = " + tipoFiltro + ", " +
+                            "Formato de reporte = " + (reporteExcel ? "Excel" : "PDF"));
                 } else {
                     logger.log("Configuración cancelada por el usuario.");
                 }
@@ -672,23 +686,6 @@ public class Vista extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Registrar en el log que el usuario hizo clic en el botón para generar el reporte
                 logger.log("Botón 'Generar Reporte' presionado.");
-
-                // Preguntar al usuario si desea generar el reporte en Excel
-                int opcion = JOptionPane.showConfirmDialog(
-                    Vista.this,
-                    "¿Desea generar el reporte en formato Excel?",
-                    "Formato del Reporte",
-                    JOptionPane.YES_NO_OPTION
-                );
-                
-                boolean reporteExcel = (opcion == JOptionPane.YES_OPTION);
-
-                // Registrar la elección del usuario
-                if (reporteExcel) {
-                    logger.log("Usuario seleccionó generar reporte en Excel.");
-                } else {
-                    logger.log("Usuario seleccionó generar reporte en PDF.");
-                }
 
                 // Usar las IDs guardadas en la configuración para filtrar las checadas
                 String idsFiltro = filtroIdGuardado;
