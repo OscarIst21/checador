@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.sqlite.SQLiteConnection;
@@ -32,7 +31,6 @@ public class BaseDeDatosManager {
         String dbPath = dataPath + File.separator + "bd_empleados.db";
         verificarArchivoBaseDatos(dbPath);
 
-        // Añadido modo WAL para mejor concurrencia
         DB_URL = "jdbc:sqlite:" + dbPath + "?journal_mode=WAL";
         System.out.println("Ruta de la base de datos: " + DB_URL);
     }
@@ -63,7 +61,6 @@ public class BaseDeDatosManager {
             }
         } else {
             System.out.println("La base de datos ya existe en: " + archivoBD.getAbsolutePath());
-            // Verificar que las tablas existan incluso si la base de datos ya existe
             verificarYCrearTablas(rutaBaseDatos);
         }
     }
@@ -73,42 +70,47 @@ public class BaseDeDatosManager {
     }
 
     private static void verificarYCrearTablas(String rutaBaseDatos) {
-        String crearTablaHorariosSQL = """
-                CREATE TABLE IF NOT EXISTS horarios (
-                    id TEXT,
-                    diaN TEXT,
-                    horaEntradaReal TEXT,
-                    horaSalidaReal TEXT,
-                    PRIMARY KEY (id, diaN, horaEntradaReal, horaSalidaReal)
+        String crearTablaEmpleadosSQL = """
+                CREATE TABLE IF NOT EXISTS empleados (
+                    id TEXT PRIMARY KEY,
+                    nombre TEXT NOT NULL,
+                    puesto TEXT,
+                    jornada TEXT,
+                    cct TEXT,
+                    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
                 """;
 
-        String crearTablaEmpleadosNombreSQL = """
-                CREATE TABLE IF NOT EXISTS empleadosNombre (
-                    id TEXT PRIMARY KEY,
-                    nombre TEXT,
-                    puesto TEXT,
-                    jornada TEXT,
-                    cct TEXT
+        String crearTablaHorariosSQL = """
+                CREATE TABLE IF NOT EXISTS horarios (
+                    horario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    empleado_id TEXT NOT NULL,
+                    dia TEXT NOT NULL,
+                    hora_entrada TEXT NOT NULL,
+                    hora_salida TEXT,
+                    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
+                    UNIQUE(empleado_id, dia, hora_entrada)
                 );
+                """;
+
+        String crearIndicesSQL = """
+                CREATE INDEX IF NOT EXISTS idx_horarios_empleado_id ON horarios(empleado_id);
+                CREATE INDEX IF NOT EXISTS idx_horarios_dia ON horarios(dia);
+                CREATE INDEX IF NOT EXISTS idx_empleados_cct ON empleados(cct);
                 """;
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + rutaBaseDatos);
                 Statement stmt = conn.createStatement()) {
 
-            // Recrear la tabla horarios para asegurar la estructura correcta
-            try {
-                stmt.execute("DROP TABLE IF EXISTS horarios");
-                stmt.execute(crearTablaHorariosSQL);
-                System.out.println("Tabla horarios recreada con nueva estructura.");
-            } catch (SQLException e) {
-                System.err.println("Error al recrear tabla horarios: " + e.getMessage());
-                // Si falla, intentar crear normalmente
-                stmt.execute(crearTablaHorariosSQL);
-            }
+            stmt.execute("PRAGMA foreign_keys = ON");
+            stmt.execute(crearTablaEmpleadosSQL);
+            stmt.execute(crearTablaHorariosSQL);
+            stmt.execute(crearIndicesSQL);
 
-            stmt.execute(crearTablaEmpleadosNombreSQL);
-            System.out.println("Tablas 'horarios' y 'empleadosNombre' verificadas/creadas correctamente.");
+            System.out.println("Esquema de base de datos relacional creado correctamente.");
+
         } catch (SQLException e) {
             System.err.println("Error al verificar/crear tablas: " + e.getMessage());
             e.printStackTrace();
@@ -116,48 +118,47 @@ public class BaseDeDatosManager {
     }
 
     private void verificarYCrearTablasSiEsNecesario() {
-        // Obtener la ruta de la base de datos desde la URL
         String rutaBaseDatos = DB_URL.replace("jdbc:sqlite:", "").replace("?journal_mode=WAL", "");
         verificarYCrearTablas(rutaBaseDatos);
-
-        // Verificar el contenido de las tablas después de crearlas
         verificarContenidoTablas();
     }
 
     private void verificarContenidoTablas() {
         try (Connection conn = getConnection()) {
-            // Verificar tabla horarios
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
+
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM empleados")) {
+                if (rs.next()) {
+                    System.out.println("Tabla 'empleados' existe con " + rs.getInt("total") + " registros");
+                }
+            }
+
             try (Statement stmt = conn.createStatement();
                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM horarios")) {
                 if (rs.next()) {
                     System.out.println("Tabla 'horarios' existe con " + rs.getInt("total") + " registros");
                 }
-            } catch (SQLException e) {
-                System.err.println("Error al verificar tabla 'horarios': " + e.getMessage());
             }
 
-            // Verificar tabla empleadosNombre
-            try (Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM empleadosNombre")) {
-                if (rs.next()) {
-                    System.out.println("Tabla 'empleadosNombre' existe con " + rs.getInt("total") + " registros");
-                }
-            } catch (SQLException e) {
-                System.err.println("Error al verificar tabla 'empleadosNombre': " + e.getMessage());
-            }
         } catch (SQLException e) {
             System.err.println("Error al verificar contenido de tablas: " + e.getMessage());
         }
     }
 
-    // Método helper para obtener conexiones
     private Connection getConnection() throws SQLException {
         Connection conn = DriverManager.getConnection(DB_URL);
-        ((SQLiteConnection) conn).setBusyTimeout(5000); // 5 seconds timeout
+        ((SQLiteConnection) conn).setBusyTimeout(5000);
+        
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = ON");
+        }
+        
         return conn;
     }
 
-    // Método helper para cerrar recursos
     private void closeResources(AutoCloseable... resources) {
         for (AutoCloseable resource : resources) {
             if (resource != null) {
@@ -170,19 +171,52 @@ public class BaseDeDatosManager {
         }
     }
 
+    // MÉTODO QUE FALTABA - RESTAURADO
+    public List<Empleado> obtenerEmpleadosNombre() {
+        List<Empleado> empleados = new ArrayList<>();
+        String query = "SELECT id, nombre, puesto, jornada, cct FROM empleados ORDER BY nombre";
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = getConnection();
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                Empleado empleado = new Empleado();
+                empleado.setId(rs.getString("id"));
+                empleado.setNombre(rs.getString("nombre"));
+                empleado.setEmpleadoPuesto(rs.getString("puesto"));
+                empleado.setJornada(rs.getString("jornada"));
+                empleado.setCct(rs.getString("cct"));
+                empleados.add(empleado);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources(rs, stmt, conn);
+        }
+
+        return empleados;
+    }
+
+    public List<Empleado> obtenerTodosLosEmpleados() {
+        return obtenerEmpleadosNombre(); // Ahora usa el mismo método
+    }
+
     public void actualizarDatos(List<EmpleadoDatosExtra> empleadosDatos) {
         if (empleadosDatos.isEmpty()) {
             System.out.println("La lista de empleados está vacía. No se realizaron cambios.");
             return;
         }
 
-        // Verificar que las tablas existan antes de proceder
         verificarYCrearTablasSiEsNecesario();
 
         synchronized (DB_LOCK) {
-            String eliminarHorariosSQL = "DELETE FROM horarios WHERE id = ?";
             String insertarHorariosSQL = """
-                    INSERT INTO horarios (id, diaN, horaEntradaReal, horaSalidaReal)
+                    INSERT OR REPLACE INTO horarios (empleado_id, dia, hora_entrada, hora_salida)
                     VALUES (?, ?, ?, ?);
                     """;
 
@@ -193,10 +227,8 @@ public class BaseDeDatosManager {
 
                 System.out.println("Iniciando actualización de " + empleadosDatos.size() + " registros de horarios");
 
-                try (PreparedStatement pstmtEliminar = conn.prepareStatement(eliminarHorariosSQL);
-                        PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
+                try (PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
 
-                    // Eliminar duplicados de la lista de empleados
                     Map<String, List<EmpleadoDatosExtra>> empleadosPorId = empleadosDatos.stream()
                             .collect(Collectors.groupingBy(EmpleadoDatosExtra::getId));
 
@@ -206,7 +238,6 @@ public class BaseDeDatosManager {
                         String idEmpleado = entry.getKey();
                         List<EmpleadoDatosExtra> registros = entry.getValue();
 
-                        // Eliminar duplicados basados en id, diaN y horaEntradaReal
                         Map<String, EmpleadoDatosExtra> registrosUnicos = new HashMap<>();
                         for (EmpleadoDatosExtra empleado : registros) {
                             String clave = empleado.getId() + "|" + empleado.getDiaN() + "|" + empleado.getHoraEntradaReal();
@@ -218,12 +249,6 @@ public class BaseDeDatosManager {
                         System.out.println(
                                 "Procesando empleado ID: " + idEmpleado + " con " + registrosSinDuplicados.size() + " horarios únicos");
 
-                        // Eliminar horarios existentes para este empleado
-                        pstmtEliminar.setString(1, idEmpleado);
-                        int filasEliminadas = pstmtEliminar.executeUpdate();
-                        System.out.println("Horarios eliminados para empleado " + idEmpleado + ": " + filasEliminadas);
-
-                        // Insertar nuevos horarios sin duplicados
                         for (EmpleadoDatosExtra empleado : registrosSinDuplicados) {
                             pstmtInsertar.setString(1, empleado.getId());
                             pstmtInsertar.setString(2, empleado.getDiaN());
@@ -233,9 +258,10 @@ public class BaseDeDatosManager {
 
                             System.out.println("Agregado a batch: " + empleado.toString());
                         }
-                        pstmtInsertar.executeBatch();
-                        System.out.println("Batch ejecutado para empleado " + idEmpleado);
                     }
+                    
+                    pstmtInsertar.executeBatch();
+                    System.out.println("Todos los batches ejecutados correctamente");
 
                     conn.commit();
                     System.out.println("Transacción completada exitosamente");
@@ -262,7 +288,7 @@ public class BaseDeDatosManager {
     }
 
     public Empleado obtenerEmpleadoPorId(String id) {
-        String query = "SELECT id, nombre, puesto, jornada, cct FROM empleadosNombre WHERE id = ?";
+        String query = "SELECT id, nombre, puesto, jornada, cct FROM empleados WHERE id = ?";
         Empleado empleado = null;
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -293,7 +319,7 @@ public class BaseDeDatosManager {
 
     public List<EmpleadoDatosExtra> obtenerHorariosPorId(String id) {
         List<EmpleadoDatosExtra> horarios = new ArrayList<>();
-        String query = "SELECT id, diaN, horaEntradaReal, horaSalidaReal FROM horarios WHERE id = ?";
+        String query = "SELECT empleado_id, dia, hora_entrada, hora_salida FROM horarios WHERE empleado_id = ? ORDER BY dia, hora_entrada";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -306,10 +332,10 @@ public class BaseDeDatosManager {
 
             while (rs.next()) {
                 EmpleadoDatosExtra horario = new EmpleadoDatosExtra(
-                        rs.getString("id"),
-                        rs.getString("diaN"),
-                        rs.getString("horaEntradaReal"),
-                        rs.getString("horaSalidaReal"));
+                        rs.getString("empleado_id"),
+                        rs.getString("dia"),
+                        rs.getString("hora_entrada"),
+                        rs.getString("hora_salida"));
                 horarios.add(horario);
             }
         } catch (SQLException e) {
@@ -321,12 +347,12 @@ public class BaseDeDatosManager {
         return horarios;
     }
 
-    public void actualizarHorarioPorDia(String id, String diaN, String horaEntradaReal, String nuevaHoraSalidaReal) {
+    public void actualizarHorarioPorDia(String id, String dia, String horaEntradaReal, String nuevaHoraSalidaReal) {
         synchronized (DB_LOCK) {
             String actualizarSQL = """
                     UPDATE horarios
-                    SET horaSalidaReal = ?
-                    WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
+                    SET hora_salida = ?
+                    WHERE empleado_id = ? AND dia = ? AND hora_entrada = ?;
                     """;
             Connection conn = null;
             PreparedStatement pstmt = null;
@@ -336,7 +362,7 @@ public class BaseDeDatosManager {
                 pstmt = conn.prepareStatement(actualizarSQL);
                 pstmt.setString(1, nuevaHoraSalidaReal);
                 pstmt.setString(2, id);
-                pstmt.setString(3, diaN);
+                pstmt.setString(3, dia);
                 pstmt.setString(4, horaEntradaReal);
                 pstmt.executeUpdate();
             } catch (SQLException e) {
@@ -347,11 +373,11 @@ public class BaseDeDatosManager {
         }
     }
 
-    public void eliminarHorarioPorDia(String id, String diaN, String horaEntradaReal) {
+    public void eliminarHorarioPorDia(String id, String dia, String horaEntradaReal) {
         synchronized (DB_LOCK) {
             String eliminarSQL = """
                     DELETE FROM horarios
-                    WHERE id = ? AND diaN = ? AND horaEntradaReal = ?;
+                    WHERE empleado_id = ? AND dia = ? AND hora_entrada = ?;
                     """;
             Connection conn = null;
             PreparedStatement pstmt = null;
@@ -360,7 +386,7 @@ public class BaseDeDatosManager {
                 conn = getConnection();
                 pstmt = conn.prepareStatement(eliminarSQL);
                 pstmt.setString(1, id);
-                pstmt.setString(2, diaN);
+                pstmt.setString(2, dia);
                 pstmt.setString(3, horaEntradaReal);
                 pstmt.executeUpdate();
             } catch (SQLException e) {
@@ -373,17 +399,17 @@ public class BaseDeDatosManager {
 
     public void insertarOActualizarEmpleado(Empleado empleado) {
         synchronized (DB_LOCK) {
-            // Primero verificar que las tablas existan
             verificarYCrearTablasSiEsNecesario();
 
             String insertarOActualizarSQL = """
-                    INSERT INTO empleadosNombre (id, nombre, puesto, jornada, cct)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO empleados (id, nombre, puesto, jornada, cct, fecha_actualizacion)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(id) DO UPDATE SET
                         nombre = excluded.nombre,
                         puesto = excluded.puesto,
                         jornada = excluded.jornada,
-                        cct = excluded.cct
+                        cct = excluded.cct,
+                        fecha_actualizacion = CURRENT_TIMESTAMP
                     """;
 
             Connection conn = null;
@@ -423,8 +449,8 @@ public class BaseDeDatosManager {
     }
 
     public List<EmpleadoDatosExtra> obtenerTodosLosHorarios() {
-        List<EmpleadoDatosExtra> empleados = new ArrayList<>();
-        String query = "SELECT id, diaN, horaEntradaReal, horaSalidaReal FROM horarios";
+        List<EmpleadoDatosExtra> horarios = new ArrayList<>();
+        String query = "SELECT empleado_id, dia, hora_entrada, hora_salida FROM horarios ORDER BY empleado_id, dia, hora_entrada";
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
@@ -435,12 +461,12 @@ public class BaseDeDatosManager {
             rs = stmt.executeQuery(query);
 
             while (rs.next()) {
-                EmpleadoDatosExtra empleado = new EmpleadoDatosExtra(
-                        rs.getString("id"),
-                        rs.getString("diaN"),
-                        rs.getString("horaEntradaReal"),
-                        rs.getString("horaSalidaReal"));
-                empleados.add(empleado);
+                EmpleadoDatosExtra horario = new EmpleadoDatosExtra(
+                        rs.getString("empleado_id"),
+                        rs.getString("dia"),
+                        rs.getString("hora_entrada"),
+                        rs.getString("hora_salida"));
+                horarios.add(horario);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -448,41 +474,11 @@ public class BaseDeDatosManager {
             closeResources(rs, stmt, conn);
         }
 
-        return empleados;
-    }
-
-    public List<Empleado> obtenerEmpleadosNombre() {
-        List<Empleado> empleados = new ArrayList<>();
-        String query = "SELECT id, nombre, puesto, jornada, cct FROM empleadosNombre";
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(query);
-
-            while (rs.next()) {
-                Empleado empleado = new Empleado();
-                empleado.setId(rs.getString("id"));
-                empleado.setNombre(rs.getString("nombre"));
-                empleado.setEmpleadoPuesto(rs.getString("puesto"));
-                empleado.setJornada(rs.getString("jornada"));
-                empleado.setCct(rs.getString("cct"));
-                empleados.add(empleado);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            closeResources(rs, stmt, conn);
-        }
-
-        return empleados;
+        return horarios;
     }
 
     public List<Empleado> obtenerEmpleadosPorCCT(String cct) {
-        String sql = "SELECT * FROM empleadosNombre WHERE cct = ?";
+        String sql = "SELECT * FROM empleados WHERE cct = ? ORDER BY nombre";
         List<Empleado> empleados = new ArrayList<>();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -512,8 +508,11 @@ public class BaseDeDatosManager {
     }
 
     public List<EmpleadoDatosExtra> obtenerHorariosPorCCT(String cct) {
-        String sql = "SELECT h.* FROM horarios h " +
-                "JOIN empleadosNombre e ON h.id = e.id WHERE e.cct = ?";
+        String sql = "SELECT h.empleado_id, h.dia, h.hora_entrada, h.hora_salida " +
+                "FROM horarios h " +
+                "JOIN empleados e ON h.empleado_id = e.id " +
+                "WHERE e.cct = ? " +
+                "ORDER BY h.empleado_id, h.dia, h.hora_entrada";
         List<EmpleadoDatosExtra> horarios = new ArrayList<>();
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -527,10 +526,10 @@ public class BaseDeDatosManager {
 
             while (rs.next()) {
                 EmpleadoDatosExtra horario = new EmpleadoDatosExtra(
-                        rs.getString("id"),
-                        rs.getString("diaN"),
-                        rs.getString("horaEntradaReal"),
-                        rs.getString("horaSalidaReal"));
+                        rs.getString("empleado_id"),
+                        rs.getString("dia"),
+                        rs.getString("hora_entrada"),
+                        rs.getString("hora_salida"));
                 horarios.add(horario);
             }
         } catch (SQLException e) {
