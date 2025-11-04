@@ -163,7 +163,7 @@ public class Vista extends JFrame {
         lblNewLabel_4.setBounds(0, 48, 1266, 50);
         contentPane.add(lblNewLabel_4);
 
-        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.7  18/06/25");
+        JLabel lblNewLabel_3 = new JLabel("Versiòn 1.8  28/10/25");
         lblNewLabel_3.setHorizontalAlignment(SwingConstants.RIGHT);
         lblNewLabel_3.setBounds(1125, 654, 131, 29);
         contentPane.add(lblNewLabel_3);

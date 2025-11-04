@@ -425,10 +425,27 @@ public class ReportePDF {
                     }
                 }
 
+                // Reconstruir la lista de IDs ordenados después del filtrado para evitar NullPointerException
+                idsOrdenados = checadasPorId.keySet().stream()
+                        .sorted((id1, id2) -> {
+                            String nombre1 = checadasPorId.get(id1).get(0).getNombre();
+                            String nombre2 = checadasPorId.get(id2).get(0).getNombre();
+                            return nombre1.compareToIgnoreCase(nombre2);
+                        })
+                        .collect(Collectors.toList());
+                logger.log("IDs ordenados después del filtrado: " + idsOrdenados.size());
+
                 boolean primeraVezEnPagina = true;
                 // Iterar sobre los IDs ordenados
                 for (String id : idsOrdenados) {
                     logger.log("Procesando empleado ID: " + id);
+                    
+                    // Validación adicional para asegurar que el ID existe en checadasPorId
+                    if (!checadasPorId.containsKey(id)) {
+                        logger.log("ID " + id + " no encontrado en checadasPorId, saltando...");
+                        continue;
+                    }
+                    
                     String nombre = checadasPorId.get(id).get(0).getNombre();
                     String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
                     Paragraph title = new Paragraph(id + "\t" + nombre + "\t" + categoria)
@@ -1251,6 +1268,12 @@ public class ReportePDF {
 
         // Datos de los empleados
         for (String id : idsOrdenados) {
+            // Validar que el ID existe en checadasPorId después del filtrado
+            if (!checadasPorId.containsKey(id)) {
+                logger.log("ID " + id + " no encontrado en checadasPorId después del filtrado, saltando...");
+                continue;
+            }
+            
             String nombre = checadasPorId.get(id).get(0).getNombre();
             String categoria = checadasPorId.get(id).get(0).getEmpleadoPuesto();
             
