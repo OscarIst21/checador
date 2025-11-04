@@ -335,6 +335,34 @@ public class ReportePDF {
             }
         }
         
+        // Aplicar filtro/exclusión si hay IDs específicos (ANTES de generar Excel o PDF)
+        if (idString != null && !idString.isEmpty()) {
+            if (idString.startsWith("filtrar:")) {
+                String idsFiltroStr = idString.substring("filtrar:".length());
+                java.util.Set<String> idsAFiltrar = Arrays.stream(idsFiltroStr.split(","))
+                        .collect(Collectors.toSet());
+                checadasPorId.keySet().retainAll(idsAFiltrar);
+                logger.log("Filtrado por IDs específicos (modo filtrar). Empleados a procesar: "
+                        + checadasPorId.size());
+            } else if (idString.startsWith("excluir:")) {
+                String idsExcluirStr = idString.substring("excluir:".length());
+                java.util.Set<String> idsAExcluir = Arrays.stream(idsExcluirStr.split(","))
+                        .collect(Collectors.toSet());
+
+                // Filtrar el mapa checadasPorId eliminando los IDs especificados
+                checadasPorId.keySet().removeAll(idsAExcluir);
+                logger.log("Filtrado por IDs específicos (modo excluir). Empleados a procesar: "
+                        + checadasPorId.size());
+            } else {
+                // Modo por defecto (compatibilidad): filtrar los IDs
+                java.util.Set<String> idsFiltro = Arrays.stream(idString.split(","))
+                        .collect(Collectors.toSet());
+                checadasPorId.keySet().retainAll(idsFiltro);
+                logger.log("Filtrado por IDs específicos (modo por defecto). Empleados a procesar: "
+                        + checadasPorId.size());
+            }
+        }
+        
         // Luego continuar con el ordenamiento de IDs para el reporte
         List<String> idsOrdenados = checadasPorId.keySet().stream()
                 .sorted((id1, id2) -> {
@@ -396,33 +424,6 @@ public class ReportePDF {
                             canvas.release();
                         }
                     });
-                }
-                // Aplicar filtro/exclusión si hay IDs específicos
-                if (idString != null && !idString.isEmpty()) {
-                    if (idString.startsWith("filtrar:")) {
-                        String idsFiltroStr = idString.substring("filtrar:".length());
-                        java.util.Set<String> idsAFiltrar = Arrays.stream(idsFiltroStr.split(","))
-                                .collect(Collectors.toSet());
-                        checadasPorId.keySet().retainAll(idsAFiltrar);
-                        logger.log("Filtrado por IDs específicos (modo filtrar). Empleados a procesar: "
-                                + checadasPorId.size());
-                    } else if (idString.startsWith("excluir:")) {
-                        String idsExcluirStr = idString.substring("excluir:".length());
-                        java.util.Set<String> idsAExcluir = Arrays.stream(idsExcluirStr.split(","))
-                                .collect(Collectors.toSet());
-
-                        // Filtrar el mapa checadasPorId eliminando los IDs especificados
-                        checadasPorId.keySet().removeAll(idsAExcluir);
-                        logger.log("Filtrado por IDs específicos (modo excluir). Empleados a procesar: "
-                                + checadasPorId.size());
-                    } else {
-                        // Modo por defecto (compatibilidad): filtrar los IDs
-                        java.util.Set<String> idsFiltro = Arrays.stream(idString.split(","))
-                                .collect(Collectors.toSet());
-                        checadasPorId.keySet().retainAll(idsFiltro);
-                        logger.log("Filtrado por IDs específicos (modo por defecto). Empleados a procesar: "
-                                + checadasPorId.size());
-                    }
                 }
 
                 // Reconstruir la lista de IDs ordenados después del filtrado para evitar NullPointerException
