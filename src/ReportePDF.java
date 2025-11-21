@@ -323,8 +323,8 @@ public class ReportePDF {
                             checada.setEmpleadoPuesto(empleado.getEmpleadoPuesto());
                             checada.setJornada(empleado.getJornada());
                             checada.setFecha(fecha);
-                            checada.setHoraEntrada("00:00");
-                            checada.setHoraSalida("00:00");
+                checada.setHoraEntrada("00:00");
+                checada.setHoraSalida("00:00");
                             checadasGeneradas.add(checada);
                         }
                     }
@@ -479,10 +479,10 @@ public class ReportePDF {
                         List<Checadas> checadasDelDia = checadasPorFecha.getOrDefault(fecha, new ArrayList<>());
                         String diaSemana = calcularDiaSemana(fecha).toLowerCase();
 
-                        // Ordenar las checadas por hora de entrada antes de procesarlas
+                        // Ordenar checadas por hora de entrada (00:00 debe ir primero si aplica)
                         checadasDelDia.sort((c1, c2) -> {
-                            LocalTime t1 = LocalTime.parse(c1.getHoraEntrada().equals("00:00") ? "23:59" : c1.getHoraEntrada());
-                            LocalTime t2 = LocalTime.parse(c2.getHoraEntrada().equals("00:00") ? "23:59" : c2.getHoraEntrada());
+                            LocalTime t1 = LocalTime.parse(c1.getHoraEntrada());
+                            LocalTime t2 = LocalTime.parse(c2.getHoraEntrada());
                             return t1.compareTo(t2);
                         });
 
@@ -503,10 +503,13 @@ public class ReportePDF {
                                 ? new ArrayList<>(empleadoIndex.get(id).get(diaSemana))
                                 : new ArrayList<>();
 
-                        // Si no hay checadas, mostrar todos los horarios
+                        // Si no hay checadas, mostrar todos los horarios (ordenados por hora real)
                         if (checadasDelDia.isEmpty()) {
                             logger.log("No hay checadas registradas para la fecha: " + fecha + " para el empleado ID: "
                                     + id);
+                            // Ordenar horarios disponibles por hora de entrada real ascendente
+                            horariosDisponibles.sort((h1, h2) -> LocalTime.parse(h1.getHoraEntradaReal())
+                                    .compareTo(LocalTime.parse(h2.getHoraEntradaReal())));
                             for (EmpleadoDatosExtra horario : horariosDisponibles) {
 
                                 String horaEntradaReal = horario.getHoraEntradaReal();
@@ -565,7 +568,7 @@ public class ReportePDF {
                                 if (tieneHorario && !horariosDisponibles.isEmpty()) {
                                     // Asignar horario más cercano a la checada
                                     EmpleadoDatosExtra horarioAsignado = null;
-                                    LocalTime horaChecada = LocalTime.parse(checada.getHoraEntrada().equals("00:00") ? "23:59" : checada.getHoraEntrada());
+                                    LocalTime horaChecada = LocalTime.parse(checada.getHoraEntrada());
                                     
                                     // Buscar el horario más cercano a la hora de checada
                                     int minDiff = Integer.MAX_VALUE;
@@ -720,8 +723,181 @@ public class ReportePDF {
                                         .setPadding(2).setMargin(0));
 
                                 tamañoTabla++;
+
+                                // Procesar segundo par de checadas si existe (horaEntrada2/horaSalida2)
+                                String horaEntrada2 = (checada.getHoraEntrada2() != null
+                                        && !checada.getHoraEntrada2().isEmpty()) ? checada.getHoraEntrada2() : "00:00";
+                                String horaSalida2 = (checada.getHoraSalida2() != null
+                                        && !checada.getHoraSalida2().isEmpty()) ? checada.getHoraSalida2() : "00:00";
+
+                                if (!horaEntrada2.equals("00:00") || !horaSalida2.equals("00:00")) {
+                                    // Recalcular horario más cercano a la segunda checada
+                                    String horaEntradaReal2 = "00:00";
+                                    String horaSalidaReal2 = "00:00";
+
+                                    if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                                        EmpleadoDatosExtra horarioAsignado2 = null;
+                                        LocalTime horaChecada2 = LocalTime.parse(horaEntrada2);
+                                        int minDiff2 = Integer.MAX_VALUE;
+                                        for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                                            LocalTime horaEntradaHorario = LocalTime.parse(horario.getHoraEntradaReal());
+                                            int diff2 = Math.abs((int) horaEntradaHorario.until(horaChecada2, ChronoUnit.MINUTES));
+                                            if (diff2 < minDiff2) {
+                                                minDiff2 = diff2;
+                                                horarioAsignado2 = horario;
+                                            }
+                                        }
+                                        if (horarioAsignado2 != null) {
+                                            horaEntradaReal2 = horarioAsignado2.getHoraEntradaReal();
+                                            horaSalidaReal2 = horarioAsignado2.getHoraSalidaReal();
+                                            Duration duracionACubrir2 = obtenerDuracion(horaEntradaReal2, horaSalidaReal2);
+                                            totalHorasACubrir = totalHorasACubrir.plus(duracionACubrir2);
+                                            horariosDisponibles.remove(horarioAsignado2);
+                                            logger.log("Horario asignado (2ª checada). Entrada real: " + horaEntradaReal2
+                                                    + ", Salida real: " + horaSalidaReal2);
+                                        }
+                                    }
+
+                                    // Ajustes de intercambio según lógica existente
+                                    if (horaEntradaReal2.equals("00:00") && !horaSalidaReal2.equals("00:00")
+                                            && !horaEntrada2.equals("00:00")) {
+                                        horaSalida2 = horaEntrada2;
+                                        horaEntrada2 = "00:00";
+                                    } else if (horaSalidaReal2.equals("00:00") && !horaEntradaReal2.equals("00:00")
+                                            && !horaSalida2.equals("00:00")) {
+                                        horaEntrada2 = horaSalida2;
+                                        horaSalida2 = "00:00";
+                                    }
+
+                                    String estatusEntrada2 = tieneHorario ? estatusChequeo(horaEntrada2, horaEntradaReal2) : "---";
+                                    String estatusSalida2 = tieneHorario ? estatusSalida(horaSalida2, horaSalidaReal2) : "---";
+                                    String tiempoTrabajo2 = calcularTiempoTrabajo(horaEntrada2, horaSalida2);
+                                    Duration duracionTrabajada2 = obtenerDuracion(horaEntrada2, horaSalida2);
+
+                                    if (!horaEntrada2.equals("00:00") && !horaSalida2.equals("00:00")) {
+                                        totalHorasTrabajadas = totalHorasTrabajadas.plus(duracionTrabajada2);
+                                    }
+
+                                    // Contar retardos/faltas para segunda checada si aplica
+                                    if (tieneHorario) {
+                                        if ("Medio retardo".equals(estatusChequeo(horaEntrada2, horaEntradaReal2))) {
+                                            retardos++;
+                                        }
+                                        if ("Medio retardo".equals(estatusChequeo(horaSalida2, horaSalidaReal2))) {
+                                            retardos++;
+                                        }
+                                        if ("Retardo".equals(estatusChequeo(horaEntrada2, horaEntradaReal2))) {
+                                            retardos++;
+                                        }
+                                        if ("Retardo".equals(estatusChequeo(horaSalida2, horaSalidaReal2))) {
+                                            retardos++;
+                                        }
+                                        if ((horaEntrada2.equals("00:00") && horaSalida2.equals("00:00")) || (retardos >= 5)
+                                                || ("Falta".equals(estatusChequeo(horaSalida2, horaSalidaReal2))
+                                                        && "Falta".equals(estatusChequeo(horaEntrada2, horaEntradaReal2)))) {
+                                            faltas++;
+                                        } else {
+                                            if (horaEntrada2.equals("00:00")) {
+                                                entradaFaltante++;
+                                            }
+                                            if (horaSalida2.equals("00:00")) {
+                                                salidaFaltante++;
+                                            }
+                                        }
+                                    }
+
+                                    // Agregar fila para segunda checada
+                                    table.addCell(new Cell().add(new Paragraph(checada.getFecha()))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(diaSemana))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(horaEntradaReal2 + " - " + horaEntrada2))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(estatusEntrada2))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(horaSalidaReal2 + " - " + horaSalida2))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(estatusSalida2))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(tiempoTrabajo2))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                tamañoTabla++;
+                            }
+
+                            // Agregar los horarios restantes del día como "Falta" aunque haya checadas (ordenados)
+                            if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                                horariosDisponibles.sort((h1, h2) -> LocalTime.parse(h1.getHoraEntradaReal())
+                                        .compareTo(LocalTime.parse(h2.getHoraEntradaReal())));
+                                for (EmpleadoDatosExtra horarioRestante : horariosDisponibles) {
+                                    String horaEntradaRealR = horarioRestante.getHoraEntradaReal();
+                                    String horaSalidaRealR = horarioRestante.getHoraSalidaReal();
+
+                                    // Sumar horas a cubrir
+                                    Duration duracionACubrirR = obtenerDuracion(horaEntradaRealR, horaSalidaRealR);
+                                    totalHorasACubrir = totalHorasACubrir.plus(duracionACubrirR);
+
+                                    // Agregar fila de falta para cada horario restante
+                                    table.addCell(new Cell().add(new Paragraph(fecha))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(diaSemana))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(horaEntradaRealR + " - 00:00"))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph("Falta"))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph(horaSalidaRealR + " - 00:00"))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph("Falta"))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    table.addCell(new Cell().add(new Paragraph("00:00"))
+                                            .setTextAlignment(TextAlignment.LEFT)
+                                            .setFontSize(7).setBorder(Border.NO_BORDER)
+                                            .setPadding(2).setMargin(0));
+
+                                    tamañoTabla++;
+                                }
                             }
                         }
+                    }
                     }
 
                     long totalHoras = totalHorasACubrir.toHours();
@@ -1041,11 +1217,8 @@ public class ReportePDF {
     }
 
     public String estatusSalida(String horaSalida, String horaReal) {
-        if (horaReal == null || horaReal.equals("00:00") || horaSalida == null) {
-            return "";
-        }
-        if (horaSalida.equals("00:00") || horaSalida.isEmpty()) {
-            return "Falta";
+        if (esHoraFaltante(horaReal) || esHoraFaltante(horaSalida)) {
+            return esHoraFaltante(horaSalida) ? "Falta" : "";
         }
 
         String[] partesSalida = horaSalida.split(":");
@@ -1069,11 +1242,11 @@ public class ReportePDF {
     }
 
     public String estatusChequeo(String horaChequeo, String horaReal) {
-        if (horaReal == null || horaReal.isEmpty() || horaReal.equals("00:00")) {
+        if (esHoraFaltante(horaReal)) {
             return "";
         }
 
-        if (horaChequeo == null || horaChequeo.isEmpty() || horaChequeo.equals("00:00")) {
+        if (esHoraFaltante(horaChequeo)) {
             return "Falta";
         }
 
@@ -1117,7 +1290,7 @@ public class ReportePDF {
     }
 
     private String calcularTiempoTrabajo(String horaEntrada, String horaSalida) {
-        if (horaEntrada.equals("00:00") || horaEntrada == null || horaSalida == null || horaSalida.equals("00:00")) {
+        if (esHoraFaltante(horaEntrada) || esHoraFaltante(horaSalida)) {
             return "";
         }
 
@@ -1161,7 +1334,7 @@ public class ReportePDF {
     }
 
     private Duration obtenerDuracion(String horaEntrada, String horaSalida) {
-        if (horaEntrada == null || horaSalida == null || horaEntrada.isEmpty() || horaSalida.isEmpty()) {
+        if (esHoraFaltante(horaEntrada) || esHoraFaltante(horaSalida)) {
             return Duration.ZERO;
         }
 
@@ -1189,6 +1362,10 @@ public class ReportePDF {
         int horas = (int) (valorDecimal * 24);
         int minutos = (int) ((valorDecimal * 24 - horas) * 60);
         return String.format("%02d:%02d", horas, minutos);
+    }
+
+    private boolean esHoraFaltante(String hora) {
+        return hora == null || hora.isEmpty() || "??:??".equals(hora);
     }
 
     private void generarReporteExcel(List<String> idsOrdenados, 
@@ -1289,8 +1466,8 @@ public class ReportePDF {
 
                 // Ordenar las checadas por hora de entrada antes de procesarlas
                 checadasDelDia.sort((c1, c2) -> {
-                    LocalTime t1 = LocalTime.parse(c1.getHoraEntrada().equals("00:00") ? "23:59" : c1.getHoraEntrada());
-                    LocalTime t2 = LocalTime.parse(c2.getHoraEntrada().equals("00:00") ? "23:59" : c2.getHoraEntrada());
+                    LocalTime t1 = LocalTime.parse(esHoraFaltante(c1.getHoraEntrada()) ? "23:59" : c1.getHoraEntrada());
+                    LocalTime t2 = LocalTime.parse(esHoraFaltante(c2.getHoraEntrada()) ? "23:59" : c2.getHoraEntrada());
                     return t1.compareTo(t2);
                 });
 
@@ -1303,6 +1480,12 @@ public class ReportePDF {
                         new ArrayList<>(empleadoIndex.get(id).get(diaSemana.toLowerCase())) : new ArrayList<>();
 
                 if (checadasDelDia.isEmpty() && !horariosDisponibles.isEmpty()) {
+                    // Ordenar horarios disponibles por hora de entrada real
+                    horariosDisponibles.sort((h1, h2) -> {
+                        LocalTime t1 = LocalTime.parse(h1.getHoraEntradaReal());
+                        LocalTime t2 = LocalTime.parse(h2.getHoraEntradaReal());
+                        return t1.compareTo(t2);
+                    });
                     // Mostrar faltas
                     for (EmpleadoDatosExtra horario : horariosDisponibles) {
                         Row row = sheet.createRow(currentRow++);
@@ -1325,24 +1508,38 @@ public class ReportePDF {
                         String horaEntradaReal = "00:00";
                         String horaSalidaReal = "00:00";
 
-                        if (tieneHorario && !horariosDisponibles.isEmpty()) {
-                            EmpleadoDatosExtra empleadoData = horariosDisponibles.remove(0);
-                            horaEntradaReal = empleadoData.getHoraEntradaReal();
-                            horaSalidaReal = empleadoData.getHoraSalidaReal();
-                        }
-
-                        String horaEntrada = (checada.getHoraEntrada() != null && 
+                        String horaEntrada = (checada.getHoraEntrada() != null &&
                                 !checada.getHoraEntrada().isEmpty()) ? checada.getHoraEntrada() : "00:00";
-                        String horaSalida = (checada.getHoraSalida() != null && 
+                        String horaSalida = (checada.getHoraSalida() != null &&
                                 !checada.getHoraSalida().isEmpty()) ? checada.getHoraSalida() : "00:00";
 
+                        // Asignar horario más cercano a la primera checada
+                        if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                            EmpleadoDatosExtra horarioAsignado = null;
+                            LocalTime horaChecada = LocalTime.parse(esHoraFaltante(horaEntrada) ? "23:59" : horaEntrada);
+                            int minDiff = Integer.MAX_VALUE;
+                            for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                                LocalTime horaEntradaHorario = LocalTime.parse(horario.getHoraEntradaReal());
+                                int diff = Math.abs((int) horaEntradaHorario.until(horaChecada, java.time.temporal.ChronoUnit.MINUTES));
+                                if (diff < minDiff) {
+                                    minDiff = diff;
+                                    horarioAsignado = horario;
+                                }
+                            }
+                            if (horarioAsignado != null) {
+                                horaEntradaReal = horarioAsignado.getHoraEntradaReal();
+                                horaSalidaReal = horarioAsignado.getHoraSalidaReal();
+                                horariosDisponibles.remove(horarioAsignado);
+                            }
+                        }
+
                         // Ajustar horas según lógica existente
-                        if (horaEntradaReal.equals("00:00") && !horaSalidaReal.equals("00:00") && 
-                            !horaEntrada.equals("00:00")) {
+                        if (esHoraFaltante(horaEntradaReal) && !esHoraFaltante(horaSalidaReal) &&
+                            !esHoraFaltante(horaEntrada)) {
                             horaSalida = horaEntrada;
                             horaEntrada = "00:00";
-                        } else if (horaSalidaReal.equals("00:00") && !horaEntradaReal.equals("00:00") && 
-                                 !horaSalida.equals("00:00")) {
+                        } else if (esHoraFaltante(horaSalidaReal) && !esHoraFaltante(horaEntradaReal) &&
+                                 !esHoraFaltante(horaSalida)) {
                             horaEntrada = horaSalida;
                             horaSalida = "00:00";
                         }
@@ -1364,6 +1561,86 @@ public class ReportePDF {
                         row.createCell(9).setCellValue(horaSalida);
                         row.createCell(10).setCellValue(estatusSalida);
                         row.createCell(11).setCellValue(tiempoTrabajo);
+
+                        // Procesar segunda pareja si existe
+                        boolean tieneSegundaPareja = (checada.getHoraEntrada2() != null && !checada.getHoraEntrada2().isEmpty())
+                                || (checada.getHoraSalida2() != null && !checada.getHoraSalida2().isEmpty());
+                        if (tieneSegundaPareja) {
+                            String horaEntrada2 = (checada.getHoraEntrada2() != null && !checada.getHoraEntrada2().isEmpty()) ? checada.getHoraEntrada2() : "00:00";
+                            String horaSalida2 = (checada.getHoraSalida2() != null && !checada.getHoraSalida2().isEmpty()) ? checada.getHoraSalida2() : "00:00";
+                            String horaEntradaReal2 = "00:00";
+                            String horaSalidaReal2 = "00:00";
+
+                            if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                                EmpleadoDatosExtra horarioAsignado2 = null;
+                                LocalTime horaChecada2 = LocalTime.parse(esHoraFaltante(horaEntrada2) ? "23:59" : horaEntrada2);
+                                int minDiff2 = Integer.MAX_VALUE;
+                                for (EmpleadoDatosExtra horario : horariosDisponibles) {
+                                    LocalTime horaEntradaHorario = LocalTime.parse(horario.getHoraEntradaReal());
+                                    int diff2 = Math.abs((int) horaEntradaHorario.until(horaChecada2, java.time.temporal.ChronoUnit.MINUTES));
+                                    if (diff2 < minDiff2) {
+                                        minDiff2 = diff2;
+                                        horarioAsignado2 = horario;
+                                    }
+                                }
+                                if (horarioAsignado2 != null) {
+                                    horaEntradaReal2 = horarioAsignado2.getHoraEntradaReal();
+                                    horaSalidaReal2 = horarioAsignado2.getHoraSalidaReal();
+                                    horariosDisponibles.remove(horarioAsignado2);
+                                }
+                            }
+
+                            if (esHoraFaltante(horaEntradaReal2) && !esHoraFaltante(horaSalidaReal2) && !esHoraFaltante(horaEntrada2)) {
+                                horaSalida2 = horaEntrada2;
+                                horaEntrada2 = "00:00";
+                            } else if (esHoraFaltante(horaSalidaReal2) && !esHoraFaltante(horaEntradaReal2) && !esHoraFaltante(horaSalida2)) {
+                                horaEntrada2 = horaSalida2;
+                                horaSalida2 = "00:00";
+                            }
+
+                            String estatusEntrada2 = tieneHorario ? estatusChequeo(horaEntrada2, horaEntradaReal2) : "---";
+                            String estatusSalida2 = tieneHorario ? estatusSalida(horaSalida2, horaSalidaReal2) : "---";
+                            String tiempoTrabajo2 = calcularTiempoTrabajo(horaEntrada2, horaSalida2);
+                           
+                            Row row2 = sheet.createRow(currentRow++);
+                            row2.createCell(0).setCellValue(id);
+                            row2.createCell(1).setCellValue(nombre);
+                            row2.createCell(2).setCellValue(categoria);
+                            row2.createCell(3).setCellValue(fecha);
+                            row2.createCell(4).setCellValue(diaSemana);
+                            row2.createCell(5).setCellValue(horaEntradaReal2);
+                            row2.createCell(6).setCellValue(horaEntrada2);
+                            row2.createCell(7).setCellValue(estatusEntrada2);
+                            row2.createCell(8).setCellValue(horaSalidaReal2);
+                            row2.createCell(9).setCellValue(horaSalida2);
+                            row2.createCell(10).setCellValue(estatusSalida2);
+                            row2.createCell(11).setCellValue(tiempoTrabajo2);
+                        }
+                    }
+
+                    // Agregar los horarios restantes del día como "Falta" aunque haya checadas
+                    if (tieneHorario && !horariosDisponibles.isEmpty()) {
+                        // Ordenar los horarios restantes por hora de entrada real
+                        horariosDisponibles.sort((h1, h2) -> {
+                            LocalTime t1 = LocalTime.parse(h1.getHoraEntradaReal());
+                            LocalTime t2 = LocalTime.parse(h2.getHoraEntradaReal());
+                            return t1.compareTo(t2);
+                        });
+                        for (EmpleadoDatosExtra horarioRestante : horariosDisponibles) {
+                            Row row = sheet.createRow(currentRow++);
+                            row.createCell(0).setCellValue(id);
+                            row.createCell(1).setCellValue(nombre);
+                            row.createCell(2).setCellValue(categoria);
+                            row.createCell(3).setCellValue(fecha);
+                            row.createCell(4).setCellValue(diaSemana);
+                            row.createCell(5).setCellValue(horarioRestante.getHoraEntradaReal());
+                            row.createCell(6).setCellValue("00:00");
+                            row.createCell(7).setCellValue("Falta");
+                            row.createCell(8).setCellValue(horarioRestante.getHoraSalidaReal());
+                            row.createCell(9).setCellValue("00:00");
+                            row.createCell(10).setCellValue("Falta");
+                            row.createCell(11).setCellValue("00:00");
+                        }
                     }
                 }
             }

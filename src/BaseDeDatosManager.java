@@ -227,7 +227,21 @@ public class BaseDeDatosManager {
 
                 System.out.println("Iniciando actualización de " + empleadosDatos.size() + " registros de horarios");
 
-                try (PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL)) {
+                String existeEmpleadoSQL = "SELECT 1 FROM empleados WHERE id = ? LIMIT 1";
+                String upsertEmpleadoSQL = """
+                        INSERT INTO empleados (id, nombre, puesto, jornada, cct, fecha_actualizacion)
+                        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(id) DO UPDATE SET
+                            nombre = excluded.nombre,
+                            puesto = excluded.puesto,
+                            jornada = excluded.jornada,
+                            cct = excluded.cct,
+                            fecha_actualizacion = CURRENT_TIMESTAMP
+                        """;
+
+                try (PreparedStatement pstmtInsertar = conn.prepareStatement(insertarHorariosSQL);
+                        PreparedStatement pstmtExisteEmpleado = conn.prepareStatement(existeEmpleadoSQL);
+                        PreparedStatement pstmtUpsertEmpleado = conn.prepareStatement(upsertEmpleadoSQL)) {
 
                     Map<String, List<EmpleadoDatosExtra>> empleadosPorId = empleadosDatos.stream()
                             .collect(Collectors.groupingBy(EmpleadoDatosExtra::getId));
@@ -238,18 +252,59 @@ public class BaseDeDatosManager {
                         String idEmpleado = entry.getKey();
                         List<EmpleadoDatosExtra> registros = entry.getValue();
 
+                        // Asegurar que el empleado existe para cumplir la FK de horarios
+                        pstmtExisteEmpleado.setString(1, idEmpleado);
+                        try (ResultSet rsExiste = pstmtExisteEmpleado.executeQuery()) {
+                            if (!rsExiste.next()) {
+                                // Crear registro mínimo para empleado faltante
+                                pstmtUpsertEmpleado.setString(1, idEmpleado);
+                                // Nombre requerido no nulo; usamos el propio ID como nombre por defecto
+                                pstmtUpsertEmpleado.setString(2, idEmpleado);
+                                pstmtUpsertEmpleado.setNull(3, java.sql.Types.VARCHAR); // puesto
+                                pstmtUpsertEmpleado.setNull(4, java.sql.Types.VARCHAR); // jornada
+                                pstmtUpsertEmpleado.setNull(5, java.sql.Types.VARCHAR); // cct
+                                pstmtUpsertEmpleado.executeUpdate();
+                                System.out.println("[INFO] Empleado faltante creado: " + idEmpleado);
+                            }
+                        }
+
+                        // Eliminar duplicados por (id|día|horaEntrada)
                         Map<String, EmpleadoDatosExtra> registrosUnicos = new HashMap<>();
                         for (EmpleadoDatosExtra empleado : registros) {
                             String clave = empleado.getId() + "|" + empleado.getDiaN() + "|" + empleado.getHoraEntradaReal();
                             registrosUnicos.put(clave, empleado);
                         }
-                        
-                        List<EmpleadoDatosExtra> registrosSinDuplicados = new ArrayList<>(registrosUnicos.values());
-                        
-                        System.out.println(
-                                "Procesando empleado ID: " + idEmpleado + " con " + registrosSinDuplicados.size() + " horarios únicos");
 
-                        for (EmpleadoDatosExtra empleado : registrosSinDuplicados) {
+                        List<EmpleadoDatosExtra> registrosSinDuplicados = new ArrayList<>(registrosUnicos.values());
+
+                        // Aplicar tope de 4 horarios por día para cada empleado
+                        Map<String, List<EmpleadoDatosExtra>> porDia = new HashMap<>();
+                        for (EmpleadoDatosExtra r : registrosSinDuplicados) {
+                            porDia.computeIfAbsent(r.getDiaN(), k -> new ArrayList<>()).add(r);
+                        }
+
+                        List<EmpleadoDatosExtra> registrosLimitados = new ArrayList<>();
+                        for (Map.Entry<String, List<EmpleadoDatosExtra>> porDiaEntry : porDia.entrySet()) {
+                            String dia = porDiaEntry.getKey();
+                            List<EmpleadoDatosExtra> listaDia = porDiaEntry.getValue();
+
+                            // Ordenar por hora de entrada ascendente para seleccionar los primeros 4
+                            listaDia.sort((a, b) -> a.getHoraEntradaReal().compareTo(b.getHoraEntradaReal()));
+
+                            if (listaDia.size() > 4) {
+                                // Registrar los descartados para depuración
+                                System.out.println("[AVISO] Empleado " + idEmpleado + " día " + dia +
+                                        " tiene " + listaDia.size() + " horarios; se limitarán a 4. Extra(s) descartados: " +
+                                        listaDia.subList(4, listaDia.size()));
+                            }
+
+                            registrosLimitados.addAll(listaDia.subList(0, Math.min(4, listaDia.size())));
+                        }
+
+                        System.out.println(
+                                "Procesando empleado ID: " + idEmpleado + " con " + registrosLimitados.size() + " horarios tras límite por día");
+
+                        for (EmpleadoDatosExtra empleado : registrosLimitados) {
                             pstmtInsertar.setString(1, empleado.getId());
                             pstmtInsertar.setString(2, empleado.getDiaN());
                             pstmtInsertar.setString(3, empleado.getHoraEntradaReal());

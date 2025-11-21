@@ -1446,7 +1446,7 @@ public class Vista extends JFrame {
             case 5:
                 return "viernes";
             case 6:
-                return "sabado";
+                return "sábado";
             case 7:
                 return "domingo";
             default:
